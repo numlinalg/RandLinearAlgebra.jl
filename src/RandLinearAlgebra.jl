@@ -1,4 +1,4 @@
-module RLinearAlgebra
+module RandLinearAlgebra
 import Base.:*
 import Base: transpose, adjoint, setproperty!
 import LinearAlgebra: Adjoint, Transpose, axpby!, axpy!, ColumnNorm, dot, I, ldiv!

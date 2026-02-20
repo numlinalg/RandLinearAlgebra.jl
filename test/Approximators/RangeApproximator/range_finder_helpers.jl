@@ -1,16 +1,16 @@
 module  RangeApproximator_helper
-using Test, RLinearAlgebra, LinearAlgebra
+using Test, RandLinearAlgebra, LinearAlgebra
 using ..FieldTest
 using ..ApproxTol
 
-struct TestCompressorRecipe <: RLinearAlgebra.CompressorRecipe 
+struct TestCompressorRecipe <: RandLinearAlgebra.CompressorRecipe 
     n_rows::Int64
     n_cols::Int64
     op::AbstractMatrix
 end
 
 # Define a mul function for the test compressor
-function RLinearAlgebra.mul!(
+function RandLinearAlgebra.mul!(
     C::AbstractMatrix, 
     A::AbstractMatrix, 
     S::Main.RangeApproximator_helper.TestCompressorRecipe, 
@@ -20,7 +20,7 @@ function RLinearAlgebra.mul!(
     mul!(C, A, S.op, alpha, beta)
 end
 
-mutable struct TestRangeApproximatorRecipe <: RLinearAlgebra.RangeApproximatorRecipe
+mutable struct TestRangeApproximatorRecipe <: RandLinearAlgebra.RangeApproximatorRecipe
     compressor::CompressorRecipe
     power_its::Int64
 end
@@ -42,7 +42,7 @@ end
             # Start by testing the case with zero power iterations
             approx = TestRangeApproximatorRecipe(C, power_it)
             # Produce the Q from the function call
-            Q_func = RLinearAlgebra.rand_power_it(A, approx)
+            Q_func = RandLinearAlgebra.rand_power_it(A, approx)
             Q_test = Array(qr(A*C.op).Q)
             Q_func ≈ Q_test
             # test the matrix is orthogonal
@@ -63,7 +63,7 @@ end
 
             # Perform same test with 3 power iterations
             approx = TestRangeApproximatorRecipe(C, power_it)
-            Q_func = RLinearAlgebra.rand_power_it(A, approx)
+            Q_func = RandLinearAlgebra.rand_power_it(A, approx)
             Q_test = Array(qr(A * A' * A * A' * A * A'* A * C.op).Q)
             @test Q_func ≈ Q_test
             # test the matrix is orthogonal
@@ -87,7 +87,7 @@ end
             # Start by testing the case with zero power iterations
             approx = TestRangeApproximatorRecipe(C, power_it)
             # Produce the Q from the function call
-            Q_func = RLinearAlgebra.rand_ortho_it(A, approx)
+            Q_func = RandLinearAlgebra.rand_ortho_it(A, approx)
             Q_test = Array(qr(A*C.op).Q)
             Q_func ≈ Q_test
             # test the matrix is orthogonal
@@ -107,7 +107,7 @@ end
             C = deepcopy(C)
 
             approx = TestRangeApproximatorRecipe(C, power_it)
-            Q_func = RLinearAlgebra.rand_ortho_it(A, approx)
+            Q_func = RandLinearAlgebra.rand_ortho_it(A, approx)
             # Perform the 3 orthogonalized power iterations which involves 
             # orthogonalzing everytime we apply A or A' to the Q matrix
             Q1 = Array(qr(A * C.op).Q)

@@ -1,5 +1,5 @@
 module compressor_abstract_types
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
 using ..ApproxTol

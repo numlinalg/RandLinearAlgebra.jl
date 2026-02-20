@@ -3,7 +3,7 @@
 ##########################
 module column_projection_constructor 
 
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 
 @testset "ColumnProjection Structure & Constructor" begin
 
@@ -95,7 +95,7 @@ end
 ####################################
 module column_projection_recipe_structure 
 
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 
 @testset "ColumnProjectionRecipe Structure" begin
 
@@ -123,7 +123,7 @@ end
 ###################################
 module column_projection_recipe_constructor
 
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 
 @testset "ColumnProjectionRecipe complete_solver" begin
     
@@ -134,7 +134,7 @@ using Test, RLinearAlgebra
 
         struct TestSolverError <: SolverError end 
         struct TestSolverErrorRecipe <: SolverErrorRecipe end 
-        RLinearAlgebra.complete_error(
+        RandLinearAlgebra.complete_error(
             SE::TestSolverError, 
             S::ColumnProjection, 
             A::Matrix, 
@@ -154,7 +154,7 @@ using Test, RLinearAlgebra
 
         struct TestLoggerI <: Logger end 
         struct TestLoggerRecipeI <: LoggerRecipe end 
-        RLinearAlgebra.complete_logger(TL::TestLoggerI) = TestLoggerRecipeI()
+        RandLinearAlgebra.complete_logger(TL::TestLoggerI) = TestLoggerRecipeI()
 
         solver = ColumnProjection(log=TestLoggerI()) # End of test parameters 
 
@@ -171,7 +171,7 @@ using Test, RLinearAlgebra
         struct TestLoggerRecipeII <: LoggerRecipe
             max_it::Int64
         end 
-        RLinearAlgebra.complete_logger(TL::TestLoggerII) = TestLoggerRecipeII(100)
+        RandLinearAlgebra.complete_logger(TL::TestLoggerII) = TestLoggerRecipeII(100)
 
         solver = ColumnProjection(log=TestLoggerII()) # End of test parameters
 
@@ -218,7 +218,7 @@ end
 ###################################
 module column_projection_update
 
-using Test, RLinearAlgebra, LinearAlgebra
+using Test, RandLinearAlgebra, LinearAlgebra
 
 @testset "ColumnProjection Update" begin
 
@@ -227,15 +227,15 @@ using Test, RLinearAlgebra, LinearAlgebra
         A = randn(10, 5),
         b = randn(10),
         x = zeros(Float64, 5),
-        solver = RLinearAlgebra.complete_solver(
+        solver = RandLinearAlgebra.complete_solver(
             ColumnProjection(
                 compressor= Gaussian(cardinality=Right(), compression_dim=compression_dim)
             ), x, A, b
         )
 
         solver.residual_vec = b - A * x
-        RLinearAlgebra.mul!(solver.mat_view, A, solver.compressor)
-        RLinearAlgebra.colproj_update!(solver)
+        RandLinearAlgebra.mul!(solver.mat_view, A, solver.compressor)
+        RandLinearAlgebra.colproj_update!(solver)
 
         tilde_a = A * solver.compressor 
         @test x ≈ solver.compressor * [dot(tilde_a, b) / norm(tilde_a)^2]
@@ -247,15 +247,15 @@ using Test, RLinearAlgebra, LinearAlgebra
         A = randn(10, 5),
         b = randn(10),
         x = zeros(Float64, 5),
-        solver = RLinearAlgebra.complete_solver(
+        solver = RandLinearAlgebra.complete_solver(
             ColumnProjection(
                 compressor= Gaussian(cardinality=Right(), compression_dim=compression_dim)
             ), x, A, b
         )
 
         solver.residual_vec = b - A * x # Should be just b
-        RLinearAlgebra.mul!(solver.mat_view, A, solver.compressor)
-        RLinearAlgebra.colproj_update_block!(solver)
+        RandLinearAlgebra.mul!(solver.mat_view, A, solver.compressor)
+        RandLinearAlgebra.colproj_update_block!(solver)
 
         tilde_a = A * solver.compressor 
         @test x ≈ solver.compressor * (tilde_a \ b)
@@ -271,7 +271,7 @@ end
 ###################################
 module column_projection_solver 
 
-using Test, RLinearAlgebra, LinearAlgebra
+using Test, RandLinearAlgebra, LinearAlgebra
 
 @testset "ColumnProjection Solver: rsolve!" begin 
 
@@ -282,7 +282,7 @@ using Test, RLinearAlgebra, LinearAlgebra
         A = randn(5, 10),
         b = randn(5),
         x = zeros(10),
-        solver = RLinearAlgebra.complete_solver(ingredients, x, A, b)
+        solver = RandLinearAlgebra.complete_solver(ingredients, x, A, b)
 
         rsolve!(solver, x, A, b)
 
@@ -296,7 +296,7 @@ using Test, RLinearAlgebra, LinearAlgebra
         A = randn(5, 10),
         b = randn(5),
         x = zeros(10),
-        solver = RLinearAlgebra.complete_solver(ingredients, x, A, b)
+        solver = RandLinearAlgebra.complete_solver(ingredients, x, A, b)
 
         # Induction 
         rsolve!(solver, x, A, b)
@@ -304,7 +304,7 @@ using Test, RLinearAlgebra, LinearAlgebra
         # Conclusion 
         x_previous = deepcopy(x)
         ingredients = ColumnProjection(compressor=compressor, log=BasicLogger(max_it=1))
-        solver = RLinearAlgebra.complete_solver(ingredients, x, A, b)
+        solver = RandLinearAlgebra.complete_solver(ingredients, x, A, b)
         rsolve!(solver, x, A, b)
 
         @test norm(b - A*x) < norm(b - A*x_previous) # Is the residual reduced?
@@ -315,7 +315,7 @@ using Test, RLinearAlgebra, LinearAlgebra
         A = randn(5, 10),
         b = randn(5),
         x = zeros(10),
-        solver = RLinearAlgebra.complete_solver(ingredients, x, A, b)
+        solver = RandLinearAlgebra.complete_solver(ingredients, x, A, b)
 
         rsolve!(solver, x, A, b)
 
@@ -327,7 +327,7 @@ using Test, RLinearAlgebra, LinearAlgebra
         A = randn(5, 10),
         b = randn(5),
         x = zeros(10),
-        solver = RLinearAlgebra.complete_solver(ingredients, x, A, b)
+        solver = RandLinearAlgebra.complete_solver(ingredients, x, A, b)
 
         # Induction 
         rsolve!(solver, x, A, b)
@@ -335,7 +335,7 @@ using Test, RLinearAlgebra, LinearAlgebra
         # Conclusion
         x_previous = deepcopy(x)
         ingredients = ColumnProjection(log=BasicLogger(max_it=1))
-        solver = RLinearAlgebra.complete_solver(ingredients, x, A, b)
+        solver = RandLinearAlgebra.complete_solver(ingredients, x, A, b)
         rsolve!(solver, x, A, b)
 
         @test norm(b - A*x) < norm(b - A*x_previous) # Is the residual reduced?
@@ -352,13 +352,13 @@ using Test, RLinearAlgebra, LinearAlgebra
             max_it::Int64 
             converged::Bool
         end
-        RLinearAlgebra.complete_logger(LG::TestLoggerIII) = TestLoggerRecipeIII(10, false)
-        function RLinearAlgebra.reset_logger!(LG::TestLoggerRecipeIII)
+        RandLinearAlgebra.complete_logger(LG::TestLoggerIII) = TestLoggerRecipeIII(10, false)
+        function RandLinearAlgebra.reset_logger!(LG::TestLoggerRecipeIII)
             LG.max_it = 10
             LG.converged = false
             return nothing 
         end
-        function RLinearAlgebra.update_logger!(LG::TestLoggerRecipeIII, err::Float64, i::Int64)
+        function RandLinearAlgebra.update_logger!(LG::TestLoggerRecipeIII, err::Float64, i::Int64)
             if i > 1
                 LG.converged = true
             end

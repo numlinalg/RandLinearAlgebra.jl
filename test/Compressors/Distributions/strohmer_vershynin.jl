@@ -1,5 +1,5 @@
 module l2norm_distribution
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 using StatsBase: ProbabilityWeights
 
 @testset "L2Norm" begin

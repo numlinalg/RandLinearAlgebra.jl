@@ -1,5 +1,5 @@
 module solver_error_abstract_types
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 import Random: seed!
 using ..FieldTest
 using ..ApproxTol

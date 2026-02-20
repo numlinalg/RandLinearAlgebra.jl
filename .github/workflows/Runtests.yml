@@ -5,7 +5,8 @@ on:
       - master
       - main
       - v0.2-main
-    tags: '*'
+    tags:
+      - v*
   pull_request:
     types: [opened, reopened, ready_for_review, synchronize]
     branches:
@@ -39,5 +40,5 @@ jobs:
         with:
           files: lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: numlinalg/RLinearAlgebra.jl
+          slug: numlinalg/RandLinearAlgebra.jl
           fail_ci_if_error: false

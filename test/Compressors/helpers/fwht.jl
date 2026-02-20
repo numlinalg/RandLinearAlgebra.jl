@@ -1,5 +1,5 @@
 module fwht_test
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 import Hadamard: hadamard
 using ..FieldTest
 using ..ApproxTol
@@ -11,20 +11,20 @@ Random.seed!(2131)
     let ln = 4,
         x = rand(ln),
         signs = bitrand(ln + 1)
-        @test_throws DimensionMismatch RLinearAlgebra.fwht!(x, signs)
+        @test_throws DimensionMismatch RandLinearAlgebra.fwht!(x, signs)
     end
 
     # test not power of 2 for two argument implementation
     let ln = 3,
         x = rand(ln),
         signs = bitrand(ln)
-        @test_throws DimensionMismatch RLinearAlgebra.fwht!(x, signs)
+        @test_throws DimensionMismatch RandLinearAlgebra.fwht!(x, signs)
     end
     
     # test not power of 2 for one argument implementation
     let ln = 3,
         x = rand(ln)
-        @test_throws DimensionMismatch RLinearAlgebra.fwht!(x)
+        @test_throws DimensionMismatch RandLinearAlgebra.fwht!(x)
     end
     
     # Now run tests for the hadamrd transform. Run at 8 and 16 because of possible division
@@ -35,10 +35,10 @@ Random.seed!(2131)
         for type in [Float32, Float64, ComplexF32, ComplexF64]
             x = rand(type, ln)
             xc = deepcopy(x)
-            RLinearAlgebra.fwht!(x)
+            RandLinearAlgebra.fwht!(x)
             @test x ≈ H * xc
             # test that it is also a self inverse this tests the scaling as well
-            RLinearAlgebra.fwht!(x, scaling = type(1/ln))
+            RandLinearAlgebra.fwht!(x, scaling = type(1/ln))
             @test x ≈ xc
         end
 
@@ -56,14 +56,14 @@ Random.seed!(2131)
             xc = deepcopy(x)
             xc2 = deepcopy(x)
             xc3 = deepcopy(x)
-            RLinearAlgebra.fwht!(x, signs)
+            RandLinearAlgebra.fwht!(x, signs)
             @test x ≈ H * (ifelse.(signs, 1 , -1) .* xc)
             # test with scaling  
-            RLinearAlgebra.fwht!(xc, signs, scaling = type(1/ln))
+            RandLinearAlgebra.fwht!(xc, signs, scaling = type(1/ln))
             @test xc ≈ H * (ifelse.(signs, 1 , -1) .* xc2) .* type(1/ln)
             # test signs self inverse when signs are all 1
-            RLinearAlgebra.fwht!(xc2, all_true) 
-            RLinearAlgebra.fwht!(xc2, all_true, scaling = type(1/ln)) 
+            RandLinearAlgebra.fwht!(xc2, all_true) 
+            RandLinearAlgebra.fwht!(xc2, all_true, scaling = type(1/ln)) 
             @test xc2 ≈ xc3
         end
 

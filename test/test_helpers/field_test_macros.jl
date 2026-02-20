@@ -1,5 +1,5 @@
 module FieldTest
-using RLinearAlgebra, Test
+using RandLinearAlgebra, Test
 
 LoggerFields = Dict(
     :error => Real,

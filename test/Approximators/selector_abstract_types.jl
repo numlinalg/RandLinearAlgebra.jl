@@ -1,6 +1,6 @@
 module selector_abstract_types
-using Test, RLinearAlgebra
-import RLinearAlgebra: complete_selector, update_selector!, select_indices!
+using Test, RandLinearAlgebra
+import RandLinearAlgebra: complete_selector, update_selector!, select_indices!
 
 
 #############################

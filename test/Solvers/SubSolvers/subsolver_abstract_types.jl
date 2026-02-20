@@ -1,5 +1,5 @@
 module sub_solver_abstract_types
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 import LinearAlgebra: ldiv!
 include("../../test_helpers/field_test_macros.jl")
 include("../../test_helpers/approx_tol.jl")

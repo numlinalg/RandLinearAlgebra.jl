@@ -1,6 +1,6 @@
 # Solving a Consistent Linear System
 
-This guide demonstrates how to use `RLinearAlgebra.jl` package to solve a 
+This guide demonstrates how to use `RandLinearAlgebra.jl` package to solve a 
 **consistent linear system**. That is, how to approximately find $x$
 that satisfies
 
@@ -17,11 +17,11 @@ b = A*randn(Float64, num_cols)
 ```
 
 
-`RLinearAlgebra.jl` can find an approximate solution using the generalized 
+`RandLinearAlgebra.jl` can find an approximate solution using the generalized 
 [`Kaczmarz`](@ref) method [patel2023randomized](@cite).
 
 ```@example ConsistentExample; continued=true
-using RLinearAlgebra
+using RandLinearAlgebra
 solver = Kaczmarz(log = BasicLogger(max_it = 300))
 solution = zeros(Float64, num_cols) # Initial guess of zeros
 rsolve!(solver, solution, A, b)

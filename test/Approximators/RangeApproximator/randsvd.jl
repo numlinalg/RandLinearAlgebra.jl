@@ -1,6 +1,6 @@
 module  RandomizedSVD
-using Test, RLinearAlgebra, LinearAlgebra
-import RLinearAlgebra: complete_compressor
+using Test, RandLinearAlgebra, LinearAlgebra
+import RandLinearAlgebra: complete_compressor
 import LinearAlgebra: mul!, svd, Diagonal
 using ..FieldTest
 using ..ApproxTol
@@ -19,7 +19,7 @@ mutable struct TestCompressorRecipe <: CompressorRecipe
     op::AbstractMatrix
 end
 
-function RLinearAlgebra.complete_compressor(comp::TestCompressor, A::AbstractMatrix)
+function RandLinearAlgebra.complete_compressor(comp::TestCompressor, A::AbstractMatrix)
     n_cols = comp.compression_dim
     n_rows = size(A, 2)
     # Make a gaussian compressor
@@ -28,7 +28,7 @@ function RLinearAlgebra.complete_compressor(comp::TestCompressor, A::AbstractMat
 end
 
 # Define a mul function for the test compressor
-function RLinearAlgebra.mul!(
+function RandLinearAlgebra.mul!(
     C::AbstractMatrix, 
     A::AbstractMatrix, 
     S::TestCompressorRecipe, 

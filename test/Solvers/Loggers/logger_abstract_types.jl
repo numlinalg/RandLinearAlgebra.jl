@@ -1,5 +1,5 @@
 module logger_abstract_types
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 using ..FieldTest
 using ..ApproxTol
 struct TestLogger <: Logger end

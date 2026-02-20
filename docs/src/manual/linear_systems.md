@@ -4,7 +4,7 @@ Given a linear system consisting of a matrix ``A \in \mathbb{R}^{m \times n}`` a
 constant vector ``b \in \mathbb{R}^m`` in the column space of ``A``, we aim to 
 find ``x^*`` such that ``Ax^* = b``.
 
-`RLinearAlgebra` allows you to find an approximation to a solution of the linear 
+`RandLinearAlgebra` allows you to find an approximation to a solution of the linear 
 system by calling the function `rsolve!(solver, x, A, b)`, 
 where `A` is the coefficient matrix, 
 `b` is the constant vector, 
@@ -35,7 +35,7 @@ To do this appropriately, we set the `max_it` field in the `BasicLogger` structu
 `log` field in the `Kaczmarz` solver.
 
 ```julia
-using RLinearAlgebra
+using RandLinearAlgebra
 using LinearAlgebra
 
 # Generate the linear system
@@ -60,7 +60,7 @@ norm(x - x_sol)
 
 Often for Kaczmarz, we can improve the rate of convergence by projecting onto blocks of
 rows.
-In `RLinearAlgebra` we can do this by changing the `compression_dim` of the 
+In `RandLinearAlgebra` we can do this by changing the `compression_dim` of the 
 compressor. 
 Below, we set the `compression_dim = 5`. We also may wish to 
 stop when the residual falls below `1e-1`, which we do by specifying the `threshold` field
@@ -68,7 +68,7 @@ in the `Logger` structure. After setting up these systems, we run our solver and
 history of the `FullResidual` by plotting the `hist` field of `log` field of the returned 
 `SolverRecipe`.
 ```julia
-using RLinearAlgebra
+using RandLinearAlgebra
 using LinearAlgebra
 using Plots
 
