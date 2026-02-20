@@ -12,12 +12,12 @@ Of course, many other techniques beyond a Gaussian matrix can be used to generat
 ``S`` and they vary both in terms of their approximation accuracy and computational 
 efficiency. In papers, Randomized Linear Algebraists often refer to techniques
 for generating ``S`` as either sampling (random subset of identity) or sketching 
-(general random matrix) techniques. For simplicity RLinearAlgebra.jl refers to both types 
+(general random matrix) techniques. For simplicity RandLinearAlgebra.jl refers to both types 
 of techniques under the general family of Compressors. The choice of the terminology 
 `Compressors` also allows us to incorporate deterministic approaches to compressing 
 matrices/vectors. 
 
-In RLinearAlgebra.jl, using a compression technique requires two main steps. The first,
+In RandLinearAlgebra.jl, using a compression technique requires two main steps. The first,
 uses the `complete_compressor` function to generate a CompressorRecipe. The second 
 step uses the `mul!` or `*` functions to apply your `CompressorRecipe` to your matrix/
 vector object. If you ever want to form a new realization of your compressor, you can 
@@ -60,7 +60,7 @@ arguments (see [Compressors API](@ref) for more details). The one argument is th
 
 ## Compressing a Matrix Example
 Knowing that compressors allow us to reduce one of the dimensions of a matrix, the next 
-important question is how do we do this in RLinearAlgebra.jl? In the following example 
+important question is how do we do this in RandLinearAlgebra.jl? In the following example 
 we show how to do exactly this using a [Gaussian](@ref) compressor. In this 
 example we will generate a `GaussianRecipe`, `S`, with `compression_dim` 10 and 
 `cardinality` `Left()`, then we will apply `S` and its transpose, `S'`, to a matrix, `A`, 
@@ -70,7 +70,7 @@ Then we will generate a new realization of the recipe using
 the left.
 
 ```julia 
-using RLinearAlgebra
+using RandLinearAlgebra
 using LinearAlgebra
 
 A = rand(100, 100)
@@ -101,13 +101,13 @@ mul!(C, S, A)
 A special sub-type of compressors are known as `Sampling` compressors. These compressors
 are unique in that they compress the matrix by selecting rows or columns according to a 
 specific distribution. For example, we could compress a matrix by sampling 10 rows uniformly
-at random in what is known unsurprisingly as a uniform sampling approach. RLinearAlgebra.jl
+at random in what is known unsurprisingly as a uniform sampling approach. RandLinearAlgebra.jl
 allows you to use the Sampling techniques with a wide range of distributions (see 
 [Distributions](@ref) for more details). You can specify the distribution you want to use
 with the `distribution` argument in the sampling structure. As an example, if we want to 
 perform uniform sampling from a matrix we can form our SamplingRecipe by writing:
 ```julia
-using RLinearAlgebra
+using RandLinearAlgebra
 A = rand(100, 100)
 
 # Generate Compression recipe using uniform sampling distribution

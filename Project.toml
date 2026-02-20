@@ -1,4 +1,4 @@
-name = "RLinearAlgebra"
+name = "RandLinearAlgebra"
 uuid = "da1d211a-c3bc-43b2-b5d0-ce83f16a0f3a"
 authors = ["Christian Varner <cvarner@wisc.edu>", "Daniel Adrian Maldonado <maldonadod@anl.gov>", "Nathaniel Pritchard <Nathaniel.Pritchard@maths.ox.ac.uk>", "TongTong Jin <ttjin@uchicago.edu>", "Tunan Wang <tunan.wang@wisc.edu>", "Vivak Patel <vivak.patel@wisc.edu>"]
 version = "0.2.4"
@@ -10,10 +10,10 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-LinearAlgebra = "1.12"
-Random = "1.11"
-SparseArrays = "1.12"
-StatsBase = "0.34"
+LinearAlgebra = "^1.12.0"
+Random = "^1.11.0"
+SparseArrays = "^1.12.0"
+StatsBase = "^0.34"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

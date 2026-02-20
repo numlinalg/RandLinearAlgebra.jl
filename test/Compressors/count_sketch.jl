@@ -1,5 +1,5 @@
 module CountSketch_compressor
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 import SparseArrays: sparse, SparseMatrixCSC, sprandn
 import LinearAlgebra: mul!, lmul!
 import Random: randn!, seed!, rand

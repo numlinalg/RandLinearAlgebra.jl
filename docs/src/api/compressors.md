@@ -60,11 +60,11 @@ update_compressor!
 
 ## Internal Functions
 ```@docs
-RLinearAlgebra.left_mul_dimcheck
+RandLinearAlgebra.left_mul_dimcheck
 
-RLinearAlgebra.right_mul_dimcheck
+RandLinearAlgebra.right_mul_dimcheck
 
-RLinearAlgebra.sparse_idx_update!
+RandLinearAlgebra.sparse_idx_update!
 
-RLinearAlgebra.fwht!
+RandLinearAlgebra.fwht!
 ```

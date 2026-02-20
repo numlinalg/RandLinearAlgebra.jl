@@ -1,5 +1,5 @@
 module sparse_sign
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 import SparseArrays: sparse, SparseMatrixCSC, sprand
 import LinearAlgebra: mul!, Adjoint
 using ..FieldTest

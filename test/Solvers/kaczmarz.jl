@@ -1,6 +1,6 @@
 module KaczmarzTest
-using Test, RLinearAlgebra, LinearAlgebra
-import RLinearAlgebra: complete_compressor, update_compressor!
+using Test, RandLinearAlgebra, LinearAlgebra
+import RandLinearAlgebra: complete_compressor, update_compressor!
 import LinearAlgebra: mul!, norm
 import Random: randn!
 import SparseArrays: sprand, SparseMatrixCSC, SparseVector, spzeros
@@ -25,7 +25,7 @@ mutable struct KTestCompressorRecipe <: CompressorRecipe
     op::AbstractMatrix
 end
 
-function RLinearAlgebra.complete_compressor(
+function RandLinearAlgebra.complete_compressor(
     comp::KTestCompressor, 
     A::AbstractMatrix,
     b::AbstractVector 
@@ -37,7 +37,7 @@ function RLinearAlgebra.complete_compressor(
     return KTestCompressorRecipe(comp.cardinality, n_rows, n_cols, op)
 end
 
-function RLinearAlgebra.update_compressor!(
+function RandLinearAlgebra.update_compressor!(
     comp::KTestCompressorRecipe,
     x::AbstractVector,
     A::AbstractMatrix,
@@ -48,7 +48,7 @@ function RLinearAlgebra.update_compressor!(
 end
 
 # Define a mul function for the test compressor
-function RLinearAlgebra.mul!(
+function RandLinearAlgebra.mul!(
     C::AbstractArray,
     S::Main.KaczmarzTest.KTestCompressorRecipe, 
     A::AbstractArray, 
@@ -61,17 +61,17 @@ end
 ##########################
 # Error Method
 ##########################
-mutable struct KTestError <: RLinearAlgebra.SolverError
+mutable struct KTestError <: RandLinearAlgebra.SolverError
     g::Real
 end
 
-mutable struct KTestErrorRecipe <: RLinearAlgebra.SolverErrorRecipe
+mutable struct KTestErrorRecipe <: RandLinearAlgebra.SolverErrorRecipe
     residual::Vector{Number}
 end
 
 KTestError() = KTestError(1.0) 
 
-function RLinearAlgebra.complete_error(
+function RandLinearAlgebra.complete_error(
     error::KTestError, 
     solver::Kaczmarz,
     A::AbstractMatrix, 
@@ -80,7 +80,7 @@ function RLinearAlgebra.complete_error(
     return KTestErrorRecipe(zeros(typeof(error.g), size(A, 1)))
 end
 
-function RLinearAlgebra.compute_error(error::KTestErrorRecipe, solver, A, b)
+function RandLinearAlgebra.compute_error(error::KTestErrorRecipe, solver, A, b)
     error.residual = A * solver.solution_vec - b
     return norm(error.residual)
 end
@@ -88,11 +88,11 @@ end
 ##############################
 # Residual-less Error Recipe
 ##############################
-mutable struct KTestErrorNoRes <: RLinearAlgebra.SolverError end
+mutable struct KTestErrorNoRes <: RandLinearAlgebra.SolverError end
 
-mutable struct KTestErrorRecipeNoRes <: RLinearAlgebra.SolverErrorRecipe end
+mutable struct KTestErrorRecipeNoRes <: RandLinearAlgebra.SolverErrorRecipe end
 
-function RLinearAlgebra.complete_error(
+function RandLinearAlgebra.complete_error(
     error::KTestErrorNoRes, 
     solver::Kaczmarz,
     A::AbstractMatrix, 
@@ -120,7 +120,7 @@ mutable struct KTestLogRecipe <: LoggerRecipe
     converged::Bool
 end
 
-function RLinearAlgebra.complete_logger(logger::KTestLog)
+function RandLinearAlgebra.complete_logger(logger::KTestLog)
     return KTestLogRecipe(
         logger.max_it, 
         zeros(typeof(logger.g), logger.max_it), 
@@ -129,12 +129,12 @@ function RLinearAlgebra.complete_logger(logger::KTestLog)
     )
 end
 
-function RLinearAlgebra.update_logger!(logger::KTestLogRecipe, err::Real, i::Int64)
+function RandLinearAlgebra.update_logger!(logger::KTestLogRecipe, err::Real, i::Int64)
     logger.hist[i] = err
     logger.converged = err < logger.thresh ? true : false
 end
 
-function RLinearAlgebra.reset_logger!(logger::KTestLogRecipe)
+function RandLinearAlgebra.reset_logger!(logger::KTestLogRecipe)
     fill!(logger.hist, 0.0)
 end
 
@@ -145,7 +145,7 @@ mutable struct KTestLogNoCov <: Logger end
 
 mutable struct KTestLogRecipeNoCov <: LoggerRecipe end
 
-function RLinearAlgebra.complete_logger(logger::KTestLogNoCov)
+function RandLinearAlgebra.complete_logger(logger::KTestLogNoCov)
     return KTestLogRecipeNoCov()
 end
 
@@ -158,7 +158,7 @@ mutable struct KTestSubSolverRecipe <: SubSolverRecipe
     A::AbstractMatrix
 end
 
-function RLinearAlgebra.complete_sub_solver(
+function RandLinearAlgebra.complete_sub_solver(
     solver::KTestSubSolver, 
     A::AbstractMatrix, 
     b::AbstractVector
@@ -166,11 +166,11 @@ function RLinearAlgebra.complete_sub_solver(
     return KTestSubSolverRecipe(A)
 end
 
-function RLinearAlgebra.update_sub_solver!(solver::KTestSubSolverRecipe, A::AbstractMatrix)
+function RandLinearAlgebra.update_sub_solver!(solver::KTestSubSolverRecipe, A::AbstractMatrix)
     solver.A = A
 end
 
-function RLinearAlgebra.ldiv!(
+function RandLinearAlgebra.ldiv!(
     x::AbstractVector, 
     S::Main.KaczmarzTest.KTestSubSolverRecipe, 
     b::AbstractVector, 
@@ -568,7 +568,7 @@ end
                 test_sol = x - sc * adjoint(sA)
     
                 # compute the update
-                RLinearAlgebra.kaczmarz_update!(solver_rec)
+                RandLinearAlgebra.kaczmarz_update!(solver_rec)
                 @test solver_rec.solution_vec ≈ test_sol
             end
             
@@ -608,7 +608,7 @@ end
                 test_sol = x - sc * adjoint(sA)
     
                 # compute the update
-                RLinearAlgebra.kaczmarz_update!(solver_rec)
+                RandLinearAlgebra.kaczmarz_update!(solver_rec)
                 @test solver_rec.solution_vec ≈ test_sol
             end
         
@@ -653,7 +653,7 @@ end
                 test_sol =  x + lq(Array(sA)) \ (sb - sA * x)
     
                 # compute the update
-                RLinearAlgebra.kaczmarz_update_block!(solver_rec)
+                RandLinearAlgebra.kaczmarz_update_block!(solver_rec)
                 @test solver_rec.solution_vec ≈ test_sol
             end
             
@@ -692,7 +692,7 @@ end
             #     test_sol =  x + lq(Array(sA)) \ (sb - sA * x)
     
             #     # compute the update
-            #     RLinearAlgebra.kaczmarz_update_block!(solver_rec)
+            #     RandLinearAlgebra.kaczmarz_update_block!(solver_rec)
             #     @test solver_rec.solution_vec ≈ test_sol
             # end
     

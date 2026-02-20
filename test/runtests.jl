@@ -1,5 +1,5 @@
 using Test
-using RLinearAlgebra
+using RandLinearAlgebra
 
 # Include the test for recipes
 include("./test_helpers/field_test_macros.jl")

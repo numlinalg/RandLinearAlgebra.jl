@@ -1,5 +1,5 @@
 module fjlt 
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 import SparseArrays: sparse, SparseMatrixCSC, sprand
 import LinearAlgebra: mul!, Adjoint, Diagonal
 import Hadamard: hadamard

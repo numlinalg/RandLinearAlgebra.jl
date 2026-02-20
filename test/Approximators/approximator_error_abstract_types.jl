@@ -1,6 +1,6 @@
 module approximator_error_abstract_types
-using Test, RLinearAlgebra
-import RLinearAlgebra: complete_approximator_error, compute_approximator_error!
+using Test, RandLinearAlgebra
+import RandLinearAlgebra: complete_approximator_error, compute_approximator_error!
 
 #############################
 # Initial Testing Parameters

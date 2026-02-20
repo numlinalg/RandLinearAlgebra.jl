@@ -1,6 +1,6 @@
 module IHSTest
-using Test, RLinearAlgebra, LinearAlgebra
-import RLinearAlgebra: complete_compressor
+using Test, RandLinearAlgebra, LinearAlgebra
+import RandLinearAlgebra: complete_compressor
 import LinearAlgebra: mul!, norm
 import Random: randn!, seed!
 using ..FieldTest
@@ -24,7 +24,7 @@ mutable struct ITestCompressorRecipe <: CompressorRecipe
     op::AbstractMatrix
 end
 
-function RLinearAlgebra.complete_compressor(
+function RandLinearAlgebra.complete_compressor(
     comp::ITestCompressor, 
     A::AbstractMatrix,
     b::AbstractVector 
@@ -36,7 +36,7 @@ function RLinearAlgebra.complete_compressor(
     return ITestCompressorRecipe(comp.cardinality, n_rows, n_cols, op)
 end
 
-function RLinearAlgebra.update_compressor!(
+function RandLinearAlgebra.update_compressor!(
     comp::ITestCompressorRecipe,
     x::AbstractVector,
     A::AbstractMatrix,
@@ -47,7 +47,7 @@ function RLinearAlgebra.update_compressor!(
 end
 
 # Define a mul function for the test compressor
-function RLinearAlgebra.mul!(
+function RandLinearAlgebra.mul!(
     C::AbstractArray,
     S::Main.IHSTest.ITestCompressorRecipe, 
     A::AbstractArray, 
@@ -60,17 +60,17 @@ end
 ##########################
 # Error Method
 ##########################
-mutable struct ITestError <: RLinearAlgebra.SolverError
+mutable struct ITestError <: RandLinearAlgebra.SolverError
     g::Real
 end
 
-mutable struct ITestErrorRecipe <: RLinearAlgebra.SolverErrorRecipe
+mutable struct ITestErrorRecipe <: RandLinearAlgebra.SolverErrorRecipe
     residual::Vector{Number}
 end
 
 ITestError() = ITestError(1.0) 
 
-function RLinearAlgebra.complete_error(
+function RandLinearAlgebra.complete_error(
     error::ITestError, 
     solver::IHS,
     A::AbstractMatrix, 
@@ -79,7 +79,7 @@ function RLinearAlgebra.complete_error(
     return ITestErrorRecipe(zeros(typeof(error.g), size(A, 1)))
 end
 
-function RLinearAlgebra.compute_error(error::ITestErrorRecipe, solver, A, b)
+function RandLinearAlgebra.compute_error(error::ITestErrorRecipe, solver, A, b)
     error.residual = A * solver.solution_vec - b
     return norm(error.residual)
 end
@@ -87,11 +87,11 @@ end
 ##############################
 # Residual-less Error Recipe
 ##############################
-mutable struct ITestErrorNoRes <: RLinearAlgebra.SolverError end
+mutable struct ITestErrorNoRes <: RandLinearAlgebra.SolverError end
 
-mutable struct ITestErrorRecipeNoRes <: RLinearAlgebra.SolverErrorRecipe end
+mutable struct ITestErrorRecipeNoRes <: RandLinearAlgebra.SolverErrorRecipe end
 
-function RLinearAlgebra.complete_error(
+function RandLinearAlgebra.complete_error(
     error::ITestErrorNoRes, 
     solver::IHS,
     A::AbstractMatrix, 
@@ -120,7 +120,7 @@ mutable struct ITestLogRecipe <: LoggerRecipe
     iteration::Int64
 end
 
-function RLinearAlgebra.complete_logger(logger::ITestLog)
+function RandLinearAlgebra.complete_logger(logger::ITestLog)
     return ITestLogRecipe(
         logger.max_it, 
         zeros(typeof(logger.g), logger.max_it), 
@@ -130,13 +130,13 @@ function RLinearAlgebra.complete_logger(logger::ITestLog)
     )
 end
 
-function RLinearAlgebra.update_logger!(logger::ITestLogRecipe, err::Real, i::Int64)
+function RandLinearAlgebra.update_logger!(logger::ITestLogRecipe, err::Real, i::Int64)
     logger.iteration = i
     logger.hist[i] = err
     logger.converged = err < logger.thresh ? true : false
 end
 
-function RLinearAlgebra.reset_logger!(logger::ITestLogRecipe)
+function RandLinearAlgebra.reset_logger!(logger::ITestLogRecipe)
     fill!(logger.hist, 0.0)
 end
 
@@ -147,7 +147,7 @@ mutable struct ITestLogNoCov <: Logger end
 
 mutable struct ITestLogRecipeNoCov <: LoggerRecipe end
 
-function RLinearAlgebra.complete_logger(logger::ITestLogNoCov)
+function RandLinearAlgebra.complete_logger(logger::ITestLogNoCov)
     return ITestLogRecipeNoCov()
 end
 

@@ -1,5 +1,5 @@
 module basic_logger
-    using Test, RLinearAlgebra, Random
+    using Test, RandLinearAlgebra, Random
     include("../../test_helpers/field_test_macros.jl")
     include("../../test_helpers/approx_tol.jl")
     using .FieldTest

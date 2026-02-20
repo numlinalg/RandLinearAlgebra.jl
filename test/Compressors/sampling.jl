@@ -1,5 +1,5 @@
 module Sampling_compressor
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 using StatsBase: ProbabilityWeights, sample
 import LinearAlgebra: mul!, Adjoint
 import SparseArrays: sprandn

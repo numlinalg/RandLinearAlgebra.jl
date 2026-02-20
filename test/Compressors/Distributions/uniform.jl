@@ -1,5 +1,5 @@
 module uniform_distribution
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 using StatsBase: ProbabilityWeights
 
 @testset "Uniform" begin

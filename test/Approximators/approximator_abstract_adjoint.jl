@@ -1,5 +1,5 @@
 module approximators_abstract_adjoint
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 
 #####################

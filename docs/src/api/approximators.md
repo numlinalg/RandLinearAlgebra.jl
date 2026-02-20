@@ -11,7 +11,7 @@ ApproximatorRecipe
 
 ApproximatorAdjoint
 
-RLinearAlgebra.RangeApproximator
+RandLinearAlgebra.RangeApproximator
 
 RangeApproximatorRecipe
 ```
@@ -38,7 +38,7 @@ rapproximate!
 
 ## Internal Functions
 ```@docs
-RLinearAlgebra.rand_power_it
+RandLinearAlgebra.rand_power_it
 
-RLinearAlgebra.rand_ortho_it
+RandLinearAlgebra.rand_ortho_it
 ```

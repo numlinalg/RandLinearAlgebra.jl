@@ -41,7 +41,7 @@ present a summary of the decompositions in a table.
 |CUR| Yes| Yes| General| ``(A[:,J])U(A[I,:])``|
 |One-Sided ID| General|  ``A[:,J]U_c`` or ``U_r A[I,:]``|
 
-In `RLinearAlgebra`, 
+In `RandLinearAlgebra`, 
 once you have obtained a low-rank approximation `Recipe`, you can use it 
 to do multiplications (via `mul!`) and/or left inversion (via `ldiv!`). 
 Below we have the table of approximation recipes 
@@ -73,7 +73,7 @@ For matrices whose singular values decay quickly, this bound can be
 conservative in comparison to observed performance. 
 However, for some matrices whose singular values 
 decay slowly this bound is fairly tight. 
-`RLinearAlgebra` implements the randomized rangefinder using 
+`RandLinearAlgebra` implements the randomized rangefinder using 
 [`RangeFinder`](@ref).
 
 Power iterations can be added to improve the quality of the approximation.
@@ -81,14 +81,14 @@ Power iterations basically involve multiplying the matrix with itself,
 which results in raising each singular value to a 
 higher power. This powering of the singular values increases the gap between the 
 singular values making them easier to resolve.
-In `RLinearAlgebra`, you can control the number of power iterations 
+In `RandLinearAlgebra`, you can control the number of power iterations 
 using the `power_its` keyword in [`RangeFinder`](@ref).
 
 One issue with power iterations is that they can sometimes be 
 unstable. 
 We can improve the stability of these iterations by orthogonalizing between
 power iterations (akin to Arnoldi iterations).
-In `RLinearAlgebra` you can control whether or not the
+In `RandLinearAlgebra` you can control whether or not the
 orthogonalization is performed using the `orthogonalize` keyword argument in the 
 [`RangeFinder`](@ref). 
 
@@ -99,11 +99,11 @@ orthogonalization is performed using the `orthogonalize` keyword argument in the
 ## A RangeFinder Example
 Let's say that we wish to obtain a five-dimensional Randomized Rangefinder approximation 
 to matrix with 1000 rows and columns and a rank of five.
-In `RLinearAlgebra`, we can easily do this with the Fast Johnson-Lindenstrauss
+In `RandLinearAlgebra`, we can easily do this with the Fast Johnson-Lindenstrauss
 Compressor (see [`FJLT`](@ref)), say, as follows.
 
 ```julia
-using RLinearAlgebra, LinearAlgebra
+using RandLinearAlgebra, LinearAlgebra
 
 # Generate the matrix we wish to approximate
 A = randn(1000, 5) * randn(5, 1000);
@@ -213,7 +213,7 @@ the difference between multiplying a our `RandSVDRecipe` to vector and multiplyi
 original matrix.
 
 ```julia
-using RLinearAlgebra, LinearAlgebra
+using RandLinearAlgebra, LinearAlgebra
 
 # Generate the matrix we wish to approximate
 A = randn(1000, 5) * randn(5, 1000);

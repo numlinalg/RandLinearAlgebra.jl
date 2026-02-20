@@ -12,7 +12,7 @@ SelectorRecipe
 
 ## Selector Structures
 ```@docs
-RLinearAlgebra.LUPP
+RandLinearAlgebra.LUPP
 
 LUPPRecipe
 
