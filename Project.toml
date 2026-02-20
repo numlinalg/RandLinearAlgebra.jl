@@ -10,9 +10,13 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
-julia = "1.12"
-Documenter = "1.16"
-DocumenterCitations = "1.4"
-Revise = "3.13"
-LiveServer = "1.5"
-Plots = "1.41"
+LinearAlgebra = "1.12"
+Random = "1.11"
+SparseArrays = "1.12"
+StatsBase = "0.34"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
