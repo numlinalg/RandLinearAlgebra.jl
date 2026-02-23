@@ -23,7 +23,8 @@ recognizing that when a linear system has solution, ``x^*``,
 ``x^*`` lies at the intersection of all row hyperplanes. Kaczmarz is able to converge to 
 this solution by projecting orthogonally from one hyperplane to the next. 
 Performing such 
-projects ensures that every update gets closer to the solution as can be seen in the 
+<!-- TODO: Review - should this be "projects" or "projections"? @gisslab -->
+projects ensures that every update gets closer to the solution, as can be seen in the 
 following figure.
 
 ```@raw html

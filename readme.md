@@ -22,7 +22,7 @@ It is also possible to clone the repository into a local directory. In that case
 ## Acknowledgements
 This work is supported by the National Science Foundation Office of Advanced Cyberinfrastructure under awards [2309445](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2309445) and [2309446](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2309446). This material is based upon work supported by the U.S. Department of Energy, Office of Science, under contract number DE-AC02-06CH11357.
 
-We would also like to thank the students contributors to this library: 
+We would also like to thank the student contributors to this library: 
 - Tongtong Jin
 - Christian Varner
 - Tunan Wang
