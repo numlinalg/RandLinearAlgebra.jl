@@ -1,10 +1,10 @@
 module cur_test 
-using Test, RLinearAlgebra, LinearAlgebra, SparseArrays
+using Test, RandLinearAlgebra, LinearAlgebra, SparseArrays
 import Base.*
 import Base: size
 import LinearAlgebra: mul!
-import RLinearAlgebra: CURCoreAdjoint, complete_selector, complete_core
-import RLinearAlgebra: rapproximate!, update_core! 
+import RandLinearAlgebra: CURCoreAdjoint, complete_selector, complete_core
+import RandLinearAlgebra: rapproximate!, update_core! 
 
 # Write test selector recipe 
 mutable struct TestSelector <: Selector end 

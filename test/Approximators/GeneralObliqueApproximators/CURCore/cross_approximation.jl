@@ -1,7 +1,7 @@
 module CrossApproximation_tests 
-using Test, RLinearAlgebra, LinearAlgebra, SparseArrays
-import RLinearAlgebra: complete_selector, select_indices!
-import RLinearAlgebra: complete_core, update_core!
+using Test, RandLinearAlgebra, LinearAlgebra, SparseArrays
+import RandLinearAlgebra: complete_selector, select_indices!
+import RandLinearAlgebra: complete_core, update_core!
 # Write test selector recipe 
 mutable struct TestSelector <: Selector end 
 mutable struct TestSelectorRecipe <: SelectorRecipe end

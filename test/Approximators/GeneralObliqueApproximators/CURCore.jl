@@ -1,7 +1,7 @@
 module CURCore_test 
-using Test, RLinearAlgebra, LinearAlgebra
+using Test, RandLinearAlgebra, LinearAlgebra
 import LinearAlgebra: mul!
-import RLinearAlgebra: complete_core, update_core!
+import RandLinearAlgebra: complete_core, update_core!
 
 struct TestCURCore <: CURCore end 
 struct TestCURCoreRecipe <: CURCoreRecipe 
