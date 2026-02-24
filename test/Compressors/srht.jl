@@ -1,5 +1,5 @@
 module srht
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, Adjoint, Diagonal
 import Hadamard: hadamard
 using ..FieldTest

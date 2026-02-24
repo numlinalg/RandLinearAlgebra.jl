@@ -1,5 +1,5 @@
 module Identity_compressor
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 import Base.*
 import LinearAlgebra:mul!
 import Random:seed!

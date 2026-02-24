@@ -1,6 +1,6 @@
 # Overview of Tutorials
 
-Below are examples of using different routines available in `RLinearAlgebra.jl`. 
+Below are examples of using different routines available in `RandLinearAlgebra.jl`. 
 
 - [Multiplying by a Compressor](@ref) demonstrates how to compress a matrix by
     multiplication with a compressor.

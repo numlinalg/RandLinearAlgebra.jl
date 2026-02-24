@@ -17,7 +17,7 @@ truncating it, the RandomizedSVD is 100 times faster and just as accurate
 as the truncated SVD.
 
 ```julia
-using RLinearAlgebra
+using RandLinearAlgebra
 using LinearAlgebra
 
 # Generate a rank-20 matrix
@@ -44,13 +44,13 @@ Randomized Linear Algebra is a fast growing field with a myriad of new methods b
 proposed every year. Because randomized linear algebra methods are based around similar 
 sub-routines many of the innovations could offer improvements to established techniques.
 Unfortunately, most implementations of these techniques are static making testing the 
-effectiveness of innovations on previous techniques challenging. RLinearAlgebra.jl aims to 
+effectiveness of innovations on previous techniques challenging. RandLinearAlgebra.jl aims to 
 make incorporating new innovations into established randomized linear algebra techniques
 easy.
 
-In particular, RLinearAlgebra.jl leverages a modular design to allow you 
+In particular, RandLinearAlgebra.jl leverages a modular design to allow you 
 to easily test Randomized Linear Algebra routines under a wide-range of parameter choices.  
-RLinearAlgebra.jl provides routines for two core Linear Algebra tasks: finding a solution to
+RandLinearAlgebra.jl provides routines for two core Linear Algebra tasks: finding a solution to
 a linear system via ``Ax=b`` or ``\min_x \|Ax - b\|`` and forming a low rank 
 approximation to a matrix, ``\hat A`` where ``\hat A \approx A``. The solution to a linear
 system appears everywhere: Optimization, Tomography, Statistics, Scientific Computing, 
@@ -58,12 +58,12 @@ Machine Learning, etc. The low-rank approximation problem has only become more r
 recent years owing to the drastic increase in matrix sizes. It has been widely used in 
 Statistics via PCA, but also has become increasingly more relevant.
 
-This manual will walk you through the use of the RLinearAlgebra.jl library. The remainder 
+This manual will walk you through the use of the RandLinearAlgebra.jl library. The remainder 
 of this section will be focused on providing an overview of the common design elements in 
 the library, and information about how to get started using the library.
 
 ## Overview of the Library
-You can think of using RLinearAlgebra.jl as being a producer on 
+You can think of using RandLinearAlgebra.jl as being a producer on 
 [*Chopped*](https://www.youtube.com/watch?v=7sm8VrnuOFc&list=PLpfv1AIjenVOxDKUfPuOtjsoF7OWIZVK-&index=9), 
 the long running Food Network cooking competition. 
 For those unfamiliar, the show takes place in three rounds, where one of four contestants 
@@ -73,19 +73,19 @@ the producers provide the contestants with a fix set of ingredients
 and a general category of food (e.g. appetizer, entree, or dessert) that the contestants
 then have to use in a recipe that they prepare for a panel of judges.
 
-RLinearAlgebra.jl gives you as the user the fun job of deciding which ingredients 
+RandLinearAlgebra.jl gives you as the user the fun job of deciding which ingredients 
 (techniques) you want to use to solve your linear system, compress your matrix/vector, 
 or form an approximation of your matrix. Then, once you specify that information, you 
 can start the clock by calling `rsolve` or `rapproximate`, with information about your 
-matrix/linear system and watch RLinearAlgebra.jl do the rest. Behind the scenes 
+matrix/linear system and watch RandLinearAlgebra.jl do the rest. Behind the scenes 
 it calls all the  `complete_[technique]` functions that will generate recipe data 
 structures that have all the necessary preparations (preallocations) for handling your 
-proposed task. Then once the preparations are done, RLinearAlgebra follows its designed 
+proposed task. Then once the preparations are done, RandLinearAlgebra follows its designed 
 recipes to cook-up a solution to your problem. 
 
-With this analogy of how RLinearAlgebra.jl works, the next two sections provide an overview
-over the two key data structures in RLinearAlgebra.jl, the **technique** structures (your 
-ingredients) and the **recipe** structures (what RLinearAlgebra.jl creates to perform your
+With this analogy of how RandLinearAlgebra.jl works, the next two sections provide an overview
+over the two key data structures in RandLinearAlgebra.jl, the **technique** structures (your 
+ingredients) and the **recipe** structures (what RandLinearAlgebra.jl creates to perform your
 task).
 
 ### The Technique Types (The Ingredients)
@@ -152,7 +152,7 @@ in the following table.
 |`SubSolverRecipe`        | `Solver`         | `update_sub_solver!`,`ldiv!`     |
 
 Instead of providing 
-a different function for each method associated with these tasks, RLinearAlgebra.jl 
+a different function for each method associated with these tasks, RandLinearAlgebra.jl 
 leverages the multiple-dispatch functionality of Julia to allow all linear systems and 
 least squares problems to be solved calling the function 
 `rsolve(solver::Solver, x::AbstractVector, A::AbstractMatrix, b::AbstractVector)` 
@@ -161,35 +161,35 @@ and all matrices to be approximated by calling the function
 the routine for solving your linear system or approximate your matrix is as 
 simple as changing the`solver` or `approximator` arguments. 
 
-## Installing RLinearAlgebra
-Currently, RLinearAlgebra.jl is not registered in Julia's official package registry. There 
-are two main ways of installing RLinearAlgebra.jl. The preferred way of doing it is through
+## Installing RandLinearAlgebra
+Currently, RandLinearAlgebra.jl is not registered in Julia's official package registry. There 
+are two main ways of installing RandLinearAlgebra.jl. The preferred way of doing it is through
 the local registry. You can install this approach by writing in the REPL:
 ```julia
 ] registry add https://github.com/numlinalg/NumLingAlg
-add RLinearAlgebra
+add RandLinearAlgebra
 ```
 
 It can also be installed by writing in the REPL:
 ```julia
-] add https://github.com/numlinalg/RLinearAlgebra.jl.git
+] add https://github.com/numlinalg/RandLinearAlgebra.jl.git
 ```
 It can also be cloned into a local directory and installed by:
 1. `cd` into the local project directory 
-2. Call `git clone https://github.com/numlinalg/RLinearAlgebra.jl.git`
+2. Call `git clone https://github.com/numlinalg/RandLinearAlgebra.jl.git`
 3. Run Julia
 4. Call `using Pkg`
-5. Call `Pkg.activate(RLinearAlgebra.jl)`
+5. Call `Pkg.activate(RandLinearAlgebra.jl)`
 6. Call `Pkg.instantiate()`
 
 For more information see 
 [Using someone else's project](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project).
 
-## Using RLinearAlgebra.jl
+## Using RandLinearAlgebra.jl
 For this example let's assume that we have a vector that we wish to compress
-using one the RLinearAlgebra.jl `SparseSign` compressor. To do this: 
+using one the RandLinearAlgebra.jl `SparseSign` compressor. To do this: 
 
-1. Load RLinearAlgebra.jl and generate your vector
+1. Load RandLinearAlgebra.jl and generate your vector
 2. Define the `SparseSign` technique. This requires us to specify a `cardinality`,
     the direction we intend to apply the compressor from, and a `compression_dim`, 
     the number of entries we want in the compressed vector. In this instance we 
@@ -197,8 +197,8 @@ using one the RLinearAlgebra.jl `SparseSign` compressor. To do this:
 3. Use the `complete_compressor` function to generate the `SparseSignRecipe`
 4. Apply the compressor to the vector using the multiplication function
 ```julia
-# Step 1: load RLinearAlgebra.jl and generate vector
-using RLinearAlgebra
+# Step 1: load RandLinearAlgebra.jl and generate vector
+using RandLinearAlgebra
 using LinearAlgebra
 # Specify the size of the vector
 n = 10000

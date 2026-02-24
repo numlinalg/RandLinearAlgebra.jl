@@ -1,5 +1,5 @@
 module distribution_abstract_types
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 struct TestDistribution <: Distribution end
 struct TestDistributionRecipe <: DistributionRecipe end
 

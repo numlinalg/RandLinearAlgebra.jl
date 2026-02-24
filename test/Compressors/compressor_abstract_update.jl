@@ -1,6 +1,6 @@
 module compressor_abstract_update 
-using Test, RLinearAlgebra
-import RLinearAlgebra: update_compressor! 
+using Test, RandLinearAlgebra
+import RandLinearAlgebra: update_compressor! 
 import LinearAlgebra: mul!
 
 #####################

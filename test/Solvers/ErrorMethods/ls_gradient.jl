@@ -1,6 +1,6 @@
 module ls_gradient_error 
 
-using Test, RLinearAlgebra, Random
+using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
 using ..ApproxTol

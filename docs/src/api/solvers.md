@@ -34,13 +34,13 @@ rsolve!
 
 ## Internal Functions
 ```@docs
-RLinearAlgebra.colproj_update!
+RandLinearAlgebra.colproj_update!
 
-RLinearAlgebra.colproj_update_block!
+RandLinearAlgebra.colproj_update_block!
 
-RLinearAlgebra.kaczmarz_update!
+RandLinearAlgebra.kaczmarz_update!
 
-RLinearAlgebra.kaczmarz_update_block!
+RandLinearAlgebra.kaczmarz_update_block!
 
-RLinearAlgebra.dotu
+RandLinearAlgebra.dotu
 ```

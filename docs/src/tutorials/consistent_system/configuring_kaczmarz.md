@@ -18,7 +18,7 @@ The [`BasicLogger`](@ref) has three arguments:
 Below is an example for specifying the [`BasicLogger`](@ref).
 
 ```@setup ConfiguringLogger
-using RLinearAlgebra
+using RandLinearAlgebra
 ```
 
 ```@example ConfiguringLogger; continued=true 

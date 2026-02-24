@@ -1,6 +1,6 @@
 module QRCP_tests
 using Test
-using RLinearAlgebra
+using RandLinearAlgebra
 import LinearAlgebra: mul!
 
 @testset "QRCP Tests" begin

@@ -16,7 +16,7 @@ We provide three examples below:
 - A [`Uniform`](@ref) [`Sampling`](@ref) of the columns of $A$.
 
 ```@example CompressorTutorial; continued=true
-using RLinearAlgebra
+using RandLinearAlgebra
 
 I1 = SparseSign(
     cardinality=Left(), #Apply the compressor to the rows of A               

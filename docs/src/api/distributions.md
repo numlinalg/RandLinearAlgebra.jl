@@ -15,6 +15,10 @@ DistributionRecipe
 Uniform
 
 UniformRecipe
+
+L2Norm
+
+L2NormRecipe
 ```
 
 ## Exported Functions

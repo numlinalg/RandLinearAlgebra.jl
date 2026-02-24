@@ -1,18 +1,18 @@
 using Documenter
 using DocumenterCitations
-using RLinearAlgebra
+using RandLinearAlgebra
 
 bib = CitationBibliography(
     joinpath(@__DIR__, "src", "refs.bib");
     style=:numeric
 )
 makedocs(
-    sitename = "RLinearAlgebra",
+    sitename = "RandLinearAlgebra",
     format = Documenter.HTML(
     collapselevel=1,
     ),
     plugins=[bib],
-    modules = [RLinearAlgebra],
+    modules = [RandLinearAlgebra],
     pages = [
         "Home" => "index.md",
         "Manual" => [
@@ -60,7 +60,7 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "github.com/numlinalg/RLinearAlgebra.jl",
+    repo = "github.com/numlinalg/RandLinearAlgebra.jl",
     devbranch = "main", # master's newest commit will become dev
     push_preview = true # pull requests to the master will become available
 )

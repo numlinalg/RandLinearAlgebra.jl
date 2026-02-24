@@ -2,7 +2,7 @@ module LUPP_tests
 using Test
 using ..FieldTest
 using ..ApproxTol
-using RLinearAlgebra
+using RandLinearAlgebra
 import LinearAlgebra: mul!
 
 @testset "LUPP Tests" begin

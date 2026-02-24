@@ -1,6 +1,6 @@
 module solver_abstract_types
-using Test, RLinearAlgebra
-import RLinearAlgebra: complete_solver, rsolve!
+using Test, RandLinearAlgebra
+import RandLinearAlgebra: complete_solver, rsolve!
 
 ###################################
 # Initial Testing Parameters   

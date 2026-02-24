@@ -1,5 +1,5 @@
 module Gaussian_compressor
-using Test, RLinearAlgebra
+using Test, RandLinearAlgebra
 import Base.*
 import LinearAlgebra: mul!, lmul!
 import Random: randn!, seed!, rand

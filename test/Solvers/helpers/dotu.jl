@@ -1,6 +1,6 @@
 module DotU
-using Test, RLinearAlgebra, LinearAlgebra
-import RLinearAlgebra: dotu
+using Test, RandLinearAlgebra, LinearAlgebra
+import RandLinearAlgebra: dotu
 import LinearAlgebra: dot
 @testset "Dotu" begin
     # begin by testing the size error

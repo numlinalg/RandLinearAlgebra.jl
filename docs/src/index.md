@@ -1,6 +1,6 @@
-# RLinearAlgebra
+# RandLinearAlgebra
 
-[RLinearAlgebra](https://github.com/numlinalg/RLinearAlgebra.jl) is a Julia library for the 
+[RandLinearAlgebra](https://github.com/numlinalg/RandLinearAlgebra.jl) is a Julia library for the 
 development and application of randomized algorithms to the problems of forming low rank 
 approximations to matrices and finding the solution of linear systems and least squares 
 problems. 
@@ -15,10 +15,10 @@ randomized linear approximation techniques and randomized linear algebra solvers
 We divide it in four parts:
 
 * **Tutorial**: examples of how to solve linear systems and least squares problems with
-    RLinearAlgebra and how to extend the library.
+    RandLinearAlgebra and how to extend the library.
 * **Manual**: here we offer an introduction to solving linear systems with randomized linear 
     algebra techniques, compressing a matrix, and forming a low-rank approximation of a matrix. 
-    We introduce theoretical foundations and we provide code examples with RLinearAlgebra.
+    We introduce theoretical foundations and we provide code examples with RandLinearAlgebra.
 * **API**: a detailed description of all the data structures and methods of the library.
 * **Development**: detailed instructions on how to contribute to the library.
 ## Acknowledgements

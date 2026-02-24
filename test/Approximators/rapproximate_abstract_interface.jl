@@ -1,6 +1,6 @@
 module rapproximate_abstract_interface
-using Test, RLinearAlgebra 
-import RLinearAlgebra: complete_approximator, rapproximate!
+using Test, RandLinearAlgebra 
+import RandLinearAlgebra: complete_approximator, rapproximate!
 
 #############################
 # Initial Testing Parameters
