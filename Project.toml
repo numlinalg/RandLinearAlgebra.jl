@@ -1,6 +1,6 @@
 name = "RandLinearAlgebra"
 uuid = "da1d211a-c3bc-43b2-b5d0-ce83f16a0f3a"
-authors = ["Christian Varner <cvarner@wisc.edu>", "Daniel Adrian Maldonado <maldonadod@anl.gov>", "Nathaniel Pritchard <Nathaniel.Pritchard@maths.ox.ac.uk>", "TongTong Jin <ttjin@uchicago.edu>", "Tunan Wang <tunan.wang@wisc.edu>", "Vivak Patel <vivak.patel@wisc.edu>"]
+authors = ["Christian Varner <cvarner@wisc.edu>", "Daniel Adrian Maldonado <maldonadod@anl.gov>", "Giselle Labrador-Badia <labradorbada@wisc.edu>", "Nathaniel Pritchard <Nathaniel.Pritchard@maths.ox.ac.uk>", "TongTong Jin <ttjin@uchicago.edu>", "Tunan Wang <tunan.wang@wisc.edu>", "Vivak Patel <vivak.patel@wisc.edu>"]
 version = "0.2.4"
 
 [deps]
