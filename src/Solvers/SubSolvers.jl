@@ -32,7 +32,16 @@ sub_solver_method_description = Dict{Symbol,String}(
     arguments.",
     :update_sub_solver => "A function that updates the `SubSolver` in place given 
     arguments.",
+    :ldiv => "A function that solves a linear system using the `SubSolverRecipe` and stores 
+    the result in `x`.",
 )
+
+sub_solver_error_list = Dict{Symbol,String}(
+    :complete_sub_solver => "`ArgumentError` if no method for completing the sub-solver exists for the given sub-solver type.",
+    :update_sub_solver => "`ArgumentError` if no method for updating the sub-solver exists for the given sub-solver type.",
+    :ldiv => "`ArgumentError` if no method for solving with the sub-solver exists for the given sub-solver type."
+)
+
 """
     complete_sub_solver(solver::SubSolver, A::AbstractArray)
 
@@ -44,6 +53,9 @@ $(sub_solver_method_description[:complete_sub_solver])
 
 # Returns 
 - $(sub_solver_output_list[:sub_solver_recipe])
+
+# Throws
+- $(sub_solver_error_list[:complete_sub_solver])
 """
 function complete_sub_solver(solver::SubSolver, A::AbstractArray)
     return throw(
@@ -66,6 +78,9 @@ $(sub_solver_method_description[:complete_sub_solver])
 
 # Returns 
 - $(sub_solver_output_list[:sub_solver_recipe])
+
+# Throws
+- $(sub_solver_error_list[:complete_sub_solver])
 """
 function complete_sub_solver(solver::SubSolver, A::AbstractArray, b::AbstractArray)
     complete_sub_solver(solver, A)
@@ -82,6 +97,9 @@ $(sub_solver_method_description[:update_sub_solver])
 
 # Returns
 - Modifies the `SubSolverRecipe` in place given the arguments.and returns nothing.
+
+# Throws
+- $(sub_solver_error_list[:update_sub_solver])
 """
 function update_sub_solver!(solver::SubSolverRecipe, A::AbstractArray)
     return  throw(
@@ -92,6 +110,22 @@ function update_sub_solver!(solver::SubSolverRecipe, A::AbstractArray)
     )
 end
 
+"""
+    ldiv!(x::AbstractVector, solver::SubSolverRecipe, b::AbstractVector)
+
+$(sub_solver_method_description[:ldiv])
+
+# Arguments
+- `x::AbstractVector`, the output vector to store the solution.
+- $(sub_solver_arg_list[:sub_solver_recipe])
+- `b::AbstractVector`, the right-hand side vector.
+
+# Returns
+- Modifies `x` in place to contain the solution and returns `x`.
+
+# Throws
+- $(sub_solver_error_list[:ldiv])
+"""
 function ldiv!(x::AbstractVector, solver::SubSolverRecipe, b::AbstractVector)
     return throw(
         ArgumentError(
