@@ -42,6 +42,11 @@ solver_method_description = Dict{Symbol,String}(
     :compute_error => "A function that evaluates the error for a proposed solution 
     vector.",
 )
+
+solver_error_list = Dict{Symbol,String}(
+    :complete_error => "`ArgumentError` if no method for completing the solver error exists for the given error and solver types.",
+    :compute_error => "`ArgumentError` if no method for computing the error exists for the given error and solver types."
+)
 # Function skeletons
 
 """
@@ -62,6 +67,9 @@ $(solver_method_description[:complete_error])
 
 # Returns 
 - $(solver_output_list[:solver_error_recipe])
+
+# Throws
+- $(solver_error_list[:complete_error])
 """
 function complete_error(
     error::SolverError, 
@@ -98,6 +106,9 @@ $(solver_method_description[:compute_error])
 
 # Returns 
 -  Returns `nothing`
+
+# Throws
+- $(solver_error_list[:compute_error])
 """
 function compute_error(
     error::SolverErrorRecipe,

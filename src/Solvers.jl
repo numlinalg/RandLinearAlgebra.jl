@@ -42,6 +42,11 @@ solver_method_description = Dict{Symbol,String}(
     :rsolve => "A function that solves a linear system given the arguments.",
 )
 
+solver_error_list = Dict{Symbol,String}(
+    :complete_solver => "`ArgumentError` if no method for completing the solver exists for the given solver type.",
+    :rsolve => "`ArgumentError` if no method for solving the linear system exists for the given solver type."
+)
+
 ###################################
 # Complete Solver
 ###################################
@@ -58,6 +63,9 @@ $(solver_method_description[:complete_solver])
 
 # Outputs
 - $(solver_output_list[:solver_recipe])
+
+# Throws
+- $(solver_error_list[:complete_solver])
 """
 function complete_solver(
     solver::Solver, 
@@ -94,6 +102,9 @@ $(solver_method_description[:rsolve])
 
 # Outputs
 - Returns `nothing`. Updates the `SolverRecipe` and `x` in place.
+
+# Throws
+- $(solver_error_list[:rsolve])
 """
 function rsolve!(
     solver::SolverRecipe, 
