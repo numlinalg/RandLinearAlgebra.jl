@@ -35,6 +35,15 @@ logger_method_description = Dict{Symbol,String}(
     :reset_logger => "A function that resets the `LoggerRecipe` in place.", 
 )
 
+logger_error_list = Dict{Symbol, String}(
+    :complete_logger => "`ArgumentError` if no method for completing the logger exists 
+    for the given logger type.",
+    :update_logger => "`ArgumentError` if no method for updating the logger exists 
+    for the given logger type.",
+    :reset_logger => "`ArgumentError` if no method for resetting the logger exists 
+    for the given logger type."
+)
+
 """
     complete_logger(logger::Logger)
 
@@ -45,6 +54,9 @@ $(logger_method_description[:complete_logger])
 
 ### Returns 
 - $(logger_output_list[:logger_recipe])
+
+### Throws
+- $(logger_error_list[:complete_logger])
 """
 function complete_logger(logger::Logger)
     throw(ArgumentError("No `complete_logger` method defined for logger of type \
@@ -64,6 +76,9 @@ $(logger_method_description[:update_logger])
 
 ### Returns 
 - Performs an inplace update to the `LoggerRecipe` and returns nothing.
+
+### Throws
+- $(logger_error_list[:update_logger])
 """
 function update_logger!(logger::LoggerRecipe, err::Real, iteration::Int64)
     throw(ArgumentError("No `update_logger!` method defined for a logger of type \
@@ -82,6 +97,9 @@ $(logger_method_description[:reset_logger])
 
 ### Returns 
 - Performs an inplace update to the `LoggerRecipe` and returns nothing.
+
+### Throws
+- $(logger_error_list[:reset_logger])
 """
 function reset_logger!(logger::LoggerRecipe)
     throw(ArgumentError("No `reset_logger!` method defined for a logger of type \
