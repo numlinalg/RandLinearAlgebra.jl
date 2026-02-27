@@ -42,9 +42,12 @@ select_method_description = Dict{Symbol,String}(
 )
 
 select_error_list = Dict{Symbol,String}(
-    :complete_selector => "`ArgumentError` if no method for completing the selector exists for the given selector type.",
-    :update_selector => "`ArgumentError` if no method for updating the selector exists for the given selector type.",
-    :select_indices => "`ArgumentError` if no method for selecting indices exists for the given selector type."
+    :complete_selector => "`ArgumentError` if no method for completing the selector exists \
+    for the given selector type.",
+    :update_selector => "`ArgumentError` if no method for updating the selector exists for \
+    the given selector type.",
+    :select_indices => "`ArgumentError` if no method for selecting indices exists for the \
+    given selector type."
 )
 ##################################
 # Complete Selector Interface
