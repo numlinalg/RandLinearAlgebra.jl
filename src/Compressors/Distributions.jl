@@ -34,9 +34,12 @@ distribution_method_description = Dict{Symbol,String}(
 )
 
 distribution_error_list = Dict{Symbol,String}(
-    :complete_distribution => "`ArgumentError` if no method for completing the distribution exists for the given distribution type.",
-    :update_distribution! => "`ArgumentError` if no method for updating the distribution exists for the given distribution type.",
-    :sample_distribution! => "`ArgumentError` if no method for sampling from the distribution exists for the given distribution type."
+    :complete_distribution => "`ArgumentError` if no method for completing the \
+    distribution exists for the given distribution type.",
+    :update_distribution! => "`ArgumentError` if no method for updating the \
+    distribution exists for the given distribution type.",
+    :sample_distribution! => "`ArgumentError` if no method for sampling from the \
+    distribution exists for the given distribution type."
 )
 """
     complete_distribution(distribution::Distribution, A::AbstractMatrix)

@@ -43,8 +43,10 @@ solver_method_description = Dict{Symbol,String}(
 )
 
 solver_error_list = Dict{Symbol,String}(
-    :complete_solver => "`ArgumentError` if no method for completing the solver exists for the given solver type.",
-    :rsolve => "`ArgumentError` if no method for solving the linear system exists for the given solver type."
+    :complete_solver => "`ArgumentError` if no method for completing the solver \
+    exists for the given solver type.",
+    :rsolve => "`ArgumentError` if no method for solving the linear system exists \
+    for the given solver type."
 )
 
 ###################################

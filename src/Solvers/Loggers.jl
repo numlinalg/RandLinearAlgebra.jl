@@ -36,11 +36,11 @@ logger_method_description = Dict{Symbol,String}(
 )
 
 logger_error_list = Dict{Symbol, String}(
-    :complete_logger => "`ArgumentError` if no method for completing the logger exists 
+    :complete_logger => "`ArgumentError` if no method for completing the logger exists \
     for the given logger type.",
-    :update_logger => "`ArgumentError` if no method for updating the logger exists 
+    :update_logger => "`ArgumentError` if no method for updating the logger exists \
     for the given logger type.",
-    :reset_logger => "`ArgumentError` if no method for resetting the logger exists 
+    :reset_logger => "`ArgumentError` if no method for resetting the logger exists \
     for the given logger type."
 )
 

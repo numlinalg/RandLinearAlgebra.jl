@@ -44,8 +44,10 @@ solver_method_description = Dict{Symbol,String}(
 )
 
 solver_error_list = Dict{Symbol,String}(
-    :complete_error => "`ArgumentError` if no method for completing the solver error exists for the given error and solver types.",
-    :compute_error => "`ArgumentError` if no method for computing the error exists for the given error and solver types."
+    :complete_error => "`ArgumentError` if no method for completing the solver \
+    error exists for the given error and solver types.",
+    :compute_error => "`ArgumentError` if no method for computing the error exists \
+    for the given error and solver types."
 )
 # Function skeletons
 

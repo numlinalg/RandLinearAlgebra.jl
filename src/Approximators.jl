@@ -97,10 +97,14 @@ approx_method_description = Dict{Symbol,String}(
 )
 
 approx_error_list = Dict{Symbol,String}(
-    :complete_approximator => "`ArgumentError` if no method for completing the approximator exists for the given approximator type.",
-    :rapproximate => "`ArgumentError` if no method for computing the approximation exists for the given approximator type.",
-    :complete_approximator_error => "`ArgumentError` if no method for completing the approximator error exists for the given error type.",
-    :compute_approximator_error => "`ArgumentError` if no method for computing the approximator error exists for the given error type."
+    :complete_approximator => "`ArgumentError` if no method for completing the \
+    approximator exists for the given approximator type.",
+    :rapproximate => "`ArgumentError` if no method for computing the approximation \
+    exists for the given approximator type.",
+    :complete_approximator_error => "`ArgumentError` if no method for completing the \
+    approximator error exists for the given error type.",
+    :compute_approximator_error => "`ArgumentError` if no method for computing the \
+    approximator error exists for the given error type."
 )
 
 ###################################
