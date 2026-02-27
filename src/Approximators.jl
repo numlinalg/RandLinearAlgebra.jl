@@ -96,6 +96,17 @@ approx_method_description = Dict{Symbol,String}(
     `ApproximatorRecipe` for a matrix `A`.",
 )
 
+approx_error_list = Dict{Symbol,String}(
+    :complete_approximator => "`ArgumentError` if no method for completing the \
+    approximator exists for the given approximator type.",
+    :rapproximate => "`ArgumentError` if no method for computing the approximation \
+    exists for the given approximator type.",
+    :complete_approximator_error => "`ArgumentError` if no method for completing the \
+    approximator error exists for the given error type.",
+    :compute_approximator_error => "`ArgumentError` if no method for computing the \
+    approximator error exists for the given error type."
+)
+
 ###################################
 # Approximator Adjoint 
 ###################################
@@ -155,6 +166,9 @@ $(approx_method_description[:complete_approximator])
 
 # Outputs
 - $(approx_output_list[:approximator_recipe])
+
+# Throws
+- $(approx_error_list[:complete_approximator])
 """
 function complete_approximator(approximator::Approximator, A::AbstractMatrix)
     return throw(
@@ -180,6 +194,9 @@ $(approx_method_description[:rapproximate])
 
 # Outputs
 - $(approx_output_list[:approximator_recipe])
+
+# Throws
+- $(approx_error_list[:rapproximate])
 """
 function rapproximate!(approximator::ApproximatorRecipe, A::AbstractMatrix)
     return throw(
@@ -228,6 +245,9 @@ $(approx_method_description[:complete_approximator_error])
 
 # Outputs
 - $(approx_output_list[:approximator_error_recipe])
+
+# Throws
+- $(approx_error_list[:complete_approximator_error])
 """
 function complete_approximator_error(
     error::ApproximatorError, 
@@ -261,6 +281,9 @@ $(approx_method_description[:compute_approximator_error])
 
 # Outputs
 - Returns the `error::Float64` 
+
+# Throws
+- $(approx_error_list[:compute_approximator_error])
 """
 function compute_approximator_error!(
     error::ApproximatorErrorRecipe, 

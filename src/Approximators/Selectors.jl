@@ -40,6 +40,15 @@ select_method_description = Dict{Symbol,String}(
     `SelectorRecipe`. It updates the vector `idx` in place with `n_idx` new indices starting
     at index `start_idx`."
 )
+
+select_error_list = Dict{Symbol,String}(
+    :complete_selector => "`ArgumentError` if no method for completing the selector exists \
+    for the given selector type.",
+    :update_selector => "`ArgumentError` if no method for updating the selector exists for \
+    the given selector type.",
+    :select_indices => "`ArgumentError` if no method for selecting indices exists for the \
+    given selector type."
+)
 ##################################
 # Complete Selector Interface
 ##################################
@@ -54,6 +63,9 @@ $(select_method_description[:complete_selector])
 
 # Outputs
 - $(select_output_list[:selector_recipe])
+
+# Throws
+- $(select_error_list[:complete_selector])
 """
 function complete_selector(selector::Selector, A::AbstractMatrix)
     return throw(
@@ -77,6 +89,9 @@ $(select_method_description[:update_selector])
 
 # Outputs
 - $(select_output_list[:selector_recipe])
+
+# Throws
+- $(select_error_list[:update_selector])
 """
 function update_selector!(selector::SelectorRecipe)
     return throw(
@@ -126,6 +141,9 @@ $(select_method_description[:select_indices])
 
 # Outputs
 -  Returns `nothing`
+
+# Throws
+- $(select_error_list[:select_indices])
 """
 function select_indices!(
     idx::AbstractVector,
