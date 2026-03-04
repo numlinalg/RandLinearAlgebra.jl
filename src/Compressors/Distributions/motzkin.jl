@@ -33,11 +33,6 @@ The algorithm works as follows:
 
 ## Returns
 - A `Motzkin` object.
-
-# References
-- Motzkin, T. S., & Schoenberg, I. J. (1954). The relaxation method for linear inequalities. 
-  Canadian Journal of Mathematics, 6, 393-404.
-- Haddock, J., & Ma, A. (2020). Greed works: An improved analysis of sampling Kaczmarz-Motzkin.
 """
 mutable struct Motzkin <: Distribution
     cardinality::Cardinality
