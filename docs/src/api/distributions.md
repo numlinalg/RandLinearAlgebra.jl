@@ -19,6 +19,10 @@ UniformRecipe
 L2Norm
 
 L2NormRecipe
+
+Motzkin
+
+MotzkinRecipe
 ```
 
 ## Exported Functions
