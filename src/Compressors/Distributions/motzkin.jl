@@ -223,38 +223,15 @@ function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
     elseif distribution.beta >= n_rows
         # Pure greedy (Motzkin method): find max residual over all rows
         # Alternative (allocates a length-m vector each call): 
-        x[1] = argmax(abs.(distribution.A * distribution.x - distribution.b)) # uncomment to run
-
-        # best_idx = 1
-        # max_residual = abs(dot(distribution.A[1, :], distribution.x) - distribution.b[1])
-        # for i in 2:n_rows
-        #     r = abs(dot(distribution.A[i, :], distribution.x) - distribution.b[i])
-        #     if r > max_residual
-        #         max_residual = r
-        #         best_idx = i
-        #     end
-        # end
-        # x[1] = best_idx
+        x[1] = argmax(abs.(distribution.A * distribution.x - distribution.b)) 
     else
+        # Sampling Kaczmarz-Motzkin: sample β rows, compute their residuals, pick max
         sample!(distribution.state_space, distribution.sample_buffer,
         replace = false, ordered = false)
-        # Sampling Kaczmarz-Motzkin: sample β rows, compute their residuals, pick max
-        # Alternative (allocates a length-β vector each call):
+
         r = abs.(distribution.A[distribution.sample_buffer, :] * distribution.x
                  - distribution.b[distribution.sample_buffer])
         x[1] = distribution.sample_buffer[argmax(r)]
-
-        # best_idx = distribution.sample_buffer[1]
-        # max_residual = abs(dot(distribution.A[best_idx, :], distribution.x) - distribution.b[best_idx])
-        # for i in 2:length(distribution.sample_buffer)
-        #     idx = distribution.sample_buffer[i]
-        #     r = abs(dot(distribution.A[idx, :], distribution.x) - distribution.b[idx])
-        #     if r > max_residual
-        #         max_residual = r
-        #         best_idx = idx
-        #     end
-        # end
-        # x[1] = best_idx
     end
     
     return nothing
