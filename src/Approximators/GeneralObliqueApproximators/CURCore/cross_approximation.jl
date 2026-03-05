@@ -60,7 +60,7 @@ end
 # where the first column would be selected. If the rows are selected disregarding the 
 # selection of the first column the second row would be selected, which results in an 
 # intersection matrix of 0 causing overflows when computing the pseudo inverse.)
-# 3. form the core matrix will be formed using the entries at the interesection 
+# 3. form the core matrix will be formed using the entries at the intersection 
 # of the index sets.
 function rapproximate!(approx::CURRecipe{CrossApproximationRecipe}, A::AbstractMatrix)
     # select column indices
@@ -91,7 +91,6 @@ function rapproximate!(approx::CURRecipe{CrossApproximationRecipe}, A::AbstractM
     return nothing
 end
 
-# you still need to figure out how to do these multiplications now the issue is that type of (A) does not work when A is a vector
 function mul!(
     C::AbstractArray, 
     core::CrossApproximationRecipe, 

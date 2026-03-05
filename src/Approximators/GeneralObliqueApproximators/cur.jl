@@ -97,18 +97,18 @@ end
 
 
 function CUR(;
-        rank = 1,
-        oversample = 0,
-        selector_cols = LUPP(),
-        selector_rows = selector_cols,
-        core = CrossApproximation(),
-        block_size = 0
-    )
+    rank = 1,
+    oversample = 0,
+    selector_cols = LUPP(),
+    selector_rows = selector_cols,
+    core = CrossApproximation(),
+    block_size = 0
+)
     return CUR(rank, oversample, selector_cols, selector_rows, core, block_size)
 end
 
 """
-    CURRecipe <: ApproximatorRecipe
+    CURRecipe{CURCoreRecipe} <: ApproximatorRecipe
 
 A struct that contains the preallocated memory and completed `Selectors` to form a
     CUR approximation to the matrix ``A``.
