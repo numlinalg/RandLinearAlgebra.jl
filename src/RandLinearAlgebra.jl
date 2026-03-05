@@ -1,13 +1,16 @@
 module RandLinearAlgebra
 import Base.:*
-import Base: transpose, adjoint, setproperty!
-import LinearAlgebra: Adjoint, Transpose, axpby!, axpy!, ColumnNorm, dot, I, ldiv!
-import LinearAlgebra: lmul!, lq!, lq, LQ, lu!, mul!, norm, qr!, rmul!, svd, UpperTriangular
+import Base: transpose, adjoint, size, setproperty!
+import LinearAlgebra: Adjoint, axpby!, axpy!, ColumnNorm, dot, I, ldiv!
+import LinearAlgebra: lmul!, lq!, lq, LQ, lu!, mul!, norm, qr!, rmul!, svd
+import LinearAlgebra: Transpose, UpperTriangular
 import StatsBase: ProbabilityWeights, sample, sample!, wsample!
 import Random: bitrand, rand!, randn!
-import SparseArrays: SparseMatrixCSC, SparseVector, nonzeros, nzrange, rowvals, sparse, sprandn, spzeros
+import SparseArrays: rowvals, nonzeros, nzrange, SparseMatrixCSC, SparseVector, SPQR
+import SparseArrays: sparse, sprandn, spzeros
 
-# Include the files correspoding to the top-level techniques
+
+# Include the files corresponding to the top-level techniques
 include("Compressors.jl")
 include("Solvers.jl")
 include("Approximators.jl")
@@ -19,6 +22,9 @@ export rapproximate, rapproximate!, complete_approximator
 export RangeApproximator, RangeApproximatorRecipe
 export RangeFinder, RangeFinderRecipe
 export RandSVD, RandSVDRecipe
+export CUR, CURRecipe
+export CURCore, CURCoreRecipe, CURCoreAdjoint
+export CrossApproximation, CrossApproximationRecipe
 
 # Export Compressor types and functions
 export Compressor, CompressorRecipe, CompressorAdjoint
@@ -70,4 +76,6 @@ export complete_approximator_error, compute_approximator_error, compute_approxim
 export Selector, SelectorRecipe
 export LUPP, LUPPRecipe, QRCP, QRCPRecipe
 export complete_selector, update_selector!, select_indices!
+
+
 end #module

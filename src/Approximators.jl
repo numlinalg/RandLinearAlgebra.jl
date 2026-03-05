@@ -458,8 +458,11 @@ end
 include("Approximators/RangeApproximators/rangefinder.jl")
 include("Approximators/RangeApproximators/randsvd.jl")
 include("Approximators/RangeApproximators/helpers/power_its.jl")
-
 ############################################
 # Include the selector files
 ############################################
 include("Approximators/Selectors.jl")
+############################################
+# Include CUR file which depends on selector
+############################################
+include("Approximators/GeneralObliqueApproximators/cur.jl")
