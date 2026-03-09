@@ -33,6 +33,10 @@ The algorithm works as follows:
 
 ## Returns
 - A `Motzkin` object.
+
+## Throws
+- `ArgumentError` if `beta` < 1.
+- `ArgumentError` if `cardinality` is `Right()` (only `Left()` and `Undef()` are supported).
 """
 mutable struct Motzkin <: Distribution
     cardinality::Cardinality
@@ -43,6 +47,9 @@ end
 function Motzkin(; cardinality = Undef(), replace = false, beta = 1)
     if beta < 1
         throw(ArgumentError("`Motzkin` beta must be >= 1, got beta=$beta"))
+    end
+    if cardinality == Right()
+        throw(ArgumentError("`Motzkin` distribution only supports `Left()` cardinality (row selection). `Right()` cardinality is not supported."))
     end
     return Motzkin(cardinality, replace, beta)
 end
@@ -63,11 +70,9 @@ The recipe containing all allocations and information for the Motzkin distributi
 - `b::AbstractVector`, reference to the constant vector.
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
 
-# Notes
-- Following the paper's algorithm, residuals are computed only for the β sampled rows
+!!! note
+    Following the paper's algorithm, residuals are computed only for the β sampled rows
     in `sample_distribution!`, not for all rows. This is efficient when β << m.
-- `A` and `b` are stored as references (no copy), so they do not use extra memory.
-- `x` is updated in `update_distribution!` at each iteration.
 """
 mutable struct MotzkinRecipe <: DistributionRecipe
     cardinality::Cardinality
@@ -81,7 +86,12 @@ mutable struct MotzkinRecipe <: DistributionRecipe
 end
 
 """
-    complete_distribution(distribution::Motzkin, x::AbstractVector, A::AbstractMatrix, b::AbstractVector)
+    complete_distribution(
+        distribution::Motzkin,
+        x::AbstractVector,
+        A::AbstractMatrix,
+        b::AbstractVector
+    )
 
 Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system Ax = b.
 
@@ -99,7 +109,12 @@ Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system A
 - `ArgumentError` if cardinality is `Undef()`.
 - `ArgumentError` if beta > number of rows in A.
 """
-function complete_distribution(distribution::Motzkin, x::AbstractVector, A::AbstractMatrix, b::AbstractVector)
+function complete_distribution(
+    distribution::Motzkin,
+    x::AbstractVector,
+    A::AbstractMatrix,
+    b::AbstractVector
+)
     cardinality = distribution.cardinality
     
     # Motzkin only makes sense for row selection (solving Ax=b)
@@ -116,15 +131,18 @@ function complete_distribution(distribution::Motzkin, x::AbstractVector, A::Abst
     
     # Validate dimensions
     if length(b) != n_rows
-        throw(DimensionMismatch("Vector b has length $(length(b)), expected $n_rows to match rows of A"))
+        throw(DimensionMismatch("Vector b has length $(length(b)), expected \
+        $n_rows to match rows of A"))
     end
     if length(x) != n_cols
-        throw(DimensionMismatch("Vector x has length $(length(x)), expected $n_cols to match columns of A"))
+        throw(DimensionMismatch("Vector x has length $(length(x)), expected \
+        $n_cols to match columns of A"))
     end
     
     # Validate beta
     if distribution.beta > n_rows
-        throw(ArgumentError("`Motzkin` beta must be <= number of rows ($n_rows), got beta=$(distribution.beta)"))
+        throw(ArgumentError("`Motzkin` beta must be <= number of rows \
+        ($n_rows), got beta=$(distribution.beta)"))
     end
     
     # Initialize state space (all row indices)
@@ -138,7 +156,12 @@ function complete_distribution(distribution::Motzkin, x::AbstractVector, A::Abst
 end
 
 """
-    update_distribution!(ingredients::MotzkinRecipe, x::AbstractVector, A::AbstractMatrix, b::AbstractVector)
+    update_distribution!(
+        ingredients::MotzkinRecipe,
+        x::AbstractVector,
+        A::AbstractMatrix,
+        b::AbstractVector
+    )
 
 Updates the Motzkin distribution recipe with the current solution iterate x.
 
@@ -155,7 +178,12 @@ Updates the Motzkin distribution recipe with the current solution iterate x.
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
 - `ArgumentError` if beta > number of rows in A.
 """
-function update_distribution!(ingredients::MotzkinRecipe, x::AbstractVector, A::AbstractMatrix, b::AbstractVector)
+function update_distribution!(
+    ingredients::MotzkinRecipe,
+    x::AbstractVector,
+    A::AbstractMatrix,
+    b::AbstractVector
+)
     # TODO: Design decision for review - Currently, sampling S happens in sample_distribution!
     # to keep update_distribution! purely deterministic (consistent with L2Norm/Uniform).
     # Alternative: pre-draw S here after updating x, then only compute argmax in sample_distribution!
@@ -166,10 +194,12 @@ function update_distribution!(ingredients::MotzkinRecipe, x::AbstractVector, A::
     
     # Validate dimensions
     if length(b) != n_rows
-        throw(DimensionMismatch("Vector b has length $(length(b)), expected $n_rows to match rows of A"))
+        throw(DimensionMismatch("Vector b has length $(length(b)), expected \
+        $n_rows to match rows of A"))
     end
     if length(x) != n_cols
-        throw(DimensionMismatch("Vector x has length $(length(x)), expected $n_cols to match columns of A"))
+        throw(DimensionMismatch("Vector x has length $(length(x)), expected \
+        $n_cols to match columns of A"))
     end
     
     # Update state space if matrix size changed
@@ -179,7 +209,8 @@ function update_distribution!(ingredients::MotzkinRecipe, x::AbstractVector, A::
     
     # Validate beta doesn't exceed n_rows
     if ingredients.beta > n_rows
-        throw(ArgumentError("`Motzkin` beta must be <= number of rows ($n_rows), got beta=$(ingredients.beta)"))
+        throw(ArgumentError("`Motzkin` beta must be <= number of rows \
+        ($n_rows), got beta=$(ingredients.beta)"))
     end
     if length(ingredients.sample_buffer) != ingredients.beta
         ingredients.sample_buffer = zeros(Int64, ingredients.beta)

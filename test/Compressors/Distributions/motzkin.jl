@@ -28,6 +28,9 @@ using LinearAlgebra: dot
         # Test beta validation in constructor
         @test_throws ArgumentError Motzkin(beta = 0)
         @test_throws ArgumentError Motzkin(beta = -5)
+        
+        # Test cardinality validation in constructor
+        @test_throws ArgumentError Motzkin(cardinality = Right())
     end
 
     @testset "Motzkin: DistributionRecipe" begin
