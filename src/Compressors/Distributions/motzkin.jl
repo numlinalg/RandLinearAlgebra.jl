@@ -60,7 +60,7 @@ The recipe containing all allocations and information for the Motzkin distributi
 - `state_space::Vector{Int64}`, the row index set {1, 2, ..., m}.
 - `sample_buffer::Vector{Int64}`, workspace to store the randomly sampled subset of β indices.
 - `A::AbstractMatrix`, reference to the coefficient matrix.
-- `b::AbstractVector`, reference to the right-hand side vector.
+- `b::AbstractVector`, reference to the constant vector.
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
 
 # Notes
