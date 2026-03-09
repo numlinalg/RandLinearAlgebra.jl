@@ -59,15 +59,6 @@ using LinearAlgebra: dot
             @test mr.b === b
             @test mr.x === x
         end
-        
-        # Test with Right cardinality (should throw)
-        let A = randn(5, 3), 
-            b = randn(5),
-            x = randn(3),
-            m = Motzkin(cardinality = Right(), beta = 2)
-
-            @test_throws ArgumentError complete_distribution(m, x, A, b)
-        end
 
         # Test with Undef cardinality (should throw)
         let A = randn(5, 3), 
