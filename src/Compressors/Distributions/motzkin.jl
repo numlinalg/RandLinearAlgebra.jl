@@ -146,7 +146,7 @@ Updates the Motzkin distribution recipe with the current solution iterate x.
 - `ingredients::MotzkinRecipe`: The recipe to update.
 - `x::AbstractVector`: Current solution iterate (length n).
 - `A::AbstractMatrix`: Coefficient matrix (size m × n).
-- `b::AbstractVector`: Right-hand side vector (length m).
+- `b::AbstractVector`: Constant vector (length m).
 
 # Outputs
 - Modifies `ingredients` in place by updating the solution reference and returns nothing.
