@@ -8,7 +8,7 @@ Sampling Kaczmarz-Motzkin by [haddock2020greed](@citet).
 # Mathematical Description
 
 During the sampling, the Motzkin distribution selects rows based on their residuals 
-for the linear system ``Ax = b``. Given a current solution iterate ``x``, the residual 
+for the linear system ``Ax = b``, where ``A`` is ``m \times n``. Given a current solution iterate ``x``, the residual 
 for row ``i`` is ``r_i = |a_i^T x - b_i|``.
 
 The algorithm works as follows:
