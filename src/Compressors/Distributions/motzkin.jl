@@ -73,6 +73,12 @@ The recipe containing all allocations and information for the Motzkin distributi
 !!! note
     Following the paper's algorithm, residuals are computed only for the β sampled rows
     in `sample_distribution!`, not for all rows. This is efficient when β << m.
+
+!!! note "Developer note"
+    We intentionally keep `update_distribution!` deterministic and perform all
+    randomization in `sample_distribution!`. This keeps update semantics clean,
+    and matches user expectations in iterative usage, where repeated sampling
+    calls should produce fresh samples each time.
 """
 mutable struct MotzkinRecipe <: DistributionRecipe
     cardinality::Cardinality
