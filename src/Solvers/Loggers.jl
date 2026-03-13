@@ -49,13 +49,13 @@ logger_error_list = Dict{Symbol, String}(
 
 $(logger_method_description[:complete_logger])
 
-### Arguments
+# Arguments
 - $(logger_arg_list[:logger])
 
-### Returns 
+# Returns
 - $(logger_output_list[:logger_recipe])
 
-### Throws
+# Throws
 - $(logger_error_list[:complete_logger])
 """
 function complete_logger(logger::Logger)
@@ -69,15 +69,15 @@ end
 
 $(logger_method_description[:update_logger])
 
-### Arguments
+# Arguments
 - $(logger_arg_list[:logger_recipe])
-- $(logger_arg_list[:err]) 
-- $(logger_arg_list[:iteration]) 
+- $(logger_arg_list[:err])
+- $(logger_arg_list[:iteration])
 
-### Returns 
+# Returns
 - Performs an inplace update to the `LoggerRecipe` and returns nothing.
 
-### Throws
+# Throws
 - $(logger_error_list[:update_logger])
 """
 function update_logger!(logger::LoggerRecipe, err::Real, iteration::Int64)
@@ -92,13 +92,13 @@ end
 
 $(logger_method_description[:reset_logger])
 
-### Arguments
+# Arguments
 - $(logger_arg_list[:logger_recipe])
 
-### Returns 
+# Returns
 - Performs an inplace update to the `LoggerRecipe` and returns nothing.
 
-### Throws
+# Throws
 - $(logger_error_list[:reset_logger])
 """
 function reset_logger!(logger::LoggerRecipe)
