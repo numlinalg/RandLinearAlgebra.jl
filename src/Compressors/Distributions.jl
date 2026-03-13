@@ -50,7 +50,7 @@ $(distribution_method_description[:complete_distribution])
 - $(distribution_arg_list[:distribution])
 - $(distribution_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(distribution_output_list[:distribution_recipe])
 
 # Throws
@@ -78,7 +78,7 @@ $(distribution_method_description[:update_distribution!])
 - $(distribution_arg_list[:distribution_recipe])
 - $(distribution_arg_list[:A]) 
 
-# Outputs
+# Returns
 - Modifies the `DistributionRecipe` in place and returns nothing.
 
 # Throws
@@ -106,7 +106,7 @@ $(distribution_method_description[:sample_distribution!])
 - $(distribution_arg_list[:x]) 
 - $(distribution_arg_list[:distribution_recipe])
 
-# Outputs
+# Returns
 - Modifies the `x` in place by sampling that follows the weights and replacement given by 
 'DistributionRecipe'.
 

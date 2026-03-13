@@ -256,7 +256,7 @@ A function that performs the Kaczmarz update when the compression dimension is o
 # Arguments
 - `solver::KaczmarzRecipe`, the solver information required for performing the update.
 
-# Outputs
+# Returns
 - returns `nothing`
 """
 function kaczmarz_update!(solver::KaczmarzRecipe)
@@ -288,7 +288,7 @@ A function that performs the kaczmarz update when the compression dim is greater
 # Arguments
 - `solver::KaczmarzRecipe`, the solver information required for performing the update.
 
-# Outputs
+# Returns
 - returns `nothing`
 """
 function kaczmarz_update_block!(solver::KaczmarzRecipe)

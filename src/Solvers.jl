@@ -63,7 +63,7 @@ $(solver_method_description[:complete_solver])
 - $(solver_arg_list[:A]) 
 - $(solver_arg_list[:b]) 
 
-# Outputs
+# Returns
 - $(solver_output_list[:solver_recipe])
 
 # Throws
@@ -102,7 +102,7 @@ $(solver_method_description[:rsolve])
 - $(solver_arg_list[:A]) 
 - $(solver_arg_list[:b]) 
 
-# Outputs
+# Returns
 - Returns `nothing`. Updates the `SolverRecipe` and `x` in place.
 
 # Throws
@@ -138,7 +138,7 @@ $(solver_method_description[:rsolve])
 - $(solver_arg_list[:A]) 
 - $(solver_arg_list[:b]) 
 
-# Outputs
+# Returns
 - $(solver_output_list[:x])
 - $(solver_output_list[:solver_recipe])
 """
