@@ -61,7 +61,7 @@ $(select_method_description[:complete_selector])
 - $(select_arg_list[:selector])
 - $(select_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(select_output_list[:selector_recipe])
 
 # Throws
@@ -87,7 +87,7 @@ $(select_method_description[:update_selector])
 # Arguments
 - $(select_arg_list[:selector_recipe])
 
-# Outputs
+# Returns
 - $(select_output_list[:selector_recipe])
 
 # Throws
@@ -111,7 +111,7 @@ $(select_method_description[:update_selector])
 - $(select_arg_list[:selector_recipe])
 - $(select_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(select_output_list[:selector_recipe])
 """
 function update_selector!(selector::SelectorRecipe, A::AbstractMatrix)
@@ -139,7 +139,7 @@ $(select_method_description[:select_indices])
 - $(select_arg_list[:n_idx])
 - $(select_arg_list[:start_idx])
 
-# Outputs
+# Returns
 -  Returns `nothing`
 
 # Throws
