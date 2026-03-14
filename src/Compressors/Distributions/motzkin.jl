@@ -18,8 +18,8 @@ columns (`Right()`) with cardinality-dependent dimensions.
     ``c_j = |A_{:,j}^T x - b_j|``.
 
 The algorithm works as follows over the active index set:
-1. **If β = 1**: Randomly select one index uniformly.
-2. **If β = d** (active dimension): Select the index with maximum score.
+1. **If β = 1 (Randomized Kaczmarz)**: Randomly select one index uniformly.
+2. **If β = d (Pure Motzkin/Greedy)**: Select the index with maximum score.
 3. **If 1 < β < d**: Randomly sample β distinct indices, then select the one
     with maximum score within the sampled subset.
 
@@ -74,7 +74,8 @@ The recipe containing all allocations and information for the Motzkin distributi
 - `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the
     active sampling dimension (`m` for `Left()`, `n` for `Right()`).
 - `state_space::Vector{Int64}`, the active row/column index set.
-- `sample_buffer::Vector{Int64}`, workspace to store the randomly sampled subset of β indices.
+- `sample_buffer::Vector{Int64}`, workspace to store the randomly sampled 
+    subset of β indices.
 - `A::AbstractMatrix`, reference to the coefficient matrix.
 - `b::AbstractVector`, reference to the constant vector.
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
@@ -321,7 +322,12 @@ function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
     else
         # Sampling Kaczmarz-Motzkin: Sample β indices over active cardinality,
         # then greedily pick max score
-        sample!(distribution.state_space, distribution.sample_buffer, replace = distribution.replace, ordered = false)
+        sample!(
+            distribution.state_space,
+            distribution.sample_buffer,
+            replace = distribution.replace,
+            ordered = false
+        )
 
         if distribution.cardinality == Left()
             r = abs.(distribution.A[distribution.sample_buffer, :] * distribution.x
