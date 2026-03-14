@@ -7,36 +7,43 @@ Sampling Kaczmarz-Motzkin by [haddock2020greed](@citet).
 
 # Mathematical Description
 
-During the sampling, the Motzkin distribution selects rows based on their residuals 
-for the linear system ``Ax = b``, where ``A`` is ``m \times n``. Given a current solution iterate ``x``, the residual 
-for row ``i`` is ``r_i = |a_i^T x - b_i|``.
+During sampling, the Motzkin distribution selects an index from rows (`Left()`) or
+columns (`Right()`) with cardinality-dependent dimensions.
 
-The algorithm works as follows:
-1. **If β = 1 (Randomized Kaczmarz)**: Randomly select one row uniformly.
-2. **If β = m (Pure Motzkin/Greedy)**: Select the row with maximum residual: ``i^* = \\arg\\max_i |a_i^T x - b_i|``.
-3. **If 1 < β < m (Sampling Kaczmarz-Motzkin)**: Randomly sample β distinct rows, then 
-   select the row with maximum residual among the sampled subset.
+- **`Left()` cardinality:** work on ``Ax = b`` with ``A \\in \\mathbb{R}^{m\\times n}``,
+    ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``; score row ``i`` by
+    ``r_i = |A_{i,:}x - b_i|``.
+- **`Right()` cardinality:** use the transposed-system view with
+    ``x \\in \\mathbb{R}^{m}``, ``b \\in \\mathbb{R}^{n}``; score column ``j`` by
+    ``c_j = |A_{:,j}^T x - b_j|``.
+
+The algorithm works as follows over the active index set:
+1. **If β = 1**: Randomly select one index uniformly.
+2. **If β = d** (active dimension): Select the index with maximum score.
+3. **If 1 < β < d**: Randomly sample β distinct indices, then select the one
+    with maximum score within the sampled subset.
 
 # Fields
 - `cardinality::Cardinality`, the direction the compression matrix is intended to be
-    applied to a target matrix or operator. For Motzkin sampling, only `Left()` is 
-    supported (row selection). The default value is `Undef()`.
+    applied to a target matrix or operator. Values allowed are `Left()`, `Right()`,
+    or `Undef()`. The default value is `Undef()`.
 - `replace::Bool`, if `true`, then the sampling occurs with replacement; if `false`, 
     then the sampling occurs without replacement. The default value is `false`.
-- `beta::Int`, the subset size for sampling (1 ≤ β ≤ m). When β = 1, this reduces to 
-    uniform random selection. When β = m, this becomes pure greedy Motzkin selection.
+- `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the active
+    sampling dimension (`m` for `Left()`, `n` for `Right()`). When β = 1, this
+    reduces to uniform random selection. When β = d, this becomes pure greedy
+    Motzkin selection.
     The default value is 1.
 
 # Constructor
 
     Motzkin(;cardinality=Undef(), replace=false, beta=1)
 
-## Returns
+# Returns
 - A `Motzkin` object.
 
-## Throws
+# Throws
 - `ArgumentError` if `beta` < 1.
-- `ArgumentError` if `cardinality` is `Right()` (only `Left()` and `Undef()` are supported).
 """
 mutable struct Motzkin <: Distribution
     cardinality::Cardinality
@@ -46,10 +53,11 @@ end
 
 function Motzkin(; cardinality = Undef(), replace = false, beta = 1)
     if beta < 1
-        throw(ArgumentError("`Motzkin` beta must be >= 1, got beta=$beta"))
-    end
-    if cardinality == Right()
-        throw(ArgumentError("`Motzkin` distribution only supports `Left()` cardinality (row selection). `Right()` cardinality is not supported."))
+        throw(
+            ArgumentError(
+                "`Motzkin` beta must be >= 1, got beta=$beta"
+            )
+        )
     end
     return Motzkin(cardinality, replace, beta)
 end
@@ -61,18 +69,20 @@ The recipe containing all allocations and information for the Motzkin distributi
 
 # Fields
 - `cardinality::C where C<:Cardinality`, the cardinality of the compressor. For Motzkin,
-    this should be `Left()` (row selection).
+    this should be `Left()` or `Right()`.
 - `replace::Bool`, an option to replace or not during the sampling process.
-- `beta::Int`, the subset size for sampling (1 ≤ β ≤ m).
-- `state_space::Vector{Int64}`, the row index set {1, 2, ..., m}.
+- `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the
+    active sampling dimension (`m` for `Left()`, `n` for `Right()`).
+- `state_space::Vector{Int64}`, the active row/column index set.
 - `sample_buffer::Vector{Int64}`, workspace to store the randomly sampled subset of β indices.
 - `A::AbstractMatrix`, reference to the coefficient matrix.
 - `b::AbstractVector`, reference to the constant vector.
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
 
-!!! note
-    Following the paper's algorithm, residuals are computed only for the β sampled rows
-    in `sample_distribution!`, not for all rows. This is efficient when β << m.
+!!! note "Implementation note"
+    In `sample_distribution!`, scores are evaluated only on the β sampled indices,
+    not over the full domain. For `Left()`, this means sampled rows; for `Right()`,
+    sampled columns. This is efficient when β is much smaller than the active dimension.
 
 !!! note "Developer note"
     We intentionally keep `update_distribution!` deterministic and perform all
@@ -99,21 +109,20 @@ end
         b::AbstractVector
     )
 
-Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system Ax = b.
+Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system ``Ax = b``.
 
 # Arguments
 - `distribution::Motzkin`: The Motzkin distribution specification.
-- `x::AbstractVector`: Current solution iterate (length n).
-- `A::AbstractMatrix`: Coefficient matrix (size m × n).
-- `b::AbstractVector`: Right-hand side vector (length m).
+- `x::AbstractVector`: Current solution iterate (`n` for `Left()`, `m` for `Right()`).
+- `A::AbstractMatrix`: Coefficient matrix.
+- `b::AbstractVector`: Constant vector (`m` for `Left()`, `n` for `Right()`).
 
 # Returns
 - `MotzkinRecipe`: A recipe containing all necessary allocations and references to A, b, x.
 
 # Throws
-- `ArgumentError` if cardinality is not `Left()`.
 - `ArgumentError` if cardinality is `Undef()`.
-- `ArgumentError` if beta > number of rows in A.
+- `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function complete_distribution(
     distribution::Motzkin,
@@ -122,37 +131,56 @@ function complete_distribution(
     b::AbstractVector
 )
     cardinality = distribution.cardinality
-    
-    # Motzkin only makes sense for row selection (solving Ax=b)
-    if cardinality == Right()
-        throw(ArgumentError("`Motzkin` distribution only supports `Left()` cardinality (row selection).\
-        `Right()` cardinality is not supported."))
-    elseif cardinality == Undef()
-        throw(ArgumentError("`Motzkin` cardinality must be specified as `Left()`.\
-        `Undef()` is not allowed in `complete_distribution`."))
-    end
-    
+
     n_rows = size(A, 1)
     n_cols = size(A, 2)
-    
-    # Validate dimensions
-    if length(b) != n_rows
-        throw(DimensionMismatch("Vector b has length $(length(b)), expected \
-        $n_rows to match rows of A"))
+
+    sampling_dimension, expected_x_len, expected_b_len = if cardinality == Left()
+        (n_rows, n_cols, n_rows)
+    elseif cardinality == Right()
+        (n_cols, n_rows, n_cols)
+    elseif cardinality == Undef()
+        throw(
+            ArgumentError(
+                "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
+                `Undef()` is not allowed in `complete_distribution`."
+            )
+        )
     end
-    if length(x) != n_cols
-        throw(DimensionMismatch("Vector x has length $(length(x)), expected \
-        $n_cols to match columns of A"))
+
+    # Validate dimensions
+    if length(b) != expected_b_len
+        dim_name = cardinality == Left() ? "rows of A" : "columns of A"
+        throw(
+            DimensionMismatch(
+                "Vector b has length $(length(b)), expected \
+                $expected_b_len to match $dim_name"
+            )
+        )
+    end
+    if length(x) != expected_x_len
+        dim_name = cardinality == Left() ? "columns of A" : "rows of A"
+        throw(
+            DimensionMismatch(
+                "Vector x has length $(length(x)), expected \
+                $expected_x_len to match $dim_name"
+            )
+        )
     end
     
     # Validate beta
-    if distribution.beta > n_rows
-        throw(ArgumentError("`Motzkin` beta must be <= number of rows \
-        ($n_rows), got beta=$(distribution.beta)"))
+    if distribution.beta > sampling_dimension
+        dim_name = cardinality == Left() ? "rows" : "columns"
+        throw(
+            ArgumentError(
+                "`Motzkin` beta must be <= number of $dim_name \
+                ($sampling_dimension), got beta=$(distribution.beta)"
+            )
+        )
     end
     
-    # Initialize state space (all row indices)
-    state_space = collect(1:n_rows)
+    # Initialize state space from active cardinality
+    state_space = collect(1:sampling_dimension)
     
     # Allocate buffer for sampled indices
     sample_buffer = zeros(Int64, distribution.beta)
@@ -173,16 +201,16 @@ Updates the Motzkin distribution recipe with the current solution iterate x.
 
 # Arguments
 - `ingredients::MotzkinRecipe`: The recipe to update.
-- `x::AbstractVector`: Current solution iterate (length n).
-- `A::AbstractMatrix`: Coefficient matrix (size m × n).
-- `b::AbstractVector`: Constant vector (length m).
+- `x::AbstractVector`: Current solution iterate (`n` for `Left()`, `m` for `Right()`).
+- `A::AbstractMatrix`: Coefficient matrix.
+- `b::AbstractVector`: Constant vector (`m` for `Left()`, `n` for `Right()`).
 
-# Outputs
+# Returns
 - Modifies `ingredients` in place by updating the solution reference and returns nothing.
 
 # Throws
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
-- `ArgumentError` if beta > number of rows in A.
+- `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function update_distribution!(
     ingredients::MotzkinRecipe,
@@ -190,39 +218,64 @@ function update_distribution!(
     A::AbstractMatrix,
     b::AbstractVector
 )
-    # TODO: Design decision for review - Currently, sampling S happens in sample_distribution!
-    # to keep update_distribution! purely deterministic (consistent with L2Norm/Uniform).
-    # Alternative: pre-draw S here after updating x, then only compute argmax in sample_distribution!
-    # Both are functionally equivalent.
-    
     n_rows = size(A, 1)
     n_cols = size(A, 2)
+
+    sampling_dimension, expected_x_len, expected_b_len = if ingredients.cardinality == Left()
+        (n_rows, n_cols, n_rows)
+    elseif ingredients.cardinality == Right()
+        (n_cols, n_rows, n_cols)
+    elseif ingredients.cardinality == Undef()
+        throw(
+            ArgumentError(
+                "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
+                `Undef()` is not allowed in `update_distribution!`."
+            )
+        )
+    end
     
     # Validate dimensions
-    if length(b) != n_rows
-        throw(DimensionMismatch("Vector b has length $(length(b)), expected \
-        $n_rows to match rows of A"))
+    if length(b) != expected_b_len
+        dim_name = ingredients.cardinality == Left() ? "rows of A" : "columns of A"
+        throw(
+            DimensionMismatch(
+                "Vector b has length $(length(b)), expected \
+                $expected_b_len to match $dim_name"
+            )
+        )
     end
-    if length(x) != n_cols
-        throw(DimensionMismatch("Vector x has length $(length(x)), expected \
-        $n_cols to match columns of A"))
+    if length(x) != expected_x_len
+        dim_name = ingredients.cardinality == Left() ? "columns of A" : "rows of A"
+        throw(
+            DimensionMismatch(
+                "Vector x has length $(length(x)), expected \
+                $expected_x_len to match $dim_name"
+            )
+        )
     end
     
-    # Update state space if matrix size changed
-    if length(ingredients.state_space) != n_rows
-        ingredients.state_space = collect(1:n_rows)
+    # Update state space if active dimension changed
+    if length(ingredients.state_space) != sampling_dimension
+        ingredients.state_space = collect(1:sampling_dimension)
     end
     
-    # Validate beta doesn't exceed n_rows
-    if ingredients.beta > n_rows
-        throw(ArgumentError("`Motzkin` beta must be <= number of rows \
-        ($n_rows), got beta=$(ingredients.beta)"))
+    # Validate beta doesn't exceed active sampling dimension
+    if ingredients.beta > sampling_dimension
+        dim_name = ingredients.cardinality == Left() ? "rows" : "columns"
+        throw(
+            ArgumentError(
+                "`Motzkin` beta must be <= number of $dim_name \
+                ($sampling_dimension), got beta=$(ingredients.beta)"
+            )
+        )
     end
     if length(ingredients.sample_buffer) != ingredients.beta
         ingredients.sample_buffer = zeros(Int64, ingredients.beta)
     end
     
-    # Update current solution reference
+    # Update current references
+    ingredients.A = A
+    ingredients.b = b
     ingredients.x = x
     
     return nothing
@@ -231,39 +284,60 @@ end
 """
     sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
 
-Samples row indices according to the Motzkin distribution.
+Samples indices according to the Motzkin distribution.
 
 # Arguments
-- `x::AbstractVector`: Output vector to store selected row index/indices.
+- `x::AbstractVector`: Output vector to store selected index/indices.
 - `distribution::MotzkinRecipe`: The recipe containing residuals and \
     sampling parameters.
 
-# Outputs
-- Modifies `x` in place with the selected row index/indices and returns \
+# Returns
+- Modifies `x` in place with the selected index/indices and returns \
   nothing.
 
 # Notes
-- The output x typically has length 1 (single row selection per iteration).
+- The output `x` typically has length 1 (single index selection per iteration).
 - The selection within the sampled subset is deterministic (maximum residual).
 """
 function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
-    n_rows = length(distribution.state_space)
+    active_dimension = length(distribution.state_space)
     
     if distribution.beta == 1
-        # Pure random selection (Randomized Kaczmarz)
+        # Pure random selection
         x[1] = rand(distribution.state_space)
-    elseif distribution.beta >= n_rows
-        # Pure greedy (Motzkin method): find max residual over all rows
-        # Alternative (allocates a length-m vector each call): 
-        x[1] = argmax(abs.(distribution.A * distribution.x - distribution.b)) 
+    elseif distribution.beta >= active_dimension
+        # Pure greedy over active cardinality
+        if distribution.cardinality == Left()
+            x[1] = argmax(abs.(distribution.A * distribution.x - distribution.b))
+        elseif distribution.cardinality == Right()
+            x[1] = argmax(abs.(distribution.A' * distribution.x - distribution.b))
+        else
+            throw(
+                ArgumentError(
+                    "`Motzkin` cardinality must be `Left()` or `Right()`."
+                )
+            )
+        end
     else
-        # Sampling Kaczmarz-Motzkin: sample β rows, compute their residuals, pick max
-        sample!(distribution.state_space, distribution.sample_buffer,
-        replace = false, ordered = false)
+        # Sampling Kaczmarz-Motzkin: Sample β indices over active cardinality,
+        # then greedily pick max score
+        sample!(distribution.state_space, distribution.sample_buffer, replace = distribution.replace, ordered = false)
 
-        r = abs.(distribution.A[distribution.sample_buffer, :] * distribution.x
-                 - distribution.b[distribution.sample_buffer])
-        x[1] = distribution.sample_buffer[argmax(r)]
+        if distribution.cardinality == Left()
+            r = abs.(distribution.A[distribution.sample_buffer, :] * distribution.x
+                     - distribution.b[distribution.sample_buffer])
+            x[1] = distribution.sample_buffer[argmax(r)]
+        elseif distribution.cardinality == Right()
+            c = abs.(distribution.A[:, distribution.sample_buffer]' * distribution.x
+                     - distribution.b[distribution.sample_buffer])
+            x[1] = distribution.sample_buffer[argmax(c)]
+        else
+            throw(
+                ArgumentError(
+                    "`Motzkin` cardinality must be `Left()` or `Right()`."
+                )
+            )
+        end
     end
     
     return nothing
