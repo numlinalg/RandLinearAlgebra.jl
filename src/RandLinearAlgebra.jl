@@ -35,7 +35,7 @@ export SRHT, SRHTRecipe
 # Export Distribution types and functions
 export Distribution, DistributionRecipe
 export complete_distribution, update_distribution!, sample_distribution!
-export Uniform, UniformRecipe, L2Norm, L2NormRecipe
+export Uniform, UniformRecipe, L2Norm, L2NormRecipe, Motzkin, MotzkinRecipe
 
 # Export Solver types and functions
 export Solver, SolverRecipe
