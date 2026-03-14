@@ -25,12 +25,17 @@ using LinearAlgebra: dot
             @test m2.beta == 10
         end
 
+        let
+            m3 = Motzkin(cardinality = Right(), replace = true, beta = 3)
+            @test m3.cardinality == Right()
+            @test m3.replace == true
+            @test m3.beta == 3
+        end
+
         # Test beta validation in constructor
         @test_throws ArgumentError Motzkin(beta = 0)
         @test_throws ArgumentError Motzkin(beta = -5)
         
-        # Test cardinality validation in constructor
-        @test_throws ArgumentError Motzkin(cardinality = Right())
     end
 
     @testset "Motzkin: DistributionRecipe" begin
@@ -60,6 +65,24 @@ using LinearAlgebra: dot
             @test mr.x === x
         end
 
+        # Test with valid Right cardinality
+        let A = [1.0 0.0; 0.0 2.0; 1.0 1.0],
+            b = [1.0, 2.0],
+            x = [0.5, 0.5, 0.25],
+            m = Motzkin(cardinality = Right(), beta = 2)
+
+            mr = complete_distribution(m, x, A, b)
+            @test mr.cardinality == Right()
+            @test mr.beta == 2
+            @test mr.replace == false
+            @test length(mr.state_space) == 2
+            @test mr.state_space == [1, 2]
+            @test length(mr.sample_buffer) == 2
+            @test mr.A === A
+            @test mr.b === b
+            @test mr.x === x
+        end
+
         # Test with Undef cardinality (should throw)
         let A = randn(5, 3), 
             b = randn(5),
@@ -74,6 +97,15 @@ using LinearAlgebra: dot
             b = randn(5),
             x = randn(3),
             m = Motzkin(cardinality = Left(), beta = 10)
+
+            @test_throws ArgumentError complete_distribution(m, x, A, b)
+        end
+
+        # Test beta > n_cols validation for Right()
+        let A = randn(5, 3),
+            b = randn(3),
+            x = randn(5),
+            m = Motzkin(cardinality = Right(), beta = 4)
 
             @test_throws ArgumentError complete_distribution(m, x, A, b)
         end
@@ -128,6 +160,23 @@ using LinearAlgebra: dot
             @test mr.state_space == collect(1:7)
         end
 
+        # Test Right() dimension change handling (state_space should update with n_cols)
+        let A = randn(5, 3),
+            b = randn(3),
+            x = randn(5),
+            A2 = randn(5, 6),
+            b2 = randn(6),
+            x2 = randn(5),
+            m = Motzkin(cardinality = Right(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            @test length(mr.state_space) == 3
+
+            update_distribution!(mr, x2, A2, b2)
+            @test length(mr.state_space) == 6
+            @test mr.state_space == collect(1:6)
+        end
+
         # Test sample_buffer resizing when beta doesn't change
         let A = randn(5, 3),
             b = randn(5),
@@ -153,6 +202,19 @@ using LinearAlgebra: dot
             mr = complete_distribution(m, x, A, b)
             
             @test_throws ArgumentError update_distribution!(mr, x, A2, b2)
+        end
+
+        # Test beta validation in update for Right()
+        let A = randn(5, 5),
+            b = randn(5),
+            x = randn(5),
+            A2 = randn(5, 3),
+            b2 = randn(3),
+            x2 = randn(5),
+            m = Motzkin(cardinality = Right(), beta = 5),
+            mr = complete_distribution(m, x, A, b)
+
+            @test_throws ArgumentError update_distribution!(mr, x2, A2, b2)
         end
 
         # Test dimension mismatch: b length
@@ -221,6 +283,21 @@ using LinearAlgebra: dot
             
             # Should return a valid row index
             @test 1 <= out[1] <= 100
+        end
+
+        # Right() beta >= n_cols (pure greedy) - should pick max column score
+        let A = [1.0 0.0; 0.0 1.0; 0.0 0.0],
+            b = [0.0, 1.0],
+            x = [2.0, 0.0, 0.0],
+            m = Motzkin(cardinality = Right(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            update_distribution!(mr, x, A, b)
+            out = zeros(Int, 1)
+            sample_distribution!(out, mr)
+
+            expected_col = argmax(abs.(A' * x - b))
+            @test out[1] == expected_col
         end
     end
 
