@@ -341,6 +341,22 @@ using LinearAlgebra: dot
             sample_distribution!(out, mr)
             @test out[1] == 1
         end
+
+        # Verify top-k output and deterministic tie-break (smaller index first)
+        let A = [1.0 0.0; 0.0 1.0; 1.0 0.0; 0.0 1.0],
+            b = [2.0, 2.0, 2.0, 1.0],
+            x = [0.0, 0.0],
+            m = Motzkin(cardinality = Left(), beta = 4),
+            mr = complete_distribution(m, x, A, b)
+
+            # Residual magnitudes: [2, 2, 2, 1], tie at cutoff between rows 2 and 3.
+            # Deterministic tie-break should choose smaller index first.
+            out = zeros(Int, 2)
+            update_distribution!(mr, x, A, b)
+            sample_distribution!(out, mr)
+
+            @test out == [1, 2]
+        end
     end
 
     @testset "Motzkin: Sample Distribution - Output Validity" begin
@@ -380,6 +396,29 @@ using LinearAlgebra: dot
             
             # Should see multiple different rows (very unlikely to hit same row 50 times)
             @test length(unique(samples)) > 1
+        end
+
+        # Test error when requested output length exceeds beta
+        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
+            b = [1.0, 2.0, 3.0],
+            x = [0.5, 0.5],
+            m = Motzkin(cardinality = Left(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            out = zeros(Int, 3)  # length(out) > beta
+            @test_throws ArgumentError sample_distribution!(out, mr)
+        end
+
+        # Test sample-time cardinality guard
+        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
+            b = [1.0, 2.0, 3.0],
+            x = [0.5, 0.5],
+            m = Motzkin(cardinality = Left(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            mr.cardinality = Undef()
+            out = zeros(Int, 1)
+            @test_throws ArgumentError sample_distribution!(out, mr)
         end
     end
 end
