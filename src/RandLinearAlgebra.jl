@@ -36,6 +36,7 @@ export SRHT, SRHTRecipe
 export Distribution, DistributionRecipe
 export complete_distribution, update_distribution!, sample_distribution!
 export Uniform, UniformRecipe, L2Norm, L2NormRecipe, Agmon, AgmonRecipe
+export LeverageScore, LeverageScoreRecipe
 
 # Export Solver types and functions
 export Solver, SolverRecipe
