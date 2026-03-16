@@ -19,9 +19,10 @@ columns (`Right()`) with cardinality-dependent dimensions.
 
 The algorithm works as follows over the active index set:
 1. **If β = 1 (Randomized Kaczmarz)**: Randomly select one index uniformly.
-2. **If β = d (Pure Motzkin/Greedy)**: Select the index with maximum score.
+2. **If β = d (Pure Motzkin/Greedy)**: Select the top-`k` indices with maximum
+    residuals.
 3. **If 1 < β < d**: Randomly sample β distinct indices, then select the one
-    with maximum score within the sampled subset.
+    with maximum residuals within the sampled subset.
 
 # Fields
 - `cardinality::Cardinality`, the direction the compression matrix is intended to be
@@ -48,7 +49,7 @@ The algorithm works as follows over the active index set:
 mutable struct Motzkin <: Distribution
     cardinality::Cardinality
     replace::Bool
-    beta::Int  # Subset size for sampling (1 ≤ beta ≤ m)
+    beta::Int  # Subset size for sampling (1 ≤ beta ≤ d)
 end
 
 function Motzkin(; cardinality = Undef(), replace = false, beta = 1)
@@ -81,9 +82,10 @@ The recipe containing all allocations and information for the Motzkin distributi
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
 
 !!! note "Implementation note"
-    In `sample_distribution!`, scores are evaluated only on the β sampled indices,
-    not over the full domain. For `Left()`, this means sampled rows; for `Right()`,
-    sampled columns. This is efficient when β is much smaller than the active dimension.
+    In `sample_distribution!`, when ``1 < β < d``, residuals are evaluated only on
+    the β sampled indices (not over the full domain). For `Left()`, this means
+    sampled rows; for `Right()`, sampled columns. This is efficient when β is much
+    smaller than the active dimension.
 
 !!! note "Developer note"
     We intentionally keep `update_distribution!` deterministic and perform all
@@ -123,6 +125,7 @@ Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system `
 
 # Throws
 - `ArgumentError` if cardinality is `Undef()`.
+- `DimensionMismatch` if vector dimensions don't match the active cardinality layout.
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function complete_distribution(
@@ -289,61 +292,76 @@ Samples indices according to the Motzkin distribution.
 
 # Arguments
 - `x::AbstractVector`: Output vector to store selected index/indices.
-- `distribution::MotzkinRecipe`: The recipe containing residuals and \
+- `distribution::MotzkinRecipe`: The recipe containing residuals and
     sampling parameters.
 
 # Returns
-- Modifies `x` in place with the selected index/indices and returns \
-  nothing.
+- Modifies `x` in place with the selected index/indices and returns nothing.
 
 # Notes
-- The output `x` typically has length 1 (single index selection per iteration).
-- The selection within the sampled subset is deterministic (maximum residual).
+- Returns the top-`k` selected indices where `k = length(x)`.
+- Ties are broken deterministically by selecting smaller indices first.
+- The selection within the sampled subset is deterministic.
+
+# Throws
+- `ArgumentError` if `length(x) > beta`.
+- `ArgumentError` if cardinality is not `Left()` or `Right()`.
 """
 function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
     active_dimension = length(distribution.state_space)
-    
+    k = length(x)
+
+    if k > distribution.beta
+        throw(
+            ArgumentError(
+                "`Motzkin` cannot output $k indices when beta=$(distribution.beta)."
+            )
+        )
+    end
+
     if distribution.beta == 1
         # Pure random selection
         x[1] = rand(distribution.state_space)
-    elseif distribution.beta >= active_dimension
-        # Pure greedy over active cardinality
-        if distribution.cardinality == Left()
-            x[1] = argmax(abs.(distribution.A * distribution.x - distribution.b))
-        elseif distribution.cardinality == Right()
-            x[1] = argmax(abs.(distribution.A' * distribution.x - distribution.b))
-        else
-            throw(
-                ArgumentError(
-                    "`Motzkin` cardinality must be `Left()` or `Right()`."
-                )
-            )
-        end
+        return nothing
+    end
+
+    # Candidate set
+    candidates = if distribution.beta >= active_dimension
+        # Pure greedy over full active domain
+        distribution.state_space
     else
-        # Sampling Kaczmarz-Motzkin: Sample β indices over active cardinality,
-        # then greedily pick max score
+        # Sampling Kaczmarz-Motzkin: sample β indices first
         sample!(
             distribution.state_space,
             distribution.sample_buffer,
             replace = distribution.replace,
             ordered = false
         )
+        distribution.sample_buffer
+    end
 
-        if distribution.cardinality == Left()
-            r = abs.(distribution.A[distribution.sample_buffer, :] * distribution.x
-                     - distribution.b[distribution.sample_buffer])
-            x[1] = distribution.sample_buffer[argmax(r)]
-        elseif distribution.cardinality == Right()
-            c = abs.(distribution.A[:, distribution.sample_buffer]' * distribution.x
-                     - distribution.b[distribution.sample_buffer])
-            x[1] = distribution.sample_buffer[argmax(c)]
-        else
-            throw(
-                ArgumentError(
-                    "`Motzkin` cardinality must be `Left()` or `Right()`."
-                )
+    # Residuals on candidate set
+    residuals = if distribution.cardinality == Left()
+        abs.(distribution.A[candidates, :] * distribution.x - distribution.b[candidates])
+    elseif distribution.cardinality == Right()
+        # Transposed-system residuals for selected columns
+        abs.(distribution.A[:, candidates]' * distribution.x - distribution.b[candidates])
+    else
+        throw(
+            ArgumentError(
+                "`Motzkin` cardinality must be `Left()` or `Right()`."
             )
-        end
+        )
+    end
+
+    # Top-k by residual (descending), tie-break by smaller index
+    p = partialsortperm(
+        eachindex(residuals),
+        1:k;
+        by = i -> (-residuals[i], candidates[i])
+    )
+    @inbounds for t in 1:k
+        x[t] = candidates[p[t]]
     end
     
     return nothing
