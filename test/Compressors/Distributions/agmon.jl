@@ -1,17 +1,17 @@
-module motzkin_distribution
+module agmon_distribution
 using Test, RandLinearAlgebra
 using LinearAlgebra: dot
 
-@testset "Motzkin" begin
-    @testset "Motzkin: Distribution" begin
+@testset "Agmon" begin
+    @testset "Agmon: Distribution" begin
         # Verify supertypes, fieldnames and fieldtypes
-        @test supertype(Motzkin) == Distribution
-        @test fieldnames(Motzkin) == (:cardinality, :replace, :beta)
-        @test fieldtypes(Motzkin) == (Cardinality, Bool, Int)
+        @test supertype(Agmon) == Distribution
+        @test fieldnames(Agmon) == (:cardinality, :replace, :beta)
+        @test fieldtypes(Agmon) == (Cardinality, Bool, Int)
 
         # Default constructor
         let 
-            m = Motzkin()
+            m = Agmon()
             @test m.cardinality == Undef()
             @test m.replace == false
             @test m.beta == 1
@@ -19,39 +19,39 @@ using LinearAlgebra: dot
 
         # Custom constructor
         let 
-            m2 = Motzkin(cardinality = Left(), replace = true, beta = 10)
+            m2 = Agmon(cardinality = Left(), replace = true, beta = 10)
             @test m2.cardinality == Left()
             @test m2.replace == true
             @test m2.beta == 10
         end
 
         let
-            m3 = Motzkin(cardinality = Right(), replace = true, beta = 3)
+            m3 = Agmon(cardinality = Right(), replace = true, beta = 3)
             @test m3.cardinality == Right()
             @test m3.replace == true
             @test m3.beta == 3
         end
 
         # Test beta validation in constructor
-        @test_throws ArgumentError Motzkin(beta = 0)
-        @test_throws ArgumentError Motzkin(beta = -5)
+        @test_throws ArgumentError Agmon(beta = 0)
+        @test_throws ArgumentError Agmon(beta = -5)
         
     end
 
-    @testset "Motzkin: DistributionRecipe" begin
+    @testset "Agmon: DistributionRecipe" begin
         # Verify supertypes, fieldnames and fieldtypes
-        @test supertype(MotzkinRecipe) == DistributionRecipe
-        @test fieldnames(MotzkinRecipe) == (:cardinality, :replace, :beta, :state_space, 
+        @test supertype(AgmonRecipe) == DistributionRecipe
+        @test fieldnames(AgmonRecipe) == (:cardinality, :replace, :beta, :state_space, 
                                              :sample_buffer, :A, :b, :x)
-        @test fieldtypes(MotzkinRecipe)[1:5] == (Cardinality, Bool, Int, Vector{Int64}, Vector{Int64})
+        @test fieldtypes(AgmonRecipe)[1:5] == (Cardinality, Bool, Int, Vector{Int64}, Vector{Int64})
     end
 
-    @testset "Motzkin: Complete Distribution" begin
+    @testset "Agmon: Complete Distribution" begin
         # Test with valid Left cardinality
         let A = [1.0 0.0; 0.0 2.0; 1.0 1.0], 
             b = [1.0, 2.0, 1.0],
             x = [0.5, 0.5],
-            m = Motzkin(cardinality = Left(), beta = 2)
+            m = Agmon(cardinality = Left(), beta = 2)
             
             mr = complete_distribution(m, x, A, b)
             @test mr.cardinality == Left()
@@ -67,9 +67,9 @@ using LinearAlgebra: dot
 
         # Test with valid Right cardinality
         let A = [1.0 0.0; 0.0 2.0; 1.0 1.0],
-            b = [1.0, 2.0],
-            x = [0.5, 0.5, 0.25],
-            m = Motzkin(cardinality = Right(), beta = 2)
+            b = [1.0, 2.0, 0.5],
+            x = [0.5, 0.5],
+            m = Agmon(cardinality = Right(), beta = 2)
 
             mr = complete_distribution(m, x, A, b)
             @test mr.cardinality == Right()
@@ -87,7 +87,7 @@ using LinearAlgebra: dot
         let A = randn(5, 3), 
             b = randn(5),
             x = randn(3),
-            m = Motzkin(cardinality = Undef(), beta = 2)
+            m = Agmon(cardinality = Undef(), beta = 2)
 
             @test_throws ArgumentError complete_distribution(m, x, A, b)
         end
@@ -96,16 +96,16 @@ using LinearAlgebra: dot
         let A = randn(5, 3),
             b = randn(5),
             x = randn(3),
-            m = Motzkin(cardinality = Left(), beta = 10)
+            m = Agmon(cardinality = Left(), beta = 10)
 
             @test_throws ArgumentError complete_distribution(m, x, A, b)
         end
 
         # Test beta > n_cols validation for Right()
         let A = randn(5, 3),
-            b = randn(3),
-            x = randn(5),
-            m = Motzkin(cardinality = Right(), beta = 4)
+            b = randn(5),
+            x = randn(3),
+            m = Agmon(cardinality = Right(), beta = 4)
 
             @test_throws ArgumentError complete_distribution(m, x, A, b)
         end
@@ -114,7 +114,7 @@ using LinearAlgebra: dot
         let A = randn(5, 3),
             b = randn(4),  # Wrong length
             x = randn(3),
-            m = Motzkin(cardinality = Left(), beta = 2)
+            m = Agmon(cardinality = Left(), beta = 2)
 
             @test_throws DimensionMismatch complete_distribution(m, x, A, b)
         end
@@ -123,19 +123,19 @@ using LinearAlgebra: dot
         let A = randn(5, 3),
             b = randn(5),
             x = randn(4),  # Wrong length
-            m = Motzkin(cardinality = Left(), beta = 2)
+            m = Agmon(cardinality = Left(), beta = 2)
 
             @test_throws DimensionMismatch complete_distribution(m, x, A, b)
         end
     end
 
-    @testset "Motzkin: Update Distribution" begin
+    @testset "Agmon: Update Distribution" begin
         # Test updating with new x
         let A = randn(5, 3),
             b = randn(5),
             x1 = randn(3),
             x2 = randn(3),
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x1, A, b)
             
             @test mr.x === x1
@@ -150,7 +150,7 @@ using LinearAlgebra: dot
             x = randn(3),
             A2 = randn(7, 3),
             b2 = randn(7),
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
             
             @test length(mr.state_space) == 5
@@ -162,12 +162,12 @@ using LinearAlgebra: dot
 
         # Test Right() dimension change handling (state_space should update with n_cols)
         let A = randn(5, 3),
-            b = randn(3),
-            x = randn(5),
+            b = randn(5),
+            x = randn(3),
             A2 = randn(5, 6),
-            b2 = randn(6),
-            x2 = randn(5),
-            m = Motzkin(cardinality = Right(), beta = 2),
+            b2 = randn(5),
+            x2 = randn(6),
+            m = Agmon(cardinality = Right(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
             @test length(mr.state_space) == 3
@@ -183,7 +183,7 @@ using LinearAlgebra: dot
             x = randn(3),
             A2 = randn(7, 3),
             b2 = randn(7),
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
             
             @test length(mr.sample_buffer) == 2
@@ -198,7 +198,7 @@ using LinearAlgebra: dot
             x = randn(3),
             A2 = randn(3, 3),  # Only 3 rows now
             b2 = randn(3),
-            m = Motzkin(cardinality = Left(), beta = 5),  # beta > new n_rows
+            m = Agmon(cardinality = Left(), beta = 5),  # beta > new n_rows
             mr = complete_distribution(m, x, A, b)
             
             @test_throws ArgumentError update_distribution!(mr, x, A2, b2)
@@ -209,9 +209,9 @@ using LinearAlgebra: dot
             b = randn(5),
             x = randn(5),
             A2 = randn(5, 3),
-            b2 = randn(3),
-            x2 = randn(5),
-            m = Motzkin(cardinality = Right(), beta = 5),
+            b2 = randn(5),
+            x2 = randn(3),
+            m = Agmon(cardinality = Right(), beta = 5),
             mr = complete_distribution(m, x, A, b)
 
             @test_throws ArgumentError update_distribution!(mr, x2, A2, b2)
@@ -222,7 +222,7 @@ using LinearAlgebra: dot
             b = randn(5),
             x = randn(3),
             b2 = randn(4),  # Wrong length
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
             @test_throws DimensionMismatch update_distribution!(mr, x, A, b2)
@@ -233,19 +233,19 @@ using LinearAlgebra: dot
             b = randn(5),
             x = randn(3),
             x2 = randn(4),  # Wrong length
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
             @test_throws DimensionMismatch update_distribution!(mr, x2, A, b)
         end
     end
 
-    @testset "Motzkin: Sample Distribution - Beta Cases" begin
+    @testset "Agmon: Sample Distribution - Beta Cases" begin
         # Test beta = 1 (pure random)
         let A = randn(10, 3),
             b = randn(10),
             x = randn(3),
-            m = Motzkin(cardinality = Left(), beta = 1),
+            m = Agmon(cardinality = Left(), beta = 1),
             mr = complete_distribution(m, x, A, b)
             
             update_distribution!(mr, x, A, b)
@@ -259,7 +259,7 @@ using LinearAlgebra: dot
         let A = [1.0 0.0; 0.0 1.0; 0.0 0.0],
             b = [1.0, 5.0, 0.1],  # Row 2 has largest residual for x=0
             x = [0.0, 0.0],
-            m = Motzkin(cardinality = Left(), beta = 3),
+            m = Agmon(cardinality = Left(), beta = 3),
             mr = complete_distribution(m, x, A, b)
             
             update_distribution!(mr, x, A, b)
@@ -274,7 +274,7 @@ using LinearAlgebra: dot
         let A = randn(100, 5),
             b = randn(100),
             x = randn(5),
-            m = Motzkin(cardinality = Left(), beta = 10),
+            m = Agmon(cardinality = Left(), beta = 10),
             mr = complete_distribution(m, x, A, b)
             
             update_distribution!(mr, x, A, b)
@@ -285,28 +285,29 @@ using LinearAlgebra: dot
             @test 1 <= out[1] <= 100
         end
 
-        # Right() beta >= n_cols (pure greedy) - should pick max column score
-        let A = [1.0 0.0; 0.0 1.0; 0.0 0.0],
-            b = [0.0, 1.0],
-            x = [2.0, 0.0, 0.0],
-            m = Motzkin(cardinality = Right(), beta = 2),
+        # Right() beta >= n_cols (pure greedy) - should pick max normal equations residual
+        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
+            b = [0.0, 0.0, 0.0],
+            x = [1.0, 2.0],  # Ax = [1, 2, 3], r = Ax - b = [1, 2, 3]
+            m = Agmon(cardinality = Right(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
             update_distribution!(mr, x, A, b)
             out = zeros(Int, 1)
             sample_distribution!(out, mr)
 
-            expected_col = argmax(abs.(A' * x - b))
-            @test out[1] == expected_col
+            # |A[:,1]'*r| = |[1,0,1]'*[1,2,3]| = 4, |A[:,2]'*r| = |[0,1,1]'*[1,2,3]| = 5
+            expected_col = argmax(abs.(A' * (A * x - b)))
+            @test out[1] == expected_col  # column 2
         end
     end
 
-    @testset "Motzkin: Sample Distribution - Correctness" begin
+    @testset "Agmon: Sample Distribution - Correctness" begin
         # Verify greedy selection picks correct max residual row
         let A = [2.0 1.0; 1.0 3.0; 0.5 0.5; 1.0 1.0],
             b = [1.0, 2.0, 3.0, 0.5],
             x = [0.5, 0.5],
-            m = Motzkin(cardinality = Left(), beta = 4),  # beta >= n_rows
+            m = Agmon(cardinality = Left(), beta = 4),  # beta >= n_rows
             mr = complete_distribution(m, x, A, b)
             
             update_distribution!(mr, x, A, b)
@@ -326,7 +327,7 @@ using LinearAlgebra: dot
             b = [2.0, 3.0],
             x1 = [0.0, 0.0],  # Residuals: [2, 3] → row 2
             x2 = [10.0, 0.0], # Residuals: [8, 3] → row 1
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x1, A, b)
             
             out = zeros(Int, 1)
@@ -346,7 +347,7 @@ using LinearAlgebra: dot
         let A = [1.0 0.0; 0.0 1.0; 1.0 0.0; 0.0 1.0],
             b = [2.0, 2.0, 2.0, 1.0],
             x = [0.0, 0.0],
-            m = Motzkin(cardinality = Left(), beta = 4),
+            m = Agmon(cardinality = Left(), beta = 4),
             mr = complete_distribution(m, x, A, b)
 
             # Residual magnitudes: [2, 2, 2, 1], tie at cutoff between rows 2 and 3.
@@ -359,12 +360,12 @@ using LinearAlgebra: dot
         end
     end
 
-    @testset "Motzkin: Sample Distribution - Output Validity" begin
+    @testset "Agmon: Sample Distribution - Output Validity" begin
         # Test that output is always within valid range
         let A = randn(50, 10),
             b = randn(50),
             x = randn(10),
-            m = Motzkin(cardinality = Left(), beta = 5),
+            m = Agmon(cardinality = Left(), beta = 5),
             mr = complete_distribution(m, x, A, b)
             
             out = zeros(Int, 1)
@@ -381,7 +382,7 @@ using LinearAlgebra: dot
         let A = randn(20, 5),
             b = randn(20),
             x = randn(5),
-            m = Motzkin(cardinality = Left(), beta = 1),
+            m = Agmon(cardinality = Left(), beta = 1),
             mr = complete_distribution(m, x, A, b)
             
             out = zeros(Int, 1)
@@ -402,7 +403,7 @@ using LinearAlgebra: dot
         let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
             b = [1.0, 2.0, 3.0],
             x = [0.5, 0.5],
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
             out = zeros(Int, 3)  # length(out) > beta
@@ -413,7 +414,7 @@ using LinearAlgebra: dot
         let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
             b = [1.0, 2.0, 3.0],
             x = [0.5, 0.5],
-            m = Motzkin(cardinality = Left(), beta = 2),
+            m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
             mr.cardinality = Undef()
