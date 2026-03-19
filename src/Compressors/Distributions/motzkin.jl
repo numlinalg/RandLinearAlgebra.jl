@@ -8,14 +8,14 @@ Sampling Kaczmarz-Motzkin by [haddock2020greed](@citet).
 # Mathematical Description
 
 During sampling, the Motzkin distribution selects an index from rows (`Left()`) or
-columns (`Right()`) with cardinality-dependent dimensions.
+columns (`Right()`) of the system ``Ax = b``.
 
 - **`Left()` cardinality:** work on ``Ax = b`` with ``A \\in \\mathbb{R}^{m\\times n}``,
     ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``; score row ``i`` by
     ``r_i = |A_{i,:}x - b_i|``.
-- **`Right()` cardinality:** use the transposed-system view with
-    ``x \\in \\mathbb{R}^{m}``, ``b \\in \\mathbb{R}^{n}``; score column ``j`` by
-    ``c_j = |A_{:,j}^T x - b_j|``.
+- **`Right()` cardinality:** work on ``Ax = b`` with ``A \\in \\mathbb{R}^{m\\times n}``,
+    ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``; score column ``j`` by
+    ``c_j = |A_{:,j}^T(Ax - b)|``.
 
 The algorithm works as follows over the active index set:
 1. **If β = 1 (Randomized Kaczmarz)**: Randomly select one index uniformly.
@@ -40,10 +40,10 @@ The algorithm works as follows over the active index set:
 
     Motzkin(;cardinality=Undef(), replace=false, beta=1)
 
-# Returns
+## Returns
 - A `Motzkin` object.
 
-# Throws
+## Throws
 - `ArgumentError` if `beta` < 1.
 """
 mutable struct Motzkin <: Distribution
@@ -82,10 +82,10 @@ The recipe containing all allocations and information for the Motzkin distributi
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
 
 !!! note "Implementation note"
-    In `sample_distribution!`, when ``1 < β < d``, residuals are evaluated only on
-    the β sampled indices (not over the full domain). For `Left()`, this means
-    sampled rows; for `Right()`, sampled columns. This is efficient when β is much
-    smaller than the active dimension.
+    In `sample_distribution!`, when ``1 < β < d``, the candidate set is a random
+    sample of β indices. For `Left()`, scores are computed only on the β sampled
+    rows. For `Right()`, the full residual ``r = Ax - b`` is computed once, then
+    dotted with each of the β sampled columns.
 
 !!! note "Developer note"
     We intentionally keep `update_distribution!` deterministic and perform all
@@ -116,14 +116,14 @@ Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system `
 
 # Arguments
 - `distribution::Motzkin`: The Motzkin distribution specification.
-- `x::AbstractVector`: Current solution iterate (`n` for `Left()`, `m` for `Right()`).
+- `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
-- `b::AbstractVector`: Constant vector (`m` for `Left()`, `n` for `Right()`).
+- `b::AbstractVector`: Constant vector of length `m` (rows of A).
 
-# Returns
+## Returns
 - `MotzkinRecipe`: A recipe containing all necessary allocations and references to A, b, x.
 
-# Throws
+## Throws
 - `ArgumentError` if cardinality is `Undef()`.
 - `DimensionMismatch` if vector dimensions don't match the active cardinality layout.
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
@@ -139,35 +139,34 @@ function complete_distribution(
     n_rows = size(A, 1)
     n_cols = size(A, 2)
 
-    sampling_dimension, expected_x_len, expected_b_len = if cardinality == Left()
-        (n_rows, n_cols, n_rows)
-    elseif cardinality == Right()
-        (n_cols, n_rows, n_cols)
-    elseif cardinality == Undef()
-        throw(
-            ArgumentError(
-                "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
-                `Undef()` is not allowed in `complete_distribution`."
+    sampling_dimension, expected_x_len, expected_b_len =
+        if cardinality == Left()
+            (n_rows, n_cols, n_rows)
+        elseif cardinality == Right()
+            (n_cols, n_cols, n_rows)
+        elseif cardinality == Undef()
+            throw(
+                ArgumentError(
+                    "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
+                    `Undef()` is not allowed in `complete_distribution`."
+                )
             )
-        )
-    end
+        end
 
     # Validate dimensions
     if length(b) != expected_b_len
-        dim_name = cardinality == Left() ? "rows of A" : "columns of A"
         throw(
             DimensionMismatch(
                 "Vector b has length $(length(b)), expected \
-                $expected_b_len to match $dim_name"
+                $expected_b_len to match rows of A"
             )
         )
     end
     if length(x) != expected_x_len
-        dim_name = cardinality == Left() ? "columns of A" : "rows of A"
         throw(
             DimensionMismatch(
                 "Vector x has length $(length(x)), expected \
-                $expected_x_len to match $dim_name"
+                $expected_x_len to match columns of A"
             )
         )
     end
@@ -205,14 +204,14 @@ Updates the Motzkin distribution recipe with the current solution iterate x.
 
 # Arguments
 - `ingredients::MotzkinRecipe`: The recipe to update.
-- `x::AbstractVector`: Current solution iterate (`n` for `Left()`, `m` for `Right()`).
+- `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
-- `b::AbstractVector`: Constant vector (`m` for `Left()`, `n` for `Right()`).
+- `b::AbstractVector`: Constant vector of length `m` (rows of A).
 
-# Returns
+## Returns
 - Modifies `ingredients` in place by updating the solution reference and returns nothing.
 
-# Throws
+## Throws
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
@@ -225,35 +224,34 @@ function update_distribution!(
     n_rows = size(A, 1)
     n_cols = size(A, 2)
 
-    sampling_dimension, expected_x_len, expected_b_len = if ingredients.cardinality == Left()
-        (n_rows, n_cols, n_rows)
-    elseif ingredients.cardinality == Right()
-        (n_cols, n_rows, n_cols)
-    elseif ingredients.cardinality == Undef()
-        throw(
-            ArgumentError(
-                "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
-                `Undef()` is not allowed in `update_distribution!`."
+    sampling_dimension, expected_x_len, expected_b_len =
+        if ingredients.cardinality == Left()
+            (n_rows, n_cols, n_rows)
+        elseif ingredients.cardinality == Right()
+            (n_cols, n_cols, n_rows)
+        elseif ingredients.cardinality == Undef()
+            throw(
+                ArgumentError(
+                    "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
+                    `Undef()` is not allowed in `update_distribution!`."
+                )
             )
-        )
-    end
-    
+        end
+
     # Validate dimensions
     if length(b) != expected_b_len
-        dim_name = ingredients.cardinality == Left() ? "rows of A" : "columns of A"
         throw(
             DimensionMismatch(
                 "Vector b has length $(length(b)), expected \
-                $expected_b_len to match $dim_name"
+                $expected_b_len to match rows of A"
             )
         )
     end
     if length(x) != expected_x_len
-        dim_name = ingredients.cardinality == Left() ? "columns of A" : "rows of A"
         throw(
             DimensionMismatch(
                 "Vector x has length $(length(x)), expected \
-                $expected_x_len to match $dim_name"
+                $expected_x_len to match columns of A"
             )
         )
     end
@@ -295,7 +293,7 @@ Samples indices according to the Motzkin distribution.
 - `distribution::MotzkinRecipe`: The recipe containing residuals and
     sampling parameters.
 
-# Returns
+## Returns
 - Modifies `x` in place with the selected index/indices and returns nothing.
 
 # Notes
@@ -303,7 +301,7 @@ Samples indices according to the Motzkin distribution.
 - Ties are broken deterministically by selecting smaller indices first.
 - The selection within the sampled subset is deterministic.
 
-# Throws
+## Throws
 - `ArgumentError` if `length(x) > beta`.
 - `ArgumentError` if cardinality is not `Left()` or `Right()`.
 """
@@ -344,8 +342,9 @@ function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
     residuals = if distribution.cardinality == Left()
         abs.(distribution.A[candidates, :] * distribution.x - distribution.b[candidates])
     elseif distribution.cardinality == Right()
-        # Transposed-system residuals for selected columns
-        abs.(distribution.A[:, candidates]' * distribution.x - distribution.b[candidates])
+        # Normal equations residuals: |A[:,j]' * (Ax - b)|
+        r = distribution.A * distribution.x - distribution.b
+        abs.(distribution.A[:, candidates]' * r)
     else
         throw(
             ArgumentError(
