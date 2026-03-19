@@ -1,28 +1,26 @@
 """
-    Motzkin <: Distribution
+    Agmon <: Distribution
 
-Motzkin sampling distribution, also known as the greedy or maximum residual selection 
-method, as proposed by [motzkin1954relaxation](@citet) and analyzed in the context of 
-Sampling Kaczmarz-Motzkin by [haddock2020greed](@citet).
+Agmon sampling distribution, implementing Agmon's maximal residual selection
+method as proposed by [agmon1954relaxation](@citet). See [patel2023randomized](@citet)
+(Supplement SM1.6) for a concise summary, and [haddock2020greed](@citet) for analysis
+in the context of Sampling Kaczmarz--Motzkin.
 
 # Mathematical Description
 
-During sampling, the Motzkin distribution selects an index from rows (`Left()`) or
-columns (`Right()`) of the system ``Ax = b``.
+During sampling, the Agmon distribution scores indices of ``Ax = b``
+(``A \\in \\mathbb{R}^{m\\times n}``, ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``)
+by residual magnitude and selects the highest-scoring one(s):
 
-- **`Left()` cardinality:** work on ``Ax = b`` with ``A \\in \\mathbb{R}^{m\\times n}``,
-    ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``; score row ``i`` by
-    ``r_i = |A_{i,:}x - b_i|``.
-- **`Right()` cardinality:** work on ``Ax = b`` with ``A \\in \\mathbb{R}^{m\\times n}``,
-    ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``; score column ``j`` by
-    ``c_j = |A_{:,j}^T(Ax - b)|``.
+- **`Left()` cardinality:** score row ``i`` by ``r_i = |A_{i,:}x - b_i|``.
+- **`Right()` cardinality:** score column ``j`` by ``c_j = |A_{:,j}^T(Ax - b)|``.
 
-The algorithm works as follows over the active index set:
-1. **If β = 1 (Randomized Kaczmarz)**: Randomly select one index uniformly.
-2. **If β = d (Pure Motzkin/Greedy)**: Select the top-`k` indices with maximum
-    residuals.
-3. **If 1 < β < d**: Randomly sample β distinct indices, then select the one
-    with maximum residuals within the sampled subset.
+The candidate set depends on β (subset size, 1 ≤ β ≤ d, where d is the active
+dimension):
+1. **β = 1**: Select one index uniformly at random.
+2. **β = d**: Select greedily over the full index set (pure Agmon).
+3. **1 < β < d**: Sample β indices at random, then select the index with the
+    highest residual within the sampled subset.
 
 # Fields
 - `cardinality::Cardinality`, the direction the compression matrix is intended to be
@@ -33,43 +31,43 @@ The algorithm works as follows over the active index set:
 - `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the active
     sampling dimension (`m` for `Left()`, `n` for `Right()`). When β = 1, this
     reduces to uniform random selection. When β = d, this becomes pure greedy
-    Motzkin selection.
+    Agmon selection.
     The default value is 1.
 
 # Constructor
 
-    Motzkin(;cardinality=Undef(), replace=false, beta=1)
+    Agmon(;cardinality=Undef(), replace=false, beta=1)
 
 ## Returns
-- A `Motzkin` object.
+- An `Agmon` object.
 
 ## Throws
 - `ArgumentError` if `beta` < 1.
 """
-mutable struct Motzkin <: Distribution
+mutable struct Agmon <: Distribution
     cardinality::Cardinality
     replace::Bool
     beta::Int  # Subset size for sampling (1 ≤ beta ≤ d)
 end
 
-function Motzkin(; cardinality = Undef(), replace = false, beta = 1)
+function Agmon(; cardinality = Undef(), replace = false, beta = 1)
     if beta < 1
         throw(
             ArgumentError(
-                "`Motzkin` beta must be >= 1, got beta=$beta"
+                "`Agmon` beta must be >= 1, got beta=$beta"
             )
         )
     end
-    return Motzkin(cardinality, replace, beta)
+    return Agmon(cardinality, replace, beta)
 end
 
 """
-    MotzkinRecipe <: DistributionRecipe
+    AgmonRecipe <: DistributionRecipe
 
-The recipe containing all allocations and information for the Motzkin distribution.
+The recipe containing all allocations and information for the Agmon distribution.
 
 # Fields
-- `cardinality::C where C<:Cardinality`, the cardinality of the compressor. For Motzkin,
+- `cardinality::C where C<:Cardinality`, the cardinality of the compressor. For Agmon,
     this should be `Left()` or `Right()`.
 - `replace::Bool`, an option to replace or not during the sampling process.
 - `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the
@@ -93,7 +91,7 @@ The recipe containing all allocations and information for the Motzkin distributi
     and matches user expectations in iterative usage, where repeated sampling
     calls should produce fresh samples each time.
 """
-mutable struct MotzkinRecipe <: DistributionRecipe
+mutable struct AgmonRecipe <: DistributionRecipe
     cardinality::Cardinality
     replace::Bool
     beta::Int
@@ -106,22 +104,22 @@ end
 
 """
     complete_distribution(
-        distribution::Motzkin,
+        distribution::Agmon,
         x::AbstractVector,
         A::AbstractMatrix,
         b::AbstractVector
     )
 
-Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system ``Ax = b``.
+Creates a `AgmonRecipe` for the given Agmon distribution and linear system ``Ax = b``.
 
-# Arguments
-- `distribution::Motzkin`: The Motzkin distribution specification.
+## Arguments
+- `distribution::Agmon`: The Agmon distribution specification.
 - `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
 - `b::AbstractVector`: Constant vector of length `m` (rows of A).
 
 ## Returns
-- `MotzkinRecipe`: A recipe containing all necessary allocations and references to A, b, x.
+- `AgmonRecipe`: A recipe containing all necessary allocations and references to A, b, x.
 
 ## Throws
 - `ArgumentError` if cardinality is `Undef()`.
@@ -129,7 +127,7 @@ Creates a `MotzkinRecipe` for the given Motzkin distribution and linear system `
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function complete_distribution(
-    distribution::Motzkin,
+    distribution::Agmon,
     x::AbstractVector,
     A::AbstractMatrix,
     b::AbstractVector
@@ -147,7 +145,7 @@ function complete_distribution(
         elseif cardinality == Undef()
             throw(
                 ArgumentError(
-                    "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
+                    "`Agmon` cardinality must be specified as `Left()` or `Right()`.\
                     `Undef()` is not allowed in `complete_distribution`."
                 )
             )
@@ -176,7 +174,7 @@ function complete_distribution(
         dim_name = cardinality == Left() ? "rows" : "columns"
         throw(
             ArgumentError(
-                "`Motzkin` beta must be <= number of $dim_name \
+                "`Agmon` beta must be <= number of $dim_name \
                 ($sampling_dimension), got beta=$(distribution.beta)"
             )
         )
@@ -188,22 +186,22 @@ function complete_distribution(
     # Allocate buffer for sampled indices
     sample_buffer = zeros(Int64, distribution.beta)
     
-    return MotzkinRecipe(cardinality, distribution.replace, distribution.beta,
+    return AgmonRecipe(cardinality, distribution.replace, distribution.beta,
         state_space, sample_buffer, A, b, x)
 end
 
 """
     update_distribution!(
-        ingredients::MotzkinRecipe,
+        ingredients::AgmonRecipe,
         x::AbstractVector,
         A::AbstractMatrix,
         b::AbstractVector
     )
 
-Updates the Motzkin distribution recipe with the current solution iterate x.
+Updates the Agmon distribution recipe with the current solution iterate x.
 
-# Arguments
-- `ingredients::MotzkinRecipe`: The recipe to update.
+## Arguments
+- `ingredients::AgmonRecipe`: The recipe to update.
 - `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
 - `b::AbstractVector`: Constant vector of length `m` (rows of A).
@@ -216,7 +214,7 @@ Updates the Motzkin distribution recipe with the current solution iterate x.
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function update_distribution!(
-    ingredients::MotzkinRecipe,
+    ingredients::AgmonRecipe,
     x::AbstractVector,
     A::AbstractMatrix,
     b::AbstractVector
@@ -232,7 +230,7 @@ function update_distribution!(
         elseif ingredients.cardinality == Undef()
             throw(
                 ArgumentError(
-                    "`Motzkin` cardinality must be specified as `Left()` or `Right()`.\
+                    "`Agmon` cardinality must be specified as `Left()` or `Right()`.\
                     `Undef()` is not allowed in `update_distribution!`."
                 )
             )
@@ -266,7 +264,7 @@ function update_distribution!(
         dim_name = ingredients.cardinality == Left() ? "rows" : "columns"
         throw(
             ArgumentError(
-                "`Motzkin` beta must be <= number of $dim_name \
+                "`Agmon` beta must be <= number of $dim_name \
                 ($sampling_dimension), got beta=$(ingredients.beta)"
             )
         )
@@ -284,19 +282,19 @@ function update_distribution!(
 end
 
 """
-    sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
+    sample_distribution!(x::AbstractVector, distribution::AgmonRecipe)
 
-Samples indices according to the Motzkin distribution.
+Samples indices according to the Agmon distribution.
 
-# Arguments
+## Arguments
 - `x::AbstractVector`: Output vector to store selected index/indices.
-- `distribution::MotzkinRecipe`: The recipe containing residuals and
+- `distribution::AgmonRecipe`: The recipe containing residuals and
     sampling parameters.
 
 ## Returns
 - Modifies `x` in place with the selected index/indices and returns nothing.
 
-# Notes
+## Notes
 - Returns the top-`k` selected indices where `k = length(x)`.
 - Ties are broken deterministically by selecting smaller indices first.
 - The selection within the sampled subset is deterministic.
@@ -305,14 +303,14 @@ Samples indices according to the Motzkin distribution.
 - `ArgumentError` if `length(x) > beta`.
 - `ArgumentError` if cardinality is not `Left()` or `Right()`.
 """
-function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
+function sample_distribution!(x::AbstractVector, distribution::AgmonRecipe)
     active_dimension = length(distribution.state_space)
     k = length(x)
 
     if k > distribution.beta
         throw(
             ArgumentError(
-                "`Motzkin` cannot output $k indices when beta=$(distribution.beta)."
+                "`Agmon` cannot output $k indices when beta=$(distribution.beta)."
             )
         )
     end
@@ -348,7 +346,7 @@ function sample_distribution!(x::AbstractVector, distribution::MotzkinRecipe)
     else
         throw(
             ArgumentError(
-                "`Motzkin` cardinality must be `Left()` or `Right()`."
+                "`Agmon` cardinality must be `Left()` or `Right()`."
             )
         )
     end
