@@ -20,9 +20,9 @@ L2Norm
 
 L2NormRecipe
 
-Motzkin
+Agmon
 
-MotzkinRecipe
+AgmonRecipe
 ```
 
 ## Exported Functions
