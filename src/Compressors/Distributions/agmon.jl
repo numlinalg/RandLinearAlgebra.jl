@@ -16,7 +16,7 @@ by residual magnitude and selects the highest-scoring one(s):
 - **`Right()` cardinality:** score column ``j`` by ``c_j = |A_{:,j}^T(Ax - b)|``.
 
 The candidate set depends on β (subset size, 1 ≤ β ≤ d, where d is the active
-dimension):
+dimension: d = m for `Left()`, d = n for `Right()`):
 1. **β = 1**: Select one index uniformly at random.
 2. **β = d**: Select greedily over the full index set (pure Agmon).
 3. **1 < β < d**: Sample β indices at random, then select the index with the
@@ -112,13 +112,13 @@ end
 
 Creates a `AgmonRecipe` for the given Agmon distribution and linear system ``Ax = b``.
 
-## Arguments
+# Arguments
 - `distribution::Agmon`: The Agmon distribution specification.
 - `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
 - `b::AbstractVector`: Constant vector of length `m` (rows of A).
 
-## Returns
+# Returns
 - `AgmonRecipe`: A recipe containing all necessary allocations and references to A, b, x.
 
 ## Throws
@@ -200,16 +200,16 @@ end
 
 Updates the Agmon distribution recipe with the current solution iterate x.
 
-## Arguments
+# Arguments
 - `ingredients::AgmonRecipe`: The recipe to update.
 - `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
 - `b::AbstractVector`: Constant vector of length `m` (rows of A).
 
-## Returns
+# Returns
 - Modifies `ingredients` in place by updating the solution reference and returns nothing.
 
-## Throws
+# Throws
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
@@ -282,30 +282,30 @@ function update_distribution!(
 end
 
 """
-    sample_distribution!(x::AbstractVector, distribution::AgmonRecipe)
+    sample_distribution!(indices::AbstractVector, distribution::AgmonRecipe)
 
 Samples indices according to the Agmon distribution.
 
 ## Arguments
-- `x::AbstractVector`: Output vector to store selected index/indices.
+- `indices::AbstractVector`: Output vector to store selected index/indices.
 - `distribution::AgmonRecipe`: The recipe containing residuals and
     sampling parameters.
 
 ## Returns
-- Modifies `x` in place with the selected index/indices and returns nothing.
+- Modifies `indices` in place with the selected index/indices and returns nothing.
 
 ## Notes
-- Returns the top-`k` selected indices where `k = length(x)`.
+- Returns the top-`k` selected indices where `k = length(indices)`.
 - Ties are broken deterministically by selecting smaller indices first.
 - The selection within the sampled subset is deterministic.
 
 ## Throws
-- `ArgumentError` if `length(x) > beta`.
+- `ArgumentError` if `length(indices) > beta`.
 - `ArgumentError` if cardinality is not `Left()` or `Right()`.
 """
-function sample_distribution!(x::AbstractVector, distribution::AgmonRecipe)
+function sample_distribution!(indices::AbstractVector, distribution::AgmonRecipe)
     active_dimension = length(distribution.state_space)
-    k = length(x)
+    k = length(indices)
 
     if k > distribution.beta
         throw(
@@ -317,7 +317,7 @@ function sample_distribution!(x::AbstractVector, distribution::AgmonRecipe)
 
     if distribution.beta == 1
         # Pure random selection
-        x[1] = rand(distribution.state_space)
+        indices[1] = rand(distribution.state_space)
         return nothing
     end
 
@@ -358,7 +358,7 @@ function sample_distribution!(x::AbstractVector, distribution::AgmonRecipe)
         by = i -> (-residuals[i], candidates[i])
     )
     @inbounds for t in 1:k
-        x[t] = candidates[p[t]]
+        indices[t] = candidates[p[t]]
     end
     
     return nothing
