@@ -5,7 +5,7 @@ LoggerFields = Dict(
     :error => Real,
     :threshold_info => Union{Float64,Tuple},
     :converged => Bool,
-    :hist => Vector{Float64},
+    :hist => AbstractVector{Float64},
     :stopping_criterion => Function,
 )
 
