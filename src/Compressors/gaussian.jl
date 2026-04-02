@@ -82,16 +82,17 @@ value is either `Left()` or `Right()`.
 - `n_cols::Int64`, the number of columns of the compression matrix.
 - `scale::Number`, the standard deviation of Gaussian distribution during the 
 compression matrix generation.
-- `op::Matrix{Float64}`, the Gaussian compression matrix.
+- `op::M where M<:AbstractMatrix{<:Number}`, the Gaussian compression matrix.
 """
-mutable struct GaussianRecipe{C<:Cardinality} <: CompressorRecipe
+mutable struct GaussianRecipe{C<:Cardinality, M<:AbstractMatrix{<:Number}} <: CompressorRecipe
     cardinality::C
     compression_dim::Int64
     n_rows::Int64
     n_cols::Int64
     scale::Number
-    op::Matrix{<:Number}
+    op::M
 end
+Adapt.@adapt_structure GaussianRecipe
 
 function GaussianRecipe(
     cardinality::Right,
@@ -101,10 +102,11 @@ function GaussianRecipe(
 )
     n_rows = size(A, 2)
     n_cols = compression_dim
-    initial_size = n_rows
     # Generate entry values by N(0,1/d)
     scale = convert(type, 1 / sqrt(compression_dim))
-    op = scale .* randn(type, n_rows, n_cols)
+    op = similar(A, type, n_rows, n_cols)
+    randn!(op)
+    lmul!(scale, op)
     return GaussianRecipe(cardinality, compression_dim, n_rows, n_cols, scale, op)
 end
 
@@ -116,10 +118,11 @@ function GaussianRecipe(
 )
     n_rows = compression_dim
     n_cols = size(A, 1)
-    initial_size = n_cols
     # Generate entry values by N(0,1/d)
     scale = convert(type, 1 / sqrt(compression_dim))
-    op = scale .* randn(type, n_rows, n_cols)
+    op = similar(A, type, n_rows, n_cols)
+    randn!(op)
+    lmul!(scale, op)
     return GaussianRecipe(cardinality, compression_dim, n_rows, n_cols, scale, op)
 end
 

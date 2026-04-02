@@ -104,16 +104,16 @@ end
 
 # Because we want to return A we need to set the size of C to be that of A with identity
 # compressor
-# S * A 
+# S * A
 function (*)(S::IdentityRecipe, A::AbstractArray)
-    C = zeros(size(A)) 
+    C = fill!(similar(A), zero(eltype(A)))
     mul!(C, S, A)
     return C
 end
 
-# A * S 
+# A * S
 function (*)(A::AbstractArray, S::IdentityRecipe)
-    C = zeros(size(A)) 
+    C = fill!(similar(A), zero(eltype(A)))
     mul!(C, A, S)
     return C
 end
