@@ -9,8 +9,8 @@ in the context of Sampling Kaczmarz--Motzkin.
 # Mathematical Description
 
 During sampling, the Agmon distribution scores indices of ``Ax = b``
-(``A \\in \\mathbb{R}^{m\\times n}``, ``x \\in \\mathbb{R}^{n}``, ``b \\in \\mathbb{R}^{m}``)
-by residual magnitude and selects the highest-scoring one(s):
+(``A \\in \\mathbb{R}^{m\\times n}``, ``x \\in \\mathbb{R}^{n}``,
+``b \\in \\mathbb{R}^{m}``) by residual magnitude and selects the highest-scoring one(s):
 
 - **`Left()` cardinality:** score row ``i`` by ``r_i = |A_{i,:}x - b_i|``.
 - **`Right()` cardinality:** score column ``j`` by ``c_j = |A_{:,j}^T(Ax - b)|``.
