@@ -23,16 +23,15 @@ active dimension: ``d = m`` for `Left()`, ``d = n`` for `Right()`):
     highest residual within the sampled subset.
 
 # Fields
-- `cardinality::Cardinality`, the direction the compression matrix is intended to be
+- `cardinality::Cardinality`: the direction the compression matrix is intended to be
     applied to a target matrix or operator. Values allowed are `Left()`, `Right()`,
     or `Undef()`. The default value is `Undef()`.
-- `replace::Bool`, if `true`, then the sampling occurs with replacement; if `false`, 
+- `replace::Bool`: if `true`, then the sampling occurs with replacement; if `false`,
     then the sampling occurs without replacement. The default value is `false`.
-- `beta::Int`, the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the active
+- `beta::Int`: the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the active
     sampling dimension (``m`` for `Left()`, ``n`` for `Right()`). When ``β = 1``, this
     reduces to uniform random selection. When ``β = d``, this becomes pure greedy
-    Agmon selection.
-    The default value is 1.
+    Agmon selection. The default value is 1.
 
 # Constructor
 
@@ -77,19 +76,19 @@ end
 The recipe containing all allocations and information for the Agmon distribution.
 
 # Fields
-- `cardinality::C where C<:Cardinality`, the cardinality of the compressor. For Agmon,
+- `cardinality::C where C<:Cardinality`: the cardinality of the compressor. For Agmon,
     this should be `Left()` or `Right()`.
-- `replace::Bool`, if `true`, then sampling is done with replacement; if `false`,
+- `replace::Bool`: if `true`, then sampling is done with replacement; if `false`,
     then sampling is done without replacement.
-- `beta::Int`, the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the
+- `beta::Int`: the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the
     active sampling dimension (``m`` for `Left()`, ``n`` for `Right()`).
-- `state_space::Vector{Int64}`, the active row/column index set.
-- `sample_buffer::Vector{Int64}`, workspace to store the randomly sampled 
+- `state_space::Vector{Int64}`: the active row/column index set.
+- `sample_buffer::Vector{Int64}`: workspace to store the randomly sampled
     subset of ``β`` indices.
-- `A::AbstractMatrix`, reference to the coefficient matrix.
-- `b::AbstractVector`, reference to the constant vector.
-- `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
-- `r::Union{Nothing, AbstractVector}`, the residual vector ``Ax - b``. Starts as
+- `A::AbstractMatrix`: reference to the coefficient matrix.
+- `b::AbstractVector`: reference to the constant vector.
+- `x::AbstractVector`: reference to the current solution iterate (updated each iteration).
+- `r::Union{Nothing, AbstractVector}`: the residual vector ``Ax - b``. Starts as
     `nothing`; set by `update_distribution!`. If `nothing` when `sample_distribution!`
     is called, residuals are computed on-the-fly for the sampled candidates only.
 
@@ -147,7 +146,7 @@ Creates an `AgmonRecipe` for the given Agmon distribution and linear system ``Ax
 # Throws
 - `ArgumentError` if cardinality is `Undef()`.
 - `DimensionMismatch` if vector dimensions don't match the active cardinality layout.
-- `ArgumentError` if β > number of rows (`Left()`) or columns (`Right()`) in A.
+- `ArgumentError` if ``β`` > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function complete_distribution(
     distribution::Agmon,
@@ -240,7 +239,7 @@ optionally the residual vector.
 
 # Throws
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
-- `ArgumentError` if β > number of rows (`Left()`) or columns (`Right()`) in A.
+- `ArgumentError` if ``β`` > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function update_distribution!(
     ingredients::AgmonRecipe,
@@ -323,9 +322,9 @@ Residual strategy is controlled via `update_distribution!` and the stored
 `distribution.r` field:
 
 1. **On-the-fly** (`distribution.r === nothing`, default): computes residuals only
-    for the β sampled candidates — O(β·n) for `Left()`. Best for small β.
+    for the ``β`` sampled candidates — O(``β``·n) for `Left()`. Best for small ``β``.
 2. **Stored exact** (call `update_distribution!` without `r`): residuals read from
-    the stored ``r = Ax - b`` updated each iteration. O(β) per sample; O(mn) paid
+    the stored ``r = Ax - b`` updated each iteration. O(``β``) per sample; O(mn) paid
     once in `update_distribution!`.
 3. **Stored incremental** (call `update_distribution!` with `r`): residuals read from
     `r` maintained by the caller via ``r \\mathrel{{-}{=}} A S_k V_k``. Cheaper
@@ -349,7 +348,7 @@ Residual strategy is controlled via `update_distribution!` and the stored
 - The selection within the sampled subset is deterministic.
 
 # Throws
-- `ArgumentError` if `length(indices) > β`.
+- `ArgumentError` if `length(indices) > ``β```.
 - `ArgumentError` if cardinality is not `Left()` or `Right()`.
 
 """
