@@ -41,8 +41,8 @@ using LinearAlgebra: dot
     @testset "Agmon: DistributionRecipe" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(AgmonRecipe) == DistributionRecipe
-        @test fieldnames(AgmonRecipe) == (:cardinality, :replace, :beta, :state_space, 
-                                             :sample_buffer, :A, :b, :x)
+        @test fieldnames(AgmonRecipe) == (:cardinality, :replace, :beta, :state_space,
+                                             :sample_buffer, :A, :b, :x, :r)
         @test fieldtypes(AgmonRecipe)[1:5] == (Cardinality, Bool, Int, Vector{Int64}, Vector{Int64})
     end
 

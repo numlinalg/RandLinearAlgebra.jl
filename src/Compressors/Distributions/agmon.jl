@@ -78,12 +78,14 @@ The recipe containing all allocations and information for the Agmon distribution
 - `A::AbstractMatrix`, reference to the coefficient matrix.
 - `b::AbstractVector`, reference to the constant vector.
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
+- `r::Union{Nothing, AbstractVector}`, the residual vector ``Ax - b``. Starts as
+    `nothing`; set by `update_distribution!`. If `nothing` when `sample_distribution!`
+    is called, residuals are computed on-the-fly for the sampled candidates only.
 
 !!! note "Implementation note"
     In `sample_distribution!`, when ``1 < β < d``, the candidate set is a random
-    sample of β indices. For `Left()`, scores are computed only on the β sampled
-    rows. For `Right()`, the full residual ``r = Ax - b`` is computed once, then
-    dotted with each of the β sampled columns.
+    sample of β indices. For `Left()`, scores are read from the stored residual `r`.
+    For `Right()`, the stored `r` is dotted with each of the β sampled columns.
 
 !!! note "Developer note"
     We intentionally keep `update_distribution!` deterministic and perform all
@@ -100,6 +102,7 @@ mutable struct AgmonRecipe <: DistributionRecipe
     A::AbstractMatrix
     b::AbstractVector
     x::AbstractVector
+    r::Union{Nothing, AbstractVector}
 end
 
 """
@@ -182,12 +185,12 @@ function complete_distribution(
     
     # Initialize state space from active cardinality
     state_space = collect(1:sampling_dimension)
-    
+
     # Allocate buffer for sampled indices
     sample_buffer = zeros(Int64, distribution.beta)
-    
+
     return AgmonRecipe(cardinality, distribution.replace, distribution.beta,
-        state_space, sample_buffer, A, b, x)
+        state_space, sample_buffer, A, b, x, nothing)
 end
 
 """
@@ -195,21 +198,27 @@ end
         ingredients::AgmonRecipe,
         x::AbstractVector,
         A::AbstractMatrix,
-        b::AbstractVector
+        b::AbstractVector;
+        r::Union{Nothing, AbstractVector} = nothing
     )
 
-Updates the Agmon distribution recipe with the current solution iterate x.
+Updates the Agmon distribution recipe with the current solution iterate x and
+optionally the residual vector.
 
 # Arguments
 - `ingredients::AgmonRecipe`: The recipe to update.
 - `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
 - `b::AbstractVector`: Constant vector of length `m` (rows of A).
+- `r::Union{Nothing, AbstractVector}`: Optional residual vector. If `nothing`
+    (default), recomputes ``Ax - b`` and stores it in the recipe. If provided,
+    stores it as-is, allowing the caller to maintain `r` incrementally
+    (e.g. ``r \\mathrel{{-}{=}} A S_k V_k``) to avoid a full recompute.
 
 # Returns
-- Modifies `ingredients` in place by updating the solution reference and returns nothing.
+- Modifies `ingredients` in place and returns nothing.
 
-# Throws
+## Throws
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
 - `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
 """
@@ -217,7 +226,8 @@ function update_distribution!(
     ingredients::AgmonRecipe,
     x::AbstractVector,
     A::AbstractMatrix,
-    b::AbstractVector
+    b::AbstractVector;
+    r::Union{Nothing, AbstractVector} = nothing
 )
     n_rows = size(A, 1)
     n_cols = size(A, 2)
@@ -277,7 +287,10 @@ function update_distribution!(
     ingredients.A = A
     ingredients.b = b
     ingredients.x = x
-    
+
+    # Store residual if provided; leave nothing to trigger on-the-fly in sample
+    ingredients.r = r
+
     return nothing
 end
 
@@ -286,12 +299,28 @@ end
 
 Samples indices according to the Agmon distribution.
 
-## Arguments
-- `indices::AbstractVector`: Output vector to store selected index/indices.
-- `distribution::AgmonRecipe`: The recipe containing residuals and
-    sampling parameters.
+Residual strategy is controlled via `update_distribution!` and the stored
+`distribution.r` field:
 
-## Returns
+1. **On-the-fly** (`distribution.r === nothing`, default): computes residuals only
+    for the β sampled candidates — O(β·n) for `Left()`. Best for small β.
+2. **Stored exact** (call `update_distribution!` without `r`): residuals read from
+    the stored ``r = Ax - b`` updated each iteration. O(β) per sample; O(mn) paid
+    once in `update_distribution!`.
+3. **Stored incremental** (call `update_distribution!` with `r`): residuals read from
+    `r` maintained by the caller via ``r \\mathrel{{-}{=}} A S_k V_k``. Cheaper
+    update cost; may accumulate drift over iterations.
+
+!!! note "Design note"
+    The optional `r` argument lives in `update_distribution!` to keep this function's
+    contract simple: use `distribution.r` if available, fall back to on-the-fly if
+    `nothing`. Discuss with advisor which strategy should be the default.
+
+# Arguments
+- `indices::AbstractVector`: Output vector to store selected index/indices.
+- `distribution::AgmonRecipe`: The recipe containing sampling parameters.
+
+# Returns
 - Modifies `indices` in place with the selected index/indices and returns nothing.
 
 ## Notes
@@ -302,6 +331,7 @@ Samples indices according to the Agmon distribution.
 ## Throws
 - `ArgumentError` if `length(indices) > beta`.
 - `ArgumentError` if cardinality is not `Left()` or `Right()`.
+
 """
 function sample_distribution!(indices::AbstractVector, distribution::AgmonRecipe)
     active_dimension = length(distribution.state_space)
@@ -323,10 +353,8 @@ function sample_distribution!(indices::AbstractVector, distribution::AgmonRecipe
 
     # Candidate set
     candidates = if distribution.beta >= active_dimension
-        # Pure greedy over full active domain
         distribution.state_space
     else
-        # Sampling Kaczmarz-Motzkin: sample β indices first
         sample!(
             distribution.state_space,
             distribution.sample_buffer,
@@ -336,19 +364,23 @@ function sample_distribution!(indices::AbstractVector, distribution::AgmonRecipe
         distribution.sample_buffer
     end
 
-    # Residuals on candidate set
-    residuals = if distribution.cardinality == Left()
+    # Residuals: use stored r if available, otherwise compute on-the-fly
+    residuals = if distribution.r !== nothing
+        r = distribution.r
+        if distribution.cardinality == Left()
+            abs.(r[candidates])
+        elseif distribution.cardinality == Right()
+            abs.(distribution.A[:, candidates]' * r)
+        else
+            throw(ArgumentError("`Agmon` cardinality must be `Left()` or `Right()`."))
+        end
+    elseif distribution.cardinality == Left()
         abs.(distribution.A[candidates, :] * distribution.x - distribution.b[candidates])
     elseif distribution.cardinality == Right()
-        # Normal equations residuals: |A[:,j]' * (Ax - b)|
         r = distribution.A * distribution.x - distribution.b
         abs.(distribution.A[:, candidates]' * r)
     else
-        throw(
-            ArgumentError(
-                "`Agmon` cardinality must be `Left()` or `Right()`."
-            )
-        )
+        throw(ArgumentError("`Agmon` cardinality must be `Left()` or `Right()`."))
     end
 
     # Top-k by residual (descending), tie-break by smaller index
@@ -360,6 +392,6 @@ function sample_distribution!(indices::AbstractVector, distribution::AgmonRecipe
     @inbounds for t in 1:k
         indices[t] = candidates[p[t]]
     end
-    
+
     return nothing
 end
