@@ -15,11 +15,11 @@ by residual magnitude and selects the highest-scoring one(s):
 - **`Left()` cardinality:** score row ``i`` by ``r_i = |A_{i,:}x - b_i|``.
 - **`Right()` cardinality:** score column ``j`` by ``c_j = |A_{:,j}^T(Ax - b)|``.
 
-The candidate set depends on β (subset size, 1 ≤ β ≤ d, where d is the active
-dimension: d = m for `Left()`, d = n for `Right()`):
-1. **β = 1**: Select one index uniformly at random.
-2. **β = d**: Select greedily over the full index set (pure Agmon).
-3. **1 < β < d**: Sample β indices at random, then select the index with the
+The candidate set depends on ``β`` (subset size, ``1 ≤ β ≤ d``, where ``d`` is the
+active dimension: ``d = m`` for `Left()`, ``d = n`` for `Right()`):
+1. **``β = 1``**: Select one index uniformly at random.
+2. **``β = d``**: Select greedily over the full index set (pure Agmon).
+3. **``1 < β < d``**: Sample ``β`` indices at random, then select the index with the
     highest residual within the sampled subset.
 
 # Fields
@@ -28,15 +28,22 @@ dimension: d = m for `Left()`, d = n for `Right()`):
     or `Undef()`. The default value is `Undef()`.
 - `replace::Bool`, if `true`, then the sampling occurs with replacement; if `false`, 
     then the sampling occurs without replacement. The default value is `false`.
-- `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the active
-    sampling dimension (`m` for `Left()`, `n` for `Right()`). When β = 1, this
-    reduces to uniform random selection. When β = d, this becomes pure greedy
+- `beta::Int`, the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the active
+    sampling dimension (``m`` for `Left()`, ``n`` for `Right()`). When ``β = 1``, this
+    reduces to uniform random selection. When ``β = d``, this becomes pure greedy
     Agmon selection.
     The default value is 1.
 
 # Constructor
 
     Agmon(;cardinality=Undef(), replace=false, beta=1)
+
+## Keywords
+- `cardinality::Cardinality`: the direction of index selection. Must be `Left()` or
+    `Right()`. The default value is `Undef()`.
+- `replace::Bool`: if `true`, sampling occurs with replacement. The default value is
+    `false`.
+- `beta::Int`: subset size for sampling (``1 ≤ β ≤ d``). The default value is `1`.
 
 ## Returns
 - An `Agmon` object.
@@ -47,17 +54,20 @@ dimension: d = m for `Left()`, d = n for `Right()`):
 mutable struct Agmon <: Distribution
     cardinality::Cardinality
     replace::Bool
-    beta::Int  # Subset size for sampling (1 ≤ beta ≤ d)
+    beta::Int  # Subset size for sampling (1 ≤ β ≤ d)
+    function Agmon(cardinality::Cardinality, replace::Bool, beta::Int)
+        if beta < 1
+            throw(
+                ArgumentError(
+                    "`Agmon` beta must be >= 1, got beta=$beta"
+                )
+            )
+        end
+        new(cardinality, replace, beta)
+    end
 end
 
-function Agmon(; cardinality = Undef(), replace = false, beta = 1)
-    if beta < 1
-        throw(
-            ArgumentError(
-                "`Agmon` beta must be >= 1, got beta=$beta"
-            )
-        )
-    end
+function Agmon(; cardinality::Cardinality = Undef(), replace::Bool = false, beta::Int = 1)
     return Agmon(cardinality, replace, beta)
 end
 
@@ -69,12 +79,13 @@ The recipe containing all allocations and information for the Agmon distribution
 # Fields
 - `cardinality::C where C<:Cardinality`, the cardinality of the compressor. For Agmon,
     this should be `Left()` or `Right()`.
-- `replace::Bool`, an option to replace or not during the sampling process.
-- `beta::Int`, the subset size for sampling (1 ≤ β ≤ d), where ``d`` is the
-    active sampling dimension (`m` for `Left()`, `n` for `Right()`).
+- `replace::Bool`, if `true`, then sampling is done with replacement; if `false`,
+    then sampling is done without replacement.
+- `beta::Int`, the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the
+    active sampling dimension (``m`` for `Left()`, ``n`` for `Right()`).
 - `state_space::Vector{Int64}`, the active row/column index set.
 - `sample_buffer::Vector{Int64}`, workspace to store the randomly sampled 
-    subset of β indices.
+    subset of ``β`` indices.
 - `A::AbstractMatrix`, reference to the coefficient matrix.
 - `b::AbstractVector`, reference to the constant vector.
 - `x::AbstractVector`, reference to the current solution iterate (updated each iteration).
@@ -82,10 +93,19 @@ The recipe containing all allocations and information for the Agmon distribution
     `nothing`; set by `update_distribution!`. If `nothing` when `sample_distribution!`
     is called, residuals are computed on-the-fly for the sampled candidates only.
 
-!!! note "Implementation note"
-    In `sample_distribution!`, when ``1 < β < d``, the candidate set is a random
-    sample of β indices. For `Left()`, scores are read from the stored residual `r`.
-    For `Right()`, the stored `r` is dotted with each of the β sampled columns.
+!!! note "Determining Compression Subset"
+    In general, the ``β`` candidates are selected uniformly with or without replacement
+    depending on the value of `replace`.
+
+    For `Left()`, the compression subset (whose size is determined by the argument
+    passed to [`sample_distribution!`](@ref)) is selected by taking the top absolute
+    residuals, stored in `r`, from the candidates.
+
+    For `Right()`, the compression subset (whose size is determined by the argument
+    passed to [`sample_distribution!`](@ref)) is selected by taking the top absolute
+    residuals of the normal system. The residuals of the normal system are calculated
+    by computing the coefficient matrix columns of the candidate subset and taking an
+    inner product with the residuals, stored in `r`.
 
 !!! note "Developer note"
     We intentionally keep `update_distribution!` deterministic and perform all
@@ -113,21 +133,21 @@ end
         b::AbstractVector
     )
 
-Creates a `AgmonRecipe` for the given Agmon distribution and linear system ``Ax = b``.
+Creates an `AgmonRecipe` for the given Agmon distribution and linear system ``Ax = b``.
 
 # Arguments
 - `distribution::Agmon`: The Agmon distribution specification.
-- `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
+- `x::AbstractVector`: Current solution iterate of length ``n`` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
-- `b::AbstractVector`: Constant vector of length `m` (rows of A).
+- `b::AbstractVector`: Constant vector of length ``m`` (rows of A).
 
 # Returns
 - `AgmonRecipe`: A recipe containing all necessary allocations and references to A, b, x.
 
-## Throws
+# Throws
 - `ArgumentError` if cardinality is `Undef()`.
 - `DimensionMismatch` if vector dimensions don't match the active cardinality layout.
-- `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
+- `ArgumentError` if β > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function complete_distribution(
     distribution::Agmon,
@@ -207,9 +227,9 @@ optionally the residual vector.
 
 # Arguments
 - `ingredients::AgmonRecipe`: The recipe to update.
-- `x::AbstractVector`: Current solution iterate of length `n` (columns of A).
+- `x::AbstractVector`: Current solution iterate of length ``n`` (columns of A).
 - `A::AbstractMatrix`: Coefficient matrix.
-- `b::AbstractVector`: Constant vector of length `m` (rows of A).
+- `b::AbstractVector`: Constant vector of length ``m`` (rows of A).
 - `r::Union{Nothing, AbstractVector}`: Optional residual vector. If `nothing`
     (default), recomputes ``Ax - b`` and stores it in the recipe. If provided,
     stores it as-is, allowing the caller to maintain `r` incrementally
@@ -218,9 +238,9 @@ optionally the residual vector.
 # Returns
 - Modifies `ingredients` in place and returns nothing.
 
-## Throws
+# Throws
 - `DimensionMismatch` if vector dimensions don't match matrix dimensions.
-- `ArgumentError` if beta > number of rows (`Left()`) or columns (`Right()`) in A.
+- `ArgumentError` if β > number of rows (`Left()`) or columns (`Right()`) in A.
 """
 function update_distribution!(
     ingredients::AgmonRecipe,
@@ -328,8 +348,8 @@ Residual strategy is controlled via `update_distribution!` and the stored
 - Ties are broken deterministically by selecting smaller indices first.
 - The selection within the sampled subset is deterministic.
 
-## Throws
-- `ArgumentError` if `length(indices) > beta`.
+# Throws
+- `ArgumentError` if `length(indices) > β`.
 - `ArgumentError` if cardinality is not `Left()` or `Right()`.
 
 """
