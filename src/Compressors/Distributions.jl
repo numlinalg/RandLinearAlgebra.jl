@@ -18,7 +18,7 @@ distribution_arg_list = Dict{Symbol,String}(
     :distribution => "`distribution::Distribution`, a user-specified distribution function for sampling.",
     :distribution_recipe => "`distribution::DistributionRecipe`, a fully initialized realization of distribution.",
     :A => "`A::AbstractMatrix`, a coefficient matrix.",
-    :x => "`x::AbstractVector`, an abstract vector to store the sampled indices.",
+    :indices => "`indices::AbstractVector`, an abstract vector to store the sampled indices.",
 )
 
 distribution_output_list = Dict{Symbol,String}(
@@ -30,7 +30,7 @@ distribution_method_description = Dict{Symbol,String}(
     arguments.",
     :update_distribution! => "A function that updates the `DistributionRecipe` in place given 
     arguments.",
-    :sample_distribution! => "A function that in place updates the `x` by given `DistributionRecipe` info.",
+    :sample_distribution! => "A function that in place updates `indices` by given `DistributionRecipe` info.",
 )
 
 distribution_error_list = Dict{Symbol,String}(
@@ -98,24 +98,24 @@ function update_distribution!(distribution::DistributionRecipe, x::AbstractVecto
 end
 
 """
-    sample_distribution!(x::AbstractVector, distribution::DistributionRecipe)
+    sample_distribution!(indices::AbstractVector, distribution::DistributionRecipe)
 
 $(distribution_method_description[:sample_distribution!])
 
 # Arguments
-- $(distribution_arg_list[:x]) 
+- $(distribution_arg_list[:indices])
 - $(distribution_arg_list[:distribution_recipe])
 
 # Returns
-- Modifies the `x` in place by sampling that follows the weights and replacement given by 
-'DistributionRecipe'.
+- Modifies `indices` in place by sampling that follows the weights and replacement given by
+`DistributionRecipe`.
 
 # Throws
 - $(distribution_error_list[:sample_distribution!])
 """
-function sample_distribution!(x::AbstractVector, distribution::DistributionRecipe)
+function sample_distribution!(indices::AbstractVector, distribution::DistributionRecipe)
     return throw(ArgumentError("No `sample_distribution!` method defined for a distribution of type \
-    $(typeof(distribution)) and $(typeof(x))."))
+    $(typeof(distribution)) and $(typeof(indices))."))
 end
 
 ###########################################
