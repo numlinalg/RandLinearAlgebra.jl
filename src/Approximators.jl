@@ -117,7 +117,7 @@ A structure for the adjoint of an `ApproximatorRecipe`.
 
 # Fields
 
-  - `Parent::ApproximatorRecipe`, the approximator that we compute the adjoint of.
+  - `parent::ApproximatorRecipe`, the approximator that we compute the adjoint of.
 """
 struct ApproximatorAdjoint{S<:ApproximatorRecipe} <: ApproximatorRecipe
     parent::S
@@ -164,7 +164,7 @@ $(approx_method_description[:complete_approximator])
 - $(approx_arg_list[:approximator])
 - $(approx_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(approx_output_list[:approximator_recipe])
 
 # Throws
@@ -192,7 +192,7 @@ $(approx_method_description[:rapproximate])
 - $(approx_arg_list[:approximator_recipe])
 - $(approx_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(approx_output_list[:approximator_recipe])
 
 # Throws
@@ -216,7 +216,7 @@ $(approx_method_description[:rapproximate])
 - $(approx_arg_list[:approximator])
 - $(approx_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(approx_output_list[:approximator_recipe])
 """
 function rapproximate(approximator::Approximator, A::AbstractMatrix)
@@ -243,7 +243,7 @@ $(approx_method_description[:complete_approximator_error])
 - $(approx_arg_list[:approximator_recipe])
 - $(approx_arg_list[:A]) 
 
-# Outputs
+# Returns
 - $(approx_output_list[:approximator_error_recipe])
 
 # Throws
@@ -279,7 +279,7 @@ $(approx_method_description[:compute_approximator_error])
 - $(approx_arg_list[:approximator_recipe])
 - $(approx_arg_list[:A]) 
 
-# Outputs
+# Returns
 - Returns the `error::Float64` 
 
 # Throws
@@ -313,7 +313,7 @@ $(approx_method_description[:compute_approximator_error])
 - $(approx_arg_list[:approximator_recipe])
 - $(approx_arg_list[:A]) 
 
-# Outputs
+# Returns
 - Returns the `error::Float64` 
 """
 function compute_approximator_error(
