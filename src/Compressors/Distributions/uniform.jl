@@ -29,7 +29,7 @@ mutable struct Uniform <: Distribution
     replace::Bool
 end
 
-function Uniform(; cardinality = Undef(), replace = false)
+function Uniform(; cardinality::Cardinality = Undef(), replace::Bool = false)
     return Uniform(cardinality, replace)
 end
 
