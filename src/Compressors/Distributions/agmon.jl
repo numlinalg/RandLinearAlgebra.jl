@@ -35,7 +35,7 @@ active dimension: ``d = m`` for `Left()`, ``d = n`` for `Right()`):
 
 # Constructor
 
-    Agmon(;cardinality=Undef(), replace=false, beta=1)
+    Agmon(; cardinality::Cardinality = Undef(), replace::Bool = false, beta::Int = 1)
 
 ## Keywords
 - `cardinality::Cardinality`: the direction of index selection. Must be `Left()` or
@@ -342,10 +342,10 @@ Residual strategy is controlled via `update_distribution!` and the stored
 # Returns
 - Modifies `indices` in place with the selected index/indices and returns nothing.
 
-## Notes
-- Returns the top-`k` selected indices where `k = length(indices)`.
-- Ties are broken deterministically by selecting smaller indices first.
-- The selection within the sampled subset is deterministic.
+!!! note "Implementation note"
+    This function returns the top-`k` selected indices where `k = length(indices)`.
+    Ties are broken deterministically by selecting smaller indices first.
+    The selection within the sampled subset is deterministic.
 
 # Throws
 - `ArgumentError` if `length(indices) > ``β```.
