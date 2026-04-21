@@ -33,12 +33,13 @@ function update_sub_solver!(solver::LQSolverRecipe, A::AbstractMatrix)
 end
 
 function ldiv!(
-    x::AbstractVector, 
-    solver::LQSolverRecipe{<:AbstractMatrix}, 
+    x::AbstractVector,
+    solver::LQSolverRecipe{<:AbstractMatrix},
     b::AbstractVector
 )
     fill!(x, zero(eltype(b)))
-    # this will modify B in place so you cannot use it again
+    # Note: qr! (in-place) is used here for efficiency on CPU. GPU arrays do not support
+    # qr! — GPU block Kaczmarz/ColumnProjection requires a follow-up PR.
     # using qr here on the transpose of the matrix will work for sparse and dense matrices
     # while the lq would have only worked for dense matrices
     ldiv!(x, qr!(solver.A')', b)

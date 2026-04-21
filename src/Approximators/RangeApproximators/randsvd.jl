@@ -161,27 +161,26 @@ function complete_approximator(approx::RandSVD, A::AbstractMatrix)
     approx_recipe = RandSVDRecipe(
         a_rows,
         a_cols,
-        compress, 
+        compress,
         approx.power_its,
-        approx.orthogonalize, 
-        Matrix{type}(undef, 2, 2),
-        Vector{type}(undef,2),
-        Matrix{type}(undef, 2, 2),
-        Matrix{type}(undef, c_cols, bsize) 
+        approx.orthogonalize,
+        similar(A, type, 2, 2),
+        similar(A, type, 2),
+        similar(A, type, 2, 2),
+        similar(A, type, c_cols, bsize)
     )
 end
 
 function rapproximate!(approx::RandSVDRecipe, A::AbstractMatrix)
     # User may wish to choose to use a different power iteration
-    
-    if approx.orthogonalize 
-        Q = rand_ortho_it(A, approx) 
+
+    if approx.orthogonalize
+        Q = rand_ortho_it(A, approx)
     else
         Q = rand_power_it(A, approx)
     end
 
-    QA = Matrix{Float64}(undef, size(Q, 2), size(A, 2))
-    # Making Q an Array is far more efficient than not
+    QA = similar(A, eltype(A), size(Q, 2), size(A, 2))
     mul!(QA, Q', A)
     U, approx.S, approx.V = svd(QA)
     approx.U = Q * U

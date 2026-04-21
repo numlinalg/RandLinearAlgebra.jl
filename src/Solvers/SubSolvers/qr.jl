@@ -34,10 +34,12 @@ function update_sub_solver!(solver::QRSolverRecipe, A::AbstractMatrix)
 end
 
 function ldiv!(
-    x::AbstractVector, 
-    solver::QRSolverRecipe{<:AbstractMatrix}, 
+    x::AbstractVector,
+    solver::QRSolverRecipe{<:AbstractMatrix},
     b::AbstractVector
 )
+    # Note: qr! (in-place) is used here for efficiency on CPU. GPU arrays do not support
+    # qr! — GPU block Kaczmarz/ColumnProjection requires a follow-up PR.
     # this will modify B in place so you cannot use it again
     ldiv!(x, qr!(solver.A), b)
     return nothing
