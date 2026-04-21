@@ -88,7 +88,7 @@ struct FJLT <: Compressor
 end
 
 function FJLT(;
-    cardinality=Left(),
+    cardinality::Cardinality=Left(),
     compression_dim::Int64=2,
     block_size::Int64=10,
     sparsity::Float64=0.0,

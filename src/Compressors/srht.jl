@@ -79,7 +79,7 @@ struct SRHT <: Compressor
 end
 
 function SRHT(;
-    cardinality = Left(),
+    cardinality::Cardinality = Left(),
     compression_dim::Int64=2,
     block_size::Int64=10,
     type::Type{N}=Float64

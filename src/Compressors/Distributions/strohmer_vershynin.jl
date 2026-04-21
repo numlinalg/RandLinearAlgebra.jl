@@ -32,7 +32,7 @@ mutable struct L2Norm <: Distribution
     replace::Bool
 end
 
-function L2Norm(; cardinality = Undef(), replace = false)
+function L2Norm(; cardinality::Cardinality = Undef(), replace::Bool = false)
     return L2Norm(cardinality, replace)
 end
 
