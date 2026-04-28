@@ -238,6 +238,49 @@ using LinearAlgebra: dot
 
             @test_throws DimensionMismatch update_distribution!(mr, x2, A, b)
         end
+
+        # Test Undef cardinality guard in update_distribution!
+        let A = randn(5, 3),
+            b = randn(5),
+            x = randn(3),
+            m = Agmon(cardinality = Left(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            mr.cardinality = Undef()
+            @test_throws ArgumentError update_distribution!(mr, x, A, b)
+        end
+
+        # Test that passing explicit r stores it as-is
+        let A = randn(5, 3),
+            b = randn(5),
+            x = randn(3),
+            m = Agmon(cardinality = Left(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            @test mr.r === nothing
+
+            r = A * x - b
+            update_distribution!(mr, x, A, b; r = r)
+            @test mr.r === r
+
+            # Calling again without r should overwrite back to nothing
+            update_distribution!(mr, x, A, b)
+            @test mr.r === nothing
+        end
+
+        # Test sample_buffer is reallocated when beta on the recipe changes
+        let A = randn(5, 3),
+            b = randn(5),
+            x = randn(3),
+            m = Agmon(cardinality = Left(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            @test length(mr.sample_buffer) == 2
+
+            mr.beta = 4
+            update_distribution!(mr, x, A, b)
+            @test length(mr.sample_buffer) == 4
+        end
     end
 
     @testset "Agmon: Sample Distribution - Beta Cases" begin
@@ -300,6 +343,36 @@ using LinearAlgebra: dot
             expected_col = argmax(abs.(A' * (A * x - b)))
             @test out[1] == expected_col  # column 2
         end
+
+        # Right() beta = 1 (pure random column selection)
+        let A = randn(5, 8),
+            b = randn(5),
+            x = randn(8),
+            m = Agmon(cardinality = Right(), beta = 1),
+            mr = complete_distribution(m, x, A, b)
+
+            update_distribution!(mr, x, A, b)
+            out = zeros(Int, 1)
+            sample_distribution!(out, mr)
+
+            @test 1 <= out[1] <= 8
+        end
+
+        # Right() 1 < beta < n_cols (SKM branch with sample!)
+        let A = randn(20, 50),
+            b = randn(20),
+            x = randn(50),
+            m = Agmon(cardinality = Right(), beta = 8),
+            mr = complete_distribution(m, x, A, b)
+
+            update_distribution!(mr, x, A, b)
+            out = zeros(Int, 1)
+            sample_distribution!(out, mr)
+
+            # Result must be one of the sampled candidates
+            @test out[1] in mr.sample_buffer
+            @test 1 <= out[1] <= 50
+        end
     end
 
     @testset "Agmon: Sample Distribution - Correctness" begin
@@ -357,6 +430,53 @@ using LinearAlgebra: dot
             sample_distribution!(out, mr)
 
             @test out == [1, 2]
+        end
+
+        # Right() top-k correctness — pick the top-k columns by |A[:,j]' (Ax - b)|
+        let A = [1.0 0.0 2.0; 0.0 1.0 1.0; 1.0 1.0 0.0],
+            b = [0.0, 0.0, 0.0],
+            x = [1.0, 1.0, 1.0],
+            m = Agmon(cardinality = Right(), beta = 3),
+            mr = complete_distribution(m, x, A, b)
+
+            update_distribution!(mr, x, A, b)
+            scores = abs.(A' * (A * x - b))
+            expected = partialsortperm(scores, 1:2; rev = true)
+
+            out = zeros(Int, 2)
+            sample_distribution!(out, mr)
+            @test sort(out) == sort(expected)
+        end
+
+        # Stored-residual path, Left(): top index must come from the cached r
+        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0; 0.0 0.0],
+            b = [0.0, 0.0, 0.0, 0.0],
+            x = [0.0, 0.0],
+            m = Agmon(cardinality = Left(), beta = 4),
+            mr = complete_distribution(m, x, A, b)
+
+            # Inject a residual that does NOT match A*x - b — proves the stored r is read.
+            r_fake = [0.1, 0.2, 9.9, 0.3]
+            update_distribution!(mr, x, A, b; r = r_fake)
+            out = zeros(Int, 1)
+            sample_distribution!(out, mr)
+
+            @test out[1] == 3  # row 3 has the largest |r|
+        end
+
+        # Stored-residual path, Right(): scores are |A[:, cands]' * r|
+        let A = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
+            b = [0.0, 0.0, 0.0],
+            x = [0.0, 0.0, 0.0],
+            m = Agmon(cardinality = Right(), beta = 3),
+            mr = complete_distribution(m, x, A, b)
+
+            r_fake = [1.0, 2.0, 7.0]   # column 3 has the largest |A[:,j]' * r|
+            update_distribution!(mr, x, A, b; r = r_fake)
+            out = zeros(Int, 1)
+            sample_distribution!(out, mr)
+
+            @test out[1] == 3
         end
     end
 
@@ -420,6 +540,35 @@ using LinearAlgebra: dot
             mr.cardinality = Undef()
             out = zeros(Int, 1)
             @test_throws ArgumentError sample_distribution!(out, mr)
+        end
+
+        # Sample-time cardinality guard on the stored-residual path
+        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
+            b = [1.0, 2.0, 3.0],
+            x = [0.5, 0.5],
+            m = Agmon(cardinality = Left(), beta = 2),
+            mr = complete_distribution(m, x, A, b)
+
+            update_distribution!(mr, x, A, b; r = A * x - b)  # populate mr.r
+            mr.cardinality = Undef()                          # trip the inner else throw
+            out = zeros(Int, 1)
+            @test_throws ArgumentError sample_distribution!(out, mr)
+        end
+
+        # replace = true: sampling with replacement must still produce valid indices
+        let A = randn(30, 5),
+            b = randn(30),
+            x = randn(5),
+            m = Agmon(cardinality = Left(), replace = true, beta = 6),
+            mr = complete_distribution(m, x, A, b)
+
+            update_distribution!(mr, x, A, b)
+            out = zeros(Int, 1)
+            for _ in 1:50
+                sample_distribution!(out, mr)
+                @test 1 <= out[1] <= 30
+                @test out[1] in mr.sample_buffer
+            end
         end
     end
 end
