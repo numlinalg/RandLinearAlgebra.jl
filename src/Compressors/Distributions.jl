@@ -123,3 +123,4 @@ end
 ###########################################
 include("Distributions/uniform.jl")
 include("Distributions/strohmer_vershynin.jl")
+include("Distributions/agmon.jl")

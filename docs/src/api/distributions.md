@@ -19,6 +19,10 @@ UniformRecipe
 L2Norm
 
 L2NormRecipe
+
+Agmon
+
+AgmonRecipe
 ```
 
 ## Exported Functions
