@@ -29,7 +29,7 @@ mutable struct Uniform <: Distribution
     replace::Bool
 end
 
-function Uniform(; cardinality = Undef(), replace = false)
+function Uniform(; cardinality::Cardinality = Undef(), replace::Bool = false)
     return Uniform(cardinality, replace)
 end
 
@@ -53,6 +53,21 @@ mutable struct UniformRecipe <: DistributionRecipe
     weights::ProbabilityWeights
 end
 
+"""
+    complete_distribution(distribution::Uniform, A::AbstractMatrix)
+
+Creates a `UniformRecipe` for the given uniform distribution and matrix.
+
+# Arguments
+- `distribution::Uniform`: The uniform distribution specification.
+- `A::AbstractMatrix`: Coefficient matrix.
+
+# Returns
+- `UniformRecipe`: A recipe containing all necessary allocations.
+
+# Throws
+- `ArgumentError` if cardinality is `Undef()`.
+"""
 function complete_distribution(distribution::Uniform, A::AbstractMatrix)
     cardinality = distribution.cardinality
     if cardinality == Left()
@@ -71,6 +86,21 @@ function complete_distribution(distribution::Uniform, A::AbstractMatrix)
     return UniformRecipe(cardinality, distribution.replace, state_space, weights)
 end
 
+"""
+    update_distribution!(ingredients::UniformRecipe, A::AbstractMatrix)
+
+Updates the uniform distribution recipe with the current matrix.
+
+# Arguments
+- `ingredients::UniformRecipe`: The recipe to update.
+- `A::AbstractMatrix`: Coefficient matrix.
+
+# Returns
+- Modifies `ingredients` in place and returns nothing.
+
+# Throws
+- `ArgumentError` if cardinality is `Undef()`.
+"""
 function update_distribution!(ingredients::UniformRecipe, A::AbstractMatrix)
     if ingredients.cardinality == Left()
         n_rows = size(A, 1)
@@ -88,7 +118,19 @@ function update_distribution!(ingredients::UniformRecipe, A::AbstractMatrix)
     return nothing
 end
 
-function sample_distribution!(x::AbstractVector, distribution::UniformRecipe)
-    wsample!(distribution.state_space, distribution.weights, x, ordered = true, replace = distribution.replace)
+"""
+    sample_distribution!(indices::AbstractVector, distribution::UniformRecipe)
+
+Samples indices according to the uniform distribution.
+
+# Arguments
+- `indices::AbstractVector`: Output vector to store selected indices.
+- `distribution::UniformRecipe`: The recipe containing sampling parameters.
+
+# Returns
+- Modifies `indices` in place with the selected indices and returns nothing.
+"""
+function sample_distribution!(indices::AbstractVector, distribution::UniformRecipe)
+    wsample!(distribution.state_space, distribution.weights, indices, ordered = true, replace = distribution.replace)
     return nothing
 end

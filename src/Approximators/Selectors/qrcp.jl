@@ -22,7 +22,7 @@ mutable struct QRCP <: Selector
     compressor::Compressor
 end
 
-function QRCP(;compressor = Identity()) 
+function QRCP(; compressor::Compressor = Identity())
     QRCP(compressor)
 end
 

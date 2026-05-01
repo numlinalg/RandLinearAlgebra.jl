@@ -8,8 +8,8 @@ Randomized Linear Algebra is an exciting new approach to classical linear algebr
 that offers strong improvements in scalability. In general, Randomized Linear Algebra 
 techniques achieve this improved scalability by forming a compressed representation of a 
 matrix and performing operations on that compressed form.
-In some circumstances operating on this compressed form
-can offer profound speed-ups as can seen in the following example 
+In some circumstances, operating on this compressed form
+can offer profound speed-ups, as can be seen in the following example 
 where a technique known as the RandomizedSVD (see [halko2011finding](@cite)) 
 is used to compute a rank-20 approximation to ``3000 \times 3000`` matrix 
 ``A`` in place of a truncated SVD. Compared to computing the SVD and 
@@ -67,8 +67,8 @@ You can think of using RandLinearAlgebra.jl as being a producer on
 [*Chopped*](https://www.youtube.com/watch?v=7sm8VrnuOFc&list=PLpfv1AIjenVOxDKUfPuOtjsoF7OWIZVK-&index=9), 
 the long running Food Network cooking competition. 
 For those unfamiliar, the show takes place in three rounds, where one of four contestants 
-get eliminated at the end each round. In each round,
-the producers provide the contestants with a fix set of ingredients 
+gets eliminated at the end of each round. In each round,
+the producers provide the contestants with a fixed set of ingredients 
 [(often rather unconventional ones at that)](https://www.mashed.com/1244321/most-bizarre-mystery-basket-ingredients-ever-seen-chopped/)
 and a general category of food (e.g. appetizer, entree, or dessert) that the contestants
 then have to use in a recipe that they prepare for a panel of judges.

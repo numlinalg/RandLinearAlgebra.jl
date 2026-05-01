@@ -32,7 +32,7 @@ mutable struct L2Norm <: Distribution
     replace::Bool
 end
 
-function L2Norm(; cardinality = Undef(), replace = false)
+function L2Norm(; cardinality::Cardinality = Undef(), replace::Bool = false)
     return L2Norm(cardinality, replace)
 end
 
@@ -58,6 +58,21 @@ mutable struct L2NormRecipe <: DistributionRecipe
     weights::ProbabilityWeights
 end
 
+"""
+    complete_distribution(distribution::L2Norm, A::AbstractMatrix)
+
+Creates an `L2NormRecipe` for the given distribution and matrix.
+
+# Arguments
+- `distribution::L2Norm`: The L2Norm distribution specification.
+- `A::AbstractMatrix`: Coefficient matrix.
+
+# Returns
+- `L2NormRecipe`: A recipe containing all necessary allocations.
+
+# Throws
+- `ArgumentError` if cardinality is `Undef()`.
+"""
 function complete_distribution(distribution::L2Norm, A::AbstractMatrix)
     cardinality = distribution.cardinality
     if cardinality == Left()
@@ -82,6 +97,21 @@ function complete_distribution(distribution::L2Norm, A::AbstractMatrix)
     return L2NormRecipe(cardinality, distribution.replace, state_space, weights)
 end
 
+"""
+    update_distribution!(ingredients::L2NormRecipe, A::AbstractMatrix)
+
+Updates the L2Norm distribution recipe with the current matrix.
+
+# Arguments
+- `ingredients::L2NormRecipe`: The recipe to update.
+- `A::AbstractMatrix`: Coefficient matrix.
+
+# Returns
+- Modifies `ingredients` in place and returns nothing.
+
+# Throws
+- `ArgumentError` if cardinality is `Undef()`.
+"""
 function update_distribution!(ingredients::L2NormRecipe, A::AbstractMatrix)
     if ingredients.cardinality == Left()
         n_rows = size(A, 1)
@@ -105,7 +135,19 @@ function update_distribution!(ingredients::L2NormRecipe, A::AbstractMatrix)
     return nothing
 end
 
-function sample_distribution!(x::AbstractVector, distribution::L2NormRecipe)
-    wsample!(distribution.state_space, distribution.weights, x, ordered = true, replace = distribution.replace)
+"""
+    sample_distribution!(indices::AbstractVector, distribution::L2NormRecipe)
+
+Samples indices according to the L2Norm distribution.
+
+# Arguments
+- `indices::AbstractVector`: Output vector to store selected indices.
+- `distribution::L2NormRecipe`: The recipe containing sampling parameters.
+
+# Returns
+- Modifies `indices` in place with the selected indices and returns nothing.
+"""
+function sample_distribution!(indices::AbstractVector, distribution::L2NormRecipe)
+    wsample!(distribution.state_space, distribution.weights, indices, ordered = true, replace = distribution.replace)
     return nothing
 end
