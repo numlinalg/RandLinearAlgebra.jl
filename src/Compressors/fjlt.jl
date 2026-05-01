@@ -288,8 +288,8 @@ function mul!(
         copyto!(pv, Av)
         # Apply signs and fwht to the padding matrix
         for i in 1:b_size
-            pv = view(S.padding, :, i)
-            fwht!(pv, S.signs, scaling = S.scale) 
+            pv1 = view(S.padding, :, i)
+            fwht!(pv1, S.signs, scaling = S.scale) 
         end
 
         # Apply the operator to the matrix
@@ -309,8 +309,8 @@ function mul!(
         copyto!(pv, Av)
         # Apply signs and fwht to the padding matrix
         for i in 1:last_block_size
-            pv = view(S.padding, :, i)
-            fwht!(pv, S.signs, scaling = S.scale) 
+            pv1 = view(S.padding, :, i)
+            fwht!(pv1, S.signs, scaling = S.scale) 
         end
         
         # Perform accesses only up to the entries
@@ -355,8 +355,8 @@ function mul!(
         # Apply signs and fwht to the padding matrix along the columns of the padding matrix
         # this is equivalent to applying the hadamard transform to the rows of AS.op as desired
         for i in 1:b_size
-            pv = view(S.padding, :, i)
-            fwht!(pv, scaling = S.scale) 
+            pv1 = view(S.padding, :, i)
+            fwht!(pv1, scaling = S.scale) 
         end
 
         # Because apply sign transform after hadmard is different than the reverse can't
@@ -380,8 +380,8 @@ function mul!(
         mul!(pv', Av, S.op, alpha, zero(type))
         # Apply signs and fwht to the padding matrix
         for i in 1:last_block_size
-            pv = view(S.padding, :, i)
-            fwht!(pv, scaling = S.scale) 
+            pv1 = view(S.padding, :, i)
+            fwht!(pv1, scaling = S.scale) 
         end
         
         # Because apply sign transform after hadmard is different than the reverse can't
@@ -429,8 +429,8 @@ function mul!(
         copyto!(pv, Av)
         # Apply signs and fwht to the padding matrix
         for i in 1:b_size
-            pv = view(S.padding, i, :)
-            fwht!(pv, S.signs, scaling = S.scale) 
+            pv1 = view(S.padding, i, :)
+            fwht!(pv1, S.signs, scaling = S.scale) 
         end
 
         # Apply the operator to the matrix
@@ -450,8 +450,8 @@ function mul!(
         copyto!(pv, Av)
         # Apply signs and fwht to the padding matrix
         for i in 1:last_block_size
-            pv = view(S.padding, i, :)
-            fwht!(pv, S.signs, scaling = S.scale) 
+            pv1 = view(S.padding, i, :)
+            fwht!(pv1, S.signs, scaling = S.scale) 
         end
 
         pv = view(S.padding, 1:last_block_size, :)
@@ -493,8 +493,8 @@ function mul!(
         mul!(pv', S.op, Av, alpha, zero(type))
         # Apply signs and fwht to the padding matrix
         for i in 1:b_size
-            pv = view(S.padding, i, :)
-            fwht!(pv, scaling = S.scale) 
+            pv1 = view(S.padding, i, :)
+            fwht!(pv1, scaling = S.scale) 
         end
 
         # Flip the signs
@@ -517,8 +517,8 @@ function mul!(
         mul!(pv', S.op, Av,  alpha, zero(type))
         # Apply and fwht to the padding matrix
         for i in 1:last_block_size
-            pv = view(S.padding, i, :)
-            fwht!(pv, scaling = S.scale)
+            pv1 = view(S.padding, i, :)
+            fwht!(pv1, scaling = S.scale)
         end
         
         # Apply signs to the padding matrix
