@@ -25,7 +25,7 @@ directs =
         ],
     )
 
-@testset verbose = true "RLinearAlgera.jl" begin
+@testset verbose = true "RandLinearAlgebra.jl" begin
     for direct in directs
         # Obtain all files in the directory
         files_in_direct = readdir(direct)
