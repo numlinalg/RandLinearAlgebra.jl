@@ -32,10 +32,10 @@ struct BasicLogger <: Logger
 end
 
 BasicLogger(;
-            max_it = 0, 
-            collection_rate = 1, 
-            threshold = 0.0,
-            stopping_criterion = threshold_stop 
+            max_it::Int64 = 0,
+            collection_rate::Int64 = 1,
+            threshold::Union{Float64, Tuple} = 0.0,
+            stopping_criterion::Function = threshold_stop
            ) = BasicLogger(max_it, collection_rate, threshold, stopping_criterion)
 
 """

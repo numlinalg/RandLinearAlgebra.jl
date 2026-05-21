@@ -88,7 +88,7 @@ mutable struct SparseSign <: Compressor
 end
 
 function SparseSign(;
-    cardinality=Left(),
+    cardinality::Cardinality=Left(),
     compression_dim::Int64=2,
     nnz::Int64=min(8, compression_dim),
     type::Type{N}=Float64,

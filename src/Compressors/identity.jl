@@ -22,7 +22,7 @@ mutable struct Identity <: Compressor
     cardinality::Cardinality 
 end
 
-function Identity(;cardinality = Left())
+function Identity(; cardinality::Cardinality = Left())
     Identity(cardinality)
 end
 

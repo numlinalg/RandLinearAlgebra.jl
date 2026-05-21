@@ -89,7 +89,7 @@ comp_error_list = Dict{Symbol, String}(
 A structure for the adjoint of a compression recipe.
 
 # Fields
-- `Parent::CompressorRecipe`, the CompressorRecipe the adjoint is being applied to.
+- `parent::CompressorRecipe`, the CompressorRecipe the adjoint is being applied to.
 """
 struct CompressorAdjoint{S<:CompressorRecipe}
     parent::S

@@ -27,6 +27,7 @@ function fwht!(x::AbstractVector, signs::BitVector; scaling = 1)
     elseif rem(log(2, ln), 1) != 0 
         throw(DimensionMismatch("Size of vector must be power of 2."))
     end
+
     # size of separation between indices
     h = 1 
     #  set increment to be twice of h
@@ -37,7 +38,7 @@ function fwht!(x::AbstractVector, signs::BitVector; scaling = 1)
     # In 1st pass scale and flip signs of entries, this does not need to be done 
     # in any other passes over the vector. To avoid unnecessary condition checking 
     # this portion of the loop has been separated out from the others.
-    for i in 1:inc:ln
+    @inbounds for i in 1:inc:ln
         # Signs is vector of Bools
         z = x[i] * (signs[i] ? scaling : -scaling) 
         y = x[i+h] * (signs[i+h] ? scaling : -scaling)
@@ -46,7 +47,7 @@ function fwht!(x::AbstractVector, signs::BitVector; scaling = 1)
         
     end
 
-    for k = 1:total_its
+    @inbounds for k = 1:total_its
         # Double distance between next combintation
         h <<= 1
         # spacing between operations
@@ -85,7 +86,7 @@ function fwht!(x::AbstractVector; scaling = 1)
     # In 1st pass scale and flip signs of entries, this does not need to be done 
     # in any other passes over the vector. To avoid unnecessary condition checking 
     # this portion of the loop has been separated out fron the others.
-    for i in 1:inc:ln
+    @inbounds for i in 1:inc:ln
         # Signs is vector of Bools
         z = x[i] * scaling 
         y = x[i+h] * scaling
@@ -94,7 +95,7 @@ function fwht!(x::AbstractVector; scaling = 1)
         
     end
 
-    for k = 1:total_its
+    @inbounds for k = 1:total_its
         # Double distance between next combintation
         h <<= 1
         # spacing between operations
