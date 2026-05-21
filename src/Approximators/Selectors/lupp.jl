@@ -27,7 +27,7 @@ mutable struct LUPP <: Selector
     compressor::Compressor
 end
  
-function LUPP(;compressor = Identity()) 
+function LUPP(; compressor::Compressor = Identity())
     return LUPP(compressor)
 end
 

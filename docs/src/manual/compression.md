@@ -1,5 +1,5 @@
 # Compressing a Matrix/Vector
-Most Randomized Linear Algebra routines start by forming low-dimensional representation of 
+Most Randomized Linear Algebra routines start by forming a low-dimensional representation of 
 a matrix/vector. These representations are typically formed by multiplying a 
 random matrix with a large matrix/vector. 
 For instance, if we have ``x \in \mathbb{R}^{10,000}`` we can apply a matrix, 
