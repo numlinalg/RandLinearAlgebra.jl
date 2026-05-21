@@ -217,3 +217,13 @@ norm(Sx)
 
 norm(x)
 ```
+
+## Using Examples in RandLinearAlgebra.jl
+You can find three examples for attention compression, operator inference approximation,
+and preconditioning in the `examples` directory. You can run any of the examples by 
+1. Entering the directory corresponding to the desired example.
+2. Run `Pkg.Instantiate()`
+3. Opening the Jupyter Notebook and running through the blocks in the notebook.
+!!! note "Using Jupyter Notebooks in Julia" 
+    If you have never run a Jupyter notebook in Julia you will first need to install the 
+    [`IJulia` package](https://ijulia.org/stable/manual/installation/).
