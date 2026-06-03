@@ -1,14 +1,7 @@
 module solver_abstract_types
 using Test, RandLinearAlgebra
 import RandLinearAlgebra: complete_solver, rsolve!
-
-###################################
-# Initial Testing Parameters   
-###################################
-struct TestSolver <: Solver end
-mutable struct TestSolverRecipe <: SolverRecipe 
-    code::Int64
-end
+using ..MockTypes
 
 @testset "Solver Abstract Types" begin
     @test isdefined(Main, :Solver)

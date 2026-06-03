@@ -1,15 +1,7 @@
 module approximators_abstract_types
 using Test, RandLinearAlgebra
 import RandLinearAlgebra: complete_approximator
-
-
-#############################
-# Initial Testing Parameters
-#############################
-struct TestApproximator <: Approximator end
-struct TestApproximatorRecipe <: ApproximatorRecipe
-    code::Int64
-end
+using ..MockTypes
 
 ########################################
 # Tests for Approximator Abstract Types

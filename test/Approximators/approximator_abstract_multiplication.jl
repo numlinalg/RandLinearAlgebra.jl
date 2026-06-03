@@ -2,14 +2,12 @@ module approximator_abstract_multiplication
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
+using ..MockTypes
+import ..MockTypes: TestApproximatorRecipe
 
 #####################
 # Testing Parameters
-##################### 
-mutable struct TestApproximatorRecipe <: ApproximatorRecipe
-    n_rows::Int64
-    n_cols::Int64
-end
+#####################
 s_rows = 3
 s_cols = 4
 TestApproximatorRecipe() = TestApproximatorRecipe(s_rows, s_cols)

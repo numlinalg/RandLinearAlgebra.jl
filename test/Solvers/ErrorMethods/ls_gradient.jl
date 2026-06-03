@@ -1,11 +1,10 @@
-module ls_gradient_error 
+module ls_gradient_error
 
 using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
+using ..MockTypes: TestSolver
 Random.seed!(1232)
-
-mutable struct TestSolver <: Solver end
 
 mutable struct TestSolverRecipe <: SolverRecipe
     residual_vec::AbstractVector

@@ -1,13 +1,9 @@
-module compressed_residual_error 
+module compressed_residual_error
 using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
+using ..MockTypes: TestSolver
 Random.seed!(1232)
-
-###############################
-# Test Solver Structures
-###############################
-mutable struct TestSolver <: Solver end
 
 mutable struct TestSolverRecipe <: SolverRecipe
     compressor::AbstractMatrix

@@ -1,12 +1,11 @@
 module approximator_error_abstract_types
 using Test, RandLinearAlgebra
 import RandLinearAlgebra: complete_approximator_error, compute_approximator_error!
+using ..MockTypes
 
 #############################
 # Initial Testing Parameters
 #############################
-struct TestApproximator <: Approximator end
-struct TestApproximatorRecipe <: ApproximatorRecipe end 
 struct TestApproximatorError <: ApproximatorError end
 mutable struct TestApproximatorErrorRecipe <: ApproximatorErrorRecipe
     code::Int64
@@ -21,7 +20,7 @@ end
 @testset "ApproximatorErrorRecipe Completion Errors" begin 
     # Parameters 
     error = TestApproximatorError()
-    approx = TestApproximatorRecipe() 
+    approx = TestApproximatorRecipe(0, 0) 
     A = ones(2, 2) 
 
     # Test 
@@ -31,7 +30,7 @@ end
 @testset "ApproximatorError Compute Errors" begin 
     # Parameters 
     error = TestApproximatorErrorRecipe(1)
-    approx = TestApproximatorRecipe()
+    approx = TestApproximatorRecipe(0, 0)
     A = ones(2, 2)
 
     # Test 
@@ -58,7 +57,7 @@ end
 @testset "ApproximatorError Compute" begin
     # Check if completition is done correctly  
     let error = TestApproximatorError(),
-        approx = TestApproximatorRecipe(),
+        approx = TestApproximatorRecipe(0, 0),
         A = ones(2, 2)
 
         error_recipe = complete_approximator_error(error, approx, A)
@@ -68,7 +67,7 @@ end
 
     # Check if compute is done correctly 
     let error = TestApproximatorErrorRecipe(1),
-        approx = TestApproximatorRecipe(),
+        approx = TestApproximatorRecipe(0, 0),
         A = ones(2, 2)
 
         result = compute_approximator_error!(error, approx, A)
@@ -78,7 +77,7 @@ end
 
     # Now test the compute_approximator_error function
     let error = TestApproximatorError(), 
-        approx = TestApproximatorRecipe(),
+        approx = TestApproximatorRecipe(0, 0),
         A = ones(2, 2)
 
         # This should return the error code 3

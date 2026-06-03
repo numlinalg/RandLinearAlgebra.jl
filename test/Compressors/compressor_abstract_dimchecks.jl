@@ -2,18 +2,11 @@ module compressor_abstract_dimchecks
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
+using ..MockTypes
 
 #####################
 # Testing Parameters
-##################### 
-mutable struct TestCompressorRecipe <: CompressorRecipe
-    n_rows::Int64
-    n_cols::Int64
-end
-mutable struct TestApproximatorRecipe <: ApproximatorRecipe
-    n_rows::Int64
-    n_cols::Int64
-end
+#####################
 s = 3
 n_rows = 4
 n_cols = 5

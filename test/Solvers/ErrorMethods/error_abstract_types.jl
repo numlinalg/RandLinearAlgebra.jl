@@ -2,9 +2,9 @@ module solver_error_abstract_types
 using Test, RandLinearAlgebra
 import Random: seed!
 using ..FieldTest
+using ..MockTypes: TestSolver
 seed!(1232)
 
-struct TestSolver <: Solver end
 struct TestSolverRecipe <: SolverRecipe end
 struct TestSolverError <: SolverError end
 struct TestSolverErrorRecipe <: SolverErrorRecipe end
