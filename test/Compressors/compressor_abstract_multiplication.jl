@@ -2,7 +2,6 @@ module compressor_abstract_multiplication
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
-using ..ApproxTol
 
 #####################
 # Testing Parameters

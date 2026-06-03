@@ -3,7 +3,7 @@ using Test, RandLinearAlgebra, LinearAlgebra
 import RandLinearAlgebra: complete_compressor
 import LinearAlgebra: mul!
 using ..FieldTest
-using ..ApproxTol
+const ATOL = 1e-10
 
 mutable struct TestCompressor <: Compressor
     cardinality::Cardinality

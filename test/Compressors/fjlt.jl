@@ -4,7 +4,6 @@ import SparseArrays: sparse, SparseMatrixCSC, sprand
 import LinearAlgebra: mul!, Adjoint, Diagonal
 import Hadamard: hadamard
 using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(2131)
 @testset "FJLT" begin

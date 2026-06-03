@@ -3,7 +3,6 @@ module compressor_abstract_size
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
-using ..ApproxTol
 
 #####################
 # Testing Parameters

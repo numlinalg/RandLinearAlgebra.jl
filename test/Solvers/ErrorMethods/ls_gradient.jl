@@ -3,7 +3,6 @@ module ls_gradient_error
 using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
-using ..ApproxTol
 Random.seed!(1232)
 
 mutable struct TestSolver <: Solver end

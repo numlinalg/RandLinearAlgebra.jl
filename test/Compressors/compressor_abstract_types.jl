@@ -2,7 +2,6 @@ module compressor_abstract_types
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
-using ..ApproxTol
 struct TestCompressor <: Compressor end
 struct TestCompressorRecipe <: CompressorRecipe end
 

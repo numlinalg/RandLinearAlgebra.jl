@@ -1,9 +1,7 @@
 module basic_logger
     using Test, RandLinearAlgebra, Random
     include("../../test_helpers/field_test_macros.jl")
-    include("../../test_helpers/approx_tol.jl")
     using .FieldTest
-    using .ApproxTol
     @testset "Logger BasicLogger" begin
         Random.seed!(21321)
         n_rows = 4

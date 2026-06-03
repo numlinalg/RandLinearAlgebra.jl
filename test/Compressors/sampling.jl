@@ -4,7 +4,6 @@ using StatsBase: ProbabilityWeights, sample
 import LinearAlgebra: mul!, Adjoint
 import SparseArrays: sprandn
 using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(2131)
 @testset "Sampling" begin

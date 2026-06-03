@@ -1,7 +1,6 @@
 @testset "QR SubSolver Tests" begin
     using Test, RandLinearAlgebra, Random, LinearAlgebra
     using ..FieldTest
-    using ..ApproxTol
 
     @testset "QR SubSolver" begin
         @test supertype(QRSolver) == SubSolver

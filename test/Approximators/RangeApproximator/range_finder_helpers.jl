@@ -1,7 +1,6 @@
 module  RangeApproximator_helper
 using Test, RandLinearAlgebra, LinearAlgebra
 using ..FieldTest
-using ..ApproxTol
 
 struct TestCompressorRecipe <: RandLinearAlgebra.CompressorRecipe 
     n_rows::Int64
