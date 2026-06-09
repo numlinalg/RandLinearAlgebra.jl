@@ -149,7 +149,7 @@ function SRHTRecipe(
     padded_matrix = zeros(type, padded_size, block_size)
     signs = bitrand(padded_size)
     idx = sample(1:padded_size, compression_dim, replace = false)
-    scaling = type(sqrt(compression_dim) / sqrt(padded_size))
+    scaling = type(1 / sqrt(compression_dim))
     return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
         cardinality,
         n_rows,
@@ -178,7 +178,7 @@ function SRHTRecipe(
     padded_matrix = zeros(type, block_size, padded_size)
     signs = bitrand(padded_size)
     idx = sample(1:padded_size, compression_dim, replace = false)
-    scaling = type(sqrt(compression_dim) / sqrt(padded_size))
+    scaling = type(1 / sqrt(compression_dim))
     return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
         cardinality,
         n_rows,
