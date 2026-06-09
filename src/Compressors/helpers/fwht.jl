@@ -52,8 +52,8 @@ function fwht!(x::AbstractVector, signs::BitVector; scaling = 1)
         h <<= 1
         # spacing between operations
         inc = h << 1
-        for i in 1:inc:ln
-            for j in i:(i+h-1)
+        @inbounds for i in 1:inc:ln
+            @inbounds for j in i:(i+h-1)
                 # Perform fwht 
                 z = x[j]  
                 y = x[j+h]
@@ -100,8 +100,8 @@ function fwht!(x::AbstractVector; scaling = 1)
         h <<= 1
         # spacing between operations
         inc = h << 1
-        for i in 1:inc:ln
-            for j in i:(i+h-1)
+        @inbounds for i in 1:inc:ln
+            @inbounds for j in i:(i+h-1)
                 # Perform fwht 
                 z = x[j]  
                 y = x[j+h]
