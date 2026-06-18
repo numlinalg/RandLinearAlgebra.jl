@@ -219,18 +219,18 @@ function complete_solver(
 
 
     # Allocate the information in the buffer using the types of A and b
-    compressed_mat = typeof(A)(undef, rows_a, sample_size) #Stores A*compressor
-    residual_vec = typeof(b)(undef, rows_a) #Stores b - Ax 
+    compressed_mat = similar(A, eltype(A), rows_a, sample_size) #Stores A*compressor
+    residual_vec = similar(b, eltype(b), rows_a) #Stores b - Ax
 
     # Since sub_solver is applied to compressed matrices use here
     sub_solver = complete_sub_solver(solver.sub_solver, compressed_mat, residual_vec)
 
-    # View of the compressed matrix 
-    mat_view = view(compressed_mat, :, 1:sample_size) 
+    # View of the compressed matrix
+    mat_view = view(compressed_mat, :, 1:sample_size)
 
     # update_vec is the solution to the subproblem and is used as
-    # x_+ = x + S * update_vec 
-    update_vec = typeof(x)(undef, sample_size)
+    # x_+ = x + S * update_vec
+    update_vec = similar(x, eltype(x), sample_size)
     
     return ColumnProjectionRecipe{
         eltype(A), 

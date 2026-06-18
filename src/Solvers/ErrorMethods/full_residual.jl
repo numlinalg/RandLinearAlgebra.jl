@@ -26,7 +26,7 @@ function complete_error(
     A::AbstractMatrix, 
     b::AbstractVector
 )
-    return FullResidualRecipe{typeof(b)}(zeros(size(b,1)))
+    return FullResidualRecipe{typeof(b)}(fill!(similar(b, size(b,1)), zero(eltype(b))))
 end
 
 function compute_error(

@@ -127,7 +127,7 @@ function complete_approximator(approx::RangeFinder, A::AbstractMatrix)
         compress, 
         approx.power_its,
         approx.orthogonalize, 
-        Matrix{type}(undef, 2, 2)
+        similar(A, type, 2, 2)
     )
 end
 

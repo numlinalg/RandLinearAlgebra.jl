@@ -56,7 +56,7 @@ import LinearAlgebra: mul!
 
             sel_rec = complete_selector(sel, A)
             @test typeof(sel_rec) == QRCPRecipe
-            @test typeof(sel_rec.compressor) == GaussianRecipe{Left} 
+            @test typeof(sel_rec.compressor) <: GaussianRecipe{Left}
             @test typeof(sel_rec.SA) <: AbstractMatrix
             @test size(sel_rec.SA) == (comp_dim, n_cols)
         end

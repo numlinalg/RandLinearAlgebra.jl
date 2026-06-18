@@ -65,8 +65,9 @@ mutable struct BasicLoggerRecipe{F<:Function} <: LoggerRecipe
     collection_rate::Int64
     converged::Bool
     stopping_criterion::F
-    hist::Vector{Float64}
+    hist::AbstractVector{Float64}
 end
+Adapt.@adapt_structure BasicLoggerRecipe
 
 
 function complete_logger(logger::BasicLogger)

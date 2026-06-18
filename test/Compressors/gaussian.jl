@@ -55,7 +55,7 @@ seed!(21321)
             Int64,
             Int64,
             Number,
-            Matrix{<:Number},
+            AbstractMatrix{<:Number},
         )
     end
 
