@@ -1,22 +1,9 @@
-module compressed_residual_error 
+module compressed_residual_error
 using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
-using ..ApproxTol
+using ..MockTypes: TestSolver, TestFullSolverRecipe
 Random.seed!(1232)
-
-###############################
-# Test Solver Structures
-###############################
-mutable struct TestSolver <: Solver end
-
-mutable struct TestSolverRecipe <: SolverRecipe
-    compressor::AbstractMatrix
-    vec_view::SubArray
-    mat_view::SubArray
-    solution_vec::AbstractVector
-end
-
 
 @testset "Compressed Residual" begin
     @testset "Compressed Residual: SolverError" begin
@@ -76,11 +63,11 @@ end
                 x = ones(type, n_cols),
                 Sb = S * b,
                 SA = S * A
-                solver_rec = TestSolverRecipe(
-                    S,
-                    view(Sb, 1:comp_dim),
-                    view(SA, 1:comp_dim, 1:n_cols), 
-                    x 
+                solver_rec = TestFullSolverRecipe(;
+                    compressor = S,
+                    vec_view = view(Sb, 1:comp_dim),
+                    mat_view = view(SA, 1:comp_dim, 1:n_cols),
+                    solution_vec = x,
                 )
 
                 error_rec = complete_error(

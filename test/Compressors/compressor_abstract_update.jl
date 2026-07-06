@@ -1,20 +1,12 @@
-module compressor_abstract_update 
+module compressor_abstract_update
 using Test, RandLinearAlgebra
-import RandLinearAlgebra: update_compressor! 
+import RandLinearAlgebra: update_compressor!
 import LinearAlgebra: mul!
+using ..MockTypes
 
-#####################
-# Testing Parameters
-##################### 
-mutable struct TestCompressorRecipe <: CompressorRecipe
-    n_rows::Int64
-    n_cols::Int64
-    status::Bool
-end
-
-function update_compressor!(compressor::TestCompressorRecipe) 
+function update_compressor!(compressor::TestCompressorRecipe)
     compressor.status = true
-    return true 
+    return true
 end
 
 @testset "Compressor Recipe Update" begin

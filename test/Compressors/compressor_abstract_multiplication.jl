@@ -2,15 +2,12 @@ module compressor_abstract_multiplication
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
 using ..FieldTest
-using ..ApproxTol
+using ..MockTypes
+import ..MockTypes: TestCompressorRecipe
 
 #####################
 # Testing Parameters
-##################### 
-mutable struct TestCompressorRecipe <: CompressorRecipe
-    n_rows::Int64
-    n_cols::Int64
-end
+#####################
 s_rows = 3
 s_cols = 4
 TestCompressorRecipe() = TestCompressorRecipe(s_rows, s_cols)

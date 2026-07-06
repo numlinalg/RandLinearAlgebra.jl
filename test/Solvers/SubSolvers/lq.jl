@@ -1,7 +1,6 @@
 @testset "LQ SubSolver Tests" begin
     using Test, RandLinearAlgebra, Random, LinearAlgebra
     using ..FieldTest
-    using ..ApproxTol
     
     @testset "LQ SubSolver" begin
         @test supertype(LQSolver) == SubSolver

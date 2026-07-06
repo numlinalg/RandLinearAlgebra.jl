@@ -4,7 +4,6 @@ import RandLinearAlgebra: complete_compressor
 import LinearAlgebra: mul!, norm
 import Random: randn!, seed!
 using ..FieldTest
-using ..ApproxTol
 
 # Define the test structures
 ##########################

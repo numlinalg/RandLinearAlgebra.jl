@@ -1,44 +1,11 @@
 module  RangeApproximator
 using Test, RandLinearAlgebra, LinearAlgebra
-import RandLinearAlgebra: complete_compressor
 import LinearAlgebra: mul!
 using ..FieldTest
-using ..ApproxTol
+using ..MockTypes
+const ATOL = 1e-10
 
-mutable struct TestCompressor <: Compressor
-    cardinality::Cardinality
-    compression_dim::Int64
-end
-
-TestCompressor() = TestCompressor(Right(), 5)
-
-mutable struct TestCompressorRecipe <: CompressorRecipe 
-    cardinality::Cardinality
-    n_rows::Int64
-    n_cols::Int64
-    op::AbstractMatrix
-end
-
-function RandLinearAlgebra.complete_compressor(comp::TestCompressor, A::AbstractMatrix)
-    n_cols = comp.compression_dim
-    n_rows = size(A, 2)
-    # Make a gaussian compressor
-    op = randn(n_rows, n_cols) ./ sqrt(n_cols)
-    return TestCompressorRecipe(comp.cardinality, n_rows, n_cols, op)
-end
-
-# Define a mul function for the test compressor
-function RandLinearAlgebra.mul!(
-    C::AbstractMatrix, 
-    A::AbstractMatrix, 
-    S::Main.RangeApproximator.TestCompressorRecipe, 
-    alpha::Float64, 
-    beta::Float64
-)
-    mul!(C, A, S.op, alpha, beta)
-end
-
-@testset "Randomized RangeFinder" begin 
+@testset "Randomized RangeFinder" begin
     @testset "Randomized RangeFinder" begin
         supertype(RangeFinder) == Approximator
 
@@ -47,7 +14,7 @@ end
         fieldtypes(RangeFinder) == (Compressor, Int64, Bool)
         
         # test errors
-        let compressor = TestCompressor(),
+        let compressor = TestFullCompressor(Right()),
             power_its = -1,
             orthogonalize = false
 
@@ -57,12 +24,12 @@ end
         end
 
         # Test constructor
-        let compressor = TestCompressor(),
+        let compressor = TestFullCompressor(Right()),
             power_its = 2,
             orthogonalize = false,
             rf = RangeFinder(compressor, power_its, orthogonalize) 
 
-            @test typeof(rf.compressor) == TestCompressor
+            @test typeof(rf.compressor) == TestFullCompressor
             @test rf.power_its == 2
             @test rf.orthogonalize == false
         end
@@ -98,7 +65,7 @@ end
             cardinality = Right(),
             A = rand(n_rows, n_cols)
 
-            compressor = TestCompressor(cardinality, compression_dim)
+            compressor = TestFullCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, true)
             approx_rec = complete_approximator(approx, A)
             approx_rec.compressor.cardinality == Right()
@@ -116,7 +83,7 @@ end
             cardinality = Left(),
             A = rand(n_rows, n_cols)
 
-            compressor = TestCompressor(cardinality, compression_dim)
+            compressor = TestFullCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, false)
             @test_logs (:warn,
                 "Compressor with cardinality `Left` being applied from `Right`."
@@ -141,11 +108,11 @@ end
             cardinality = Right(),
             A = rand(n_rows, n_cols)
 
-            compressor = TestCompressor(cardinality, compression_dim)
+            compressor = TestFullCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, false)
             approx_rec = rapproximate(approx, A)
             
-            @test typeof(approx_rec.compressor) == TestCompressorRecipe  
+            @test typeof(approx_rec.compressor) == TestFullCompressorRecipe  
             # Check that the matrix is orthogonal
             gram_matrix = approx_rec.range' * approx_rec.range
             # check that the norm is 1, the diagonal is all 1
@@ -166,11 +133,11 @@ end
             cardinality = Right(),
             A = rand(n_rows, n_cols)
 
-            compressor = TestCompressor(cardinality, compression_dim)
+            compressor = TestFullCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, false)
             approx_rec = rapproximate(approx, A)
             
-            @test typeof(approx_rec.compressor) == TestCompressorRecipe  
+            @test typeof(approx_rec.compressor) == TestFullCompressorRecipe  
             approx_rec.compressor.cardinality == Right()
             @test approx_rec.power_its == 2
             @test approx_rec.orthogonalize == false
@@ -198,11 +165,11 @@ end
             cardinality = Right(),
             A = rand(n_rows, n_cols)
 
-            compressor = TestCompressor(cardinality, compression_dim)
+            compressor = TestFullCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, true)
             approx_rec = rapproximate(approx, A)
             
-            @test typeof(approx_rec.compressor) == TestCompressorRecipe  
+            @test typeof(approx_rec.compressor) == TestFullCompressorRecipe  
             # Check that the matrix is orthogonal
             gram_matrix = approx_rec.range' * approx_rec.range
             # check that the norm is 1, the diagonal is all 1
@@ -223,11 +190,11 @@ end
             cardinality = Right(),
             A = rand(n_rows, n_cols)
 
-            compressor = TestCompressor(cardinality, compression_dim)
+            compressor = TestFullCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, true)
             approx_rec = rapproximate(approx, A)
             
-            @test typeof(approx_rec.compressor) == TestCompressorRecipe  
+            @test typeof(approx_rec.compressor) == TestFullCompressorRecipe  
             approx_rec.compressor.cardinality == Right()
             @test approx_rec.power_its == 2
             @test approx_rec.orthogonalize == true
@@ -258,7 +225,7 @@ end
         C = rand(n_rows, n_cols)
         v = rand(n_cols)
         b = rand(n_cols)
-        compressor = TestCompressor(cardinality, compression_dim)
+        compressor = TestFullCompressor(cardinality, compression_dim)
         approx = RangeFinder(compressor, 2, true)
         approx_rec = rapproximate(approx, A)
         # Check that the size function works

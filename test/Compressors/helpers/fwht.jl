@@ -2,7 +2,6 @@ module fwht_test
 using Test, RandLinearAlgebra, Random
 import Hadamard: hadamard
 using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(2131)
 @testset "FWHT" begin

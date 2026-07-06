@@ -4,7 +4,6 @@ import Base.*
 import LinearAlgebra:mul!
 import Random:seed!
 using ..FieldTest
-using ..ApproxTol
 
 seed!(21321)
 @testset "Identity" begin

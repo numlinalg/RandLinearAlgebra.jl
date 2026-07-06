@@ -1,16 +1,9 @@
 module rapproximate_abstract_interface
-using Test, RandLinearAlgebra 
+using Test, RandLinearAlgebra
 import RandLinearAlgebra: complete_approximator, rapproximate!
+using ..MockTypes
 
-#############################
-# Initial Testing Parameters
-#############################
-struct TestApproximator <: Approximator end
-mutable struct TestApproximatorRecipe <: ApproximatorRecipe
-    code::Int64
-end
-complete_approximator(approx::TestApproximator, A::AbstractMatrix) = 
-    TestApproximatorRecipe(1)
+complete_approximator(approx::TestApproximator, A::AbstractMatrix) = TestApproximatorRecipe(1)
 
 ########################################
 # Tests for rapproximator Errors 

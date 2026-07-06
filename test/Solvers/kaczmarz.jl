@@ -5,7 +5,6 @@ import LinearAlgebra: mul!, norm
 import Random: randn!
 import SparseArrays: sprand, SparseMatrixCSC, SparseVector, spzeros
 using ..FieldTest
-using ..ApproxTol
 
 # Define the test structures
 ##########################

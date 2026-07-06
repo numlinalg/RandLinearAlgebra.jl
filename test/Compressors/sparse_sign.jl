@@ -3,7 +3,6 @@ using Test, RandLinearAlgebra, Random
 import SparseArrays: sparse, SparseMatrixCSC, sprand
 import LinearAlgebra: mul!, Adjoint
 using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(2131)
 @testset "Sparse Sign" begin

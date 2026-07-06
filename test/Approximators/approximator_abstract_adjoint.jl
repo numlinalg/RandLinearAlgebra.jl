@@ -1,14 +1,11 @@
 module approximators_abstract_adjoint
 using Test, RandLinearAlgebra
 import LinearAlgebra: mul!
+using ..MockTypes
 
 #####################
 # Testing Parameters
-##################### 
-mutable struct TestApproximatorRecipe <: ApproximatorRecipe
-    n_rows::Int64
-    n_cols::Int64
-end
+#####################
 s_rows = 3
 s_cols = 4
 

@@ -59,34 +59,56 @@ macro test_compressor(type)
     return expr
 end
 
-ProjectionSolverFields = Dict(
+SolverFields = Dict(
+    :compressor => CompressorRecipe,
+    :log => LoggerRecipe,
+    :error => SolverErrorRecipe,
+    :compressed_mat => AbstractMatrix,
     :mat_view => SubArray,
     :solution_vec => AbstractVector,
-    :update_vec => AbstractVector,
-    :compressed_mat => AbstractMatrix,
-    :sub_solver => SubSolverRecipe,
-    :error => SolverErrorRecipe,
-    :S => CompressorRecipe,
-    :log => LoggerRecipe,
 )
 
 """
-    @test_projection_solver(type)
+    @test_solver(type)
 
-Macro for implementing projection solver routines, such as Kaczmarz and coordinate descent.
-It checks that every SolverRecipe  includes the fields
-`mat_view::SubArray`, `solution_vec::AbstractVector`, `update_vec::AbstractVector`,
-`compressed_mat::AbstractMatrix`, `sub_solver::SubSolverRecipe`, `error::SolverErrorRecipe`,
-`S::CompressorRecipe`, and `log::LoggerRecipe` to ensure a common interface.
+Macro for testing solver recipe types, such as `KaczmarzRecipe` and `IHSRecipe`. It checks
+that every `SolverRecipe` includes the common interface fields `compressor::CompressorRecipe`,
+`log::LoggerRecipe`, `error::SolverErrorRecipe`, `compressed_mat::AbstractMatrix`,
+`mat_view::SubArray`, and `solution_vec::AbstractVector`.
 """
-macro test_projection_solver(type)
+macro test_solver(type)
     expr = quote
-        @testset verbose = true "Projection Solver: $(string($(esc(type))))" begin
+        @testset verbose = true "Solver: $(string($(esc(type))))" begin
             # Test the super type
-            @test supertype($(esc(type))) == SolverRecipe
+            @test supertype($(esc(type))) <: SolverRecipe
 
             # Test the field names and types
-            for (fname, ftype) in ProjectionSolverFields
+            for (fname, ftype) in SolverFields
+                @test fname in fieldnames($(esc(type)))
+                @test fieldtype($(esc(type)), fname) <: ftype
+            end
+        end
+    end
+
+    return expr
+end
+
+SubSolverFields = Dict(:A => AbstractArray)
+
+"""
+    @test_sub_solver(type)
+
+Macro for testing sub-solver recipe types, such as `QRSolverRecipe` and `LQSolverRecipe`.
+It checks that every `SubSolverRecipe` includes the field `A::AbstractArray`.
+"""
+macro test_sub_solver(type)
+    expr = quote
+        @testset verbose = true "SubSolver: $(string($(esc(type))))" begin
+            # Test the super type
+            @test supertype($(esc(type))) <: SubSolverRecipe
+
+            # Test the field names and types
+            for (fname, ftype) in SubSolverFields
                 @test fname in fieldnames($(esc(type)))
                 @test fieldtype($(esc(type)), fname) <: ftype
             end
@@ -130,5 +152,5 @@ macro test_range_approximator(type)
     return expr
 end
 
-export @test_projection_solver, @test_compressor, @test_logger, @test_range_approximator
+export @test_solver, @test_sub_solver, @test_compressor, @test_logger, @test_range_approximator
 end

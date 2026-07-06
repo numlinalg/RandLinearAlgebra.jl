@@ -3,7 +3,6 @@ using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, Adjoint, Diagonal
 import Hadamard: hadamard
 using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(1223)
 @testset "SRHT" begin

@@ -1,7 +1,6 @@
 module logger_abstract_types
 using Test, RandLinearAlgebra
 using ..FieldTest
-using ..ApproxTol
 struct TestLogger <: Logger end
 struct TestLoggerRecipe <: LoggerRecipe end
 
