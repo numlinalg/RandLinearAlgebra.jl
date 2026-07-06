@@ -1,23 +1,7 @@
 module  RangeApproximator_helper
 using Test, RandLinearAlgebra, LinearAlgebra
 using ..FieldTest
-
-struct TestCompressorRecipe <: RandLinearAlgebra.CompressorRecipe 
-    n_rows::Int64
-    n_cols::Int64
-    op::AbstractMatrix
-end
-
-# Define a mul function for the test compressor
-function RandLinearAlgebra.mul!(
-    C::AbstractMatrix, 
-    A::AbstractMatrix, 
-    S::Main.RangeApproximator_helper.TestCompressorRecipe, 
-    alpha::Float64, 
-    beta::Float64
-)
-    mul!(C, A, S.op, alpha, beta)
-end
+using ..MockTypes
 
 mutable struct TestRangeApproximatorRecipe <: RandLinearAlgebra.RangeApproximatorRecipe
     compressor::CompressorRecipe
@@ -29,7 +13,9 @@ end
     compression_dim = 2
     # Initialize the compressor with a Gaussian Sketch in this case scaling of matrix
     # is unimportant
-    C = TestCompressorRecipe(n_cols, compression_dim, randn(n_cols, compression_dim)) 
+    C = TestFullCompressorRecipe(
+        Right(), n_cols, compression_dim, randn(n_cols, compression_dim)
+    )
     A = rand(n_rows, n_cols)
 
     @testset "Power Iteration Test" begin 

@@ -142,6 +142,36 @@ function update_compressor!(
     return nothing
 end
 
+# ------------------------------------------------------------------
+# TestFullSolverRecipe — a unified solver-recipe mock holding the
+# union of fields read by the ErrorMethods `compute_error` routines:
+# `compressor` (CompressedResidual), `vec_view`/`mat_view`/`solution_vec`
+# (CompressedResidual, FullResidual), and `residual_vec` (LSGradient).
+#
+# The all-optional keyword constructor lets each error test populate
+# only the fields it exercises. `vec_view`/`mat_view` are typed loosely
+# (AbstractVector/AbstractMatrix) so the defaults can be plain empty
+# arrays; the tests still pass real `view(...)` objects.
+# ------------------------------------------------------------------
+
+mutable struct TestFullSolverRecipe <: SolverRecipe
+    compressor::AbstractMatrix
+    vec_view::AbstractVector
+    mat_view::AbstractMatrix
+    solution_vec::AbstractVector
+    residual_vec::AbstractVector
+end
+
+function TestFullSolverRecipe(;
+    compressor::AbstractMatrix = zeros(0, 0),
+    vec_view::AbstractVector = zeros(0),
+    mat_view::AbstractMatrix = zeros(0, 0),
+    solution_vec::AbstractVector = zeros(0),
+    residual_vec::AbstractVector = zeros(0),
+)
+    return TestFullSolverRecipe(compressor, vec_view, mat_view, solution_vec, residual_vec)
+end
+
 export TestCompressor,
     TestCompressorRecipe,
     TestApproximator,
@@ -149,6 +179,7 @@ export TestCompressor,
     TestSolver,
     TestSolverRecipe,
     TestFullCompressor,
-    TestFullCompressorRecipe
+    TestFullCompressorRecipe,
+    TestFullSolverRecipe
 
 end

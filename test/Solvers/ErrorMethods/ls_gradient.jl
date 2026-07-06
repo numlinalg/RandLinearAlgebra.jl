@@ -3,12 +3,8 @@ module ls_gradient_error
 using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
-using ..MockTypes: TestSolver
+using ..MockTypes: TestSolver, TestFullSolverRecipe
 Random.seed!(1232)
-
-mutable struct TestSolverRecipe <: SolverRecipe
-    residual_vec::AbstractVector
-end
 
 @testset "LS Gradient" begin
 
@@ -64,7 +60,7 @@ end
                 solver = TestSolver(),
                 x = rand(type, n_cols),
                 r = b-A*x,
-                solver_rec = TestSolverRecipe(r),
+                solver_rec = TestFullSolverRecipe(; residual_vec = r),
                 error_rec = complete_error(LSGradient(), TestSolver(), A, b)
 
                 # compute the error value

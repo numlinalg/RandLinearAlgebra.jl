@@ -2,12 +2,8 @@ module residual_error
 using Test, RandLinearAlgebra, Random
 import LinearAlgebra: mul!, norm
 using ..FieldTest
-using ..MockTypes: TestSolver
+using ..MockTypes: TestSolver, TestFullSolverRecipe
 Random.seed!(1232)
-
-mutable struct TestSolverRecipe <: SolverRecipe
-    solution_vec::AbstractVector
-end
 
 @testset "Full Residual" begin
     @testset "Full Residual: SolverError" begin
@@ -37,7 +33,7 @@ end
                 A = rand(type, n_rows, n_cols),
                 b = rand(type, n_rows),
                 x = rand(type, n_cols),
-                solver_rec = TestSolverRecipe(x)
+                solver_rec = TestFullSolverRecipe(; solution_vec = x)
                 error_rec = complete_error(FullResidual(), TestSolver(), A, b)
 
                 # Test the type
@@ -59,7 +55,7 @@ end
                 A = rand(type, n_rows, n_cols),
                 b = rand(type, n_rows),
                 x = rand(type, n_cols),
-                solver_rec = TestSolverRecipe(x),
+                solver_rec = TestFullSolverRecipe(; solution_vec = x),
                 solver = TestSolver(),
 
                 error_rec = complete_error(FullResidual(), TestSolver(), A, b)
