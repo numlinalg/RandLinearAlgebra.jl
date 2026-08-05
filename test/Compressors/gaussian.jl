@@ -49,14 +49,14 @@ seed!(21321)
         @test_compressor GaussianRecipe
         @test fieldnames(GaussianRecipe) ==
             (:cardinality, :compression_dim, :n_rows, :n_cols, :scale, :op)
-        @test fieldtypes(GaussianRecipe) == (
-            Cardinality,
-            Int64,
-            Int64,
-            Int64,
-            Number,
-            Matrix{<:Number},
-        )
+        @test fieldtype(GaussianRecipe, :cardinality) == Cardinality
+        @test fieldtype(GaussianRecipe, :compression_dim) == Int64
+        @test fieldtype(GaussianRecipe, :n_rows) == Int64
+        @test fieldtype(GaussianRecipe, :n_cols) == Int64
+        @test fieldtype(GaussianRecipe{Left,Float64}, :scale) == Float64
+        @test fieldtype(GaussianRecipe{Left,Float64}, :op) == Matrix{Float64}
+        @test fieldtype(GaussianRecipe{Left,Float32}, :scale) == Float32
+        @test fieldtype(GaussianRecipe{Left,Float32}, :op) == Matrix{Float32}
     end
 
     @testset "Gaussian: Complete Compressor" begin

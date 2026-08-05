@@ -95,19 +95,19 @@ end
 The recipe containing all allocations and information for the CountSketch compressor.
 
 # Fields
-- `cardinality::C where C<:Cardinality`, the cardinality of the compressor. The 
+- `cardinality::C`, the cardinality of the compressor. The
     value is either `Left()` or `Right()`.
 - `compression_dim::Int64`, the target compression dimension.
 - `n_rows::Int64`, the number of rows of the compression matrix.
-- `n_cols::Int64``, the number of columns of the compression matrix.
-- `mat::SparseMatrixCSC`, the compression matrix stored in a sparse form.
+- `n_cols::Int64`, the number of columns of the compression matrix.
+- `mat::S`, the compression matrix stored in a sparse form.
 """
-mutable struct CountSketchRecipe{C<:Cardinality} <: CompressorRecipe
-    cardinality::Cardinality
+mutable struct CountSketchRecipe{C<:Cardinality,S<:SparseMatrixCSC} <: CompressorRecipe
+    cardinality::C
     compression_dim::Int64
     n_rows::Int64
     n_cols::Int64
-    mat::SparseMatrixCSC
+    mat::S
 end
 
 function CountSketchRecipe(
@@ -125,7 +125,7 @@ function CountSketchRecipe(
     groups = rand(1:compression_dim, initial_size)
     ptr = collect(1:initial_size)
     mat = sparse(groups, ptr, signs, n_rows, n_cols)
-    return CountSketchRecipe{Left}(cardinality, compression_dim, n_rows, n_cols, mat)
+    return CountSketchRecipe{Left,typeof(mat)}(cardinality, compression_dim, n_rows, n_cols, mat)
 end
 
 function CountSketchRecipe(
@@ -143,7 +143,7 @@ function CountSketchRecipe(
     groups = rand(1:compression_dim, initial_size)
     ptr = collect(1:initial_size)
     mat = sparse(groups, ptr, signs, n_cols, n_rows)
-    return CountSketchRecipe{Right}(cardinality, compression_dim, n_rows, n_cols, mat)
+    return CountSketchRecipe{Right,typeof(mat)}(cardinality, compression_dim, n_rows, n_cols, mat)
 end
 
 function complete_compressor(ingredients::CountSketch, A::AbstractMatrix)
@@ -156,8 +156,10 @@ function complete_compressor(ingredients::CountSketch, A::AbstractMatrix)
 end
 
 function update_compressor!(S::CountSketchRecipe)
-    # Assign -1 or +1 in every row/column with probability 0.5
-    rand!(S.mat.nzval, [-1.0, 1.0])
+    nzval = S.mat.nzval
+    @inbounds for i in eachindex(nzval)
+        nzval[i] = ifelse(rand(Bool), 1.0, -1.0)
+    end
     rand!(S.mat.rowval, 1:S.compression_dim)
     return nothing
 end
@@ -242,7 +244,7 @@ function mul!(
     B_nz = nonzeros(B)
 
     # Iterate over columns of S_mat (which correspond to rows of A)
-    for j in 1:size(S_mat, 2)
+    @inbounds for j in 1:size(S_mat, 2)
         rng_S = nzrange(S_mat, j)
         for k_S in rng_S
             row_S = S_rows[k_S]

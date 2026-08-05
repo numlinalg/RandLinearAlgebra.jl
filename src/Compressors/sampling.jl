@@ -74,28 +74,29 @@ function Sampling(;
 end
 
 """
-    SamplingRecipe{C<:Cardinality} <: CompressorRecipe
+    SamplingRecipe{C<:Cardinality, D<:DistributionRecipe, V<:SubArray} <: CompressorRecipe
 
-The recipe containing all allocations and information for the sampling compressor. 
+The recipe containing all allocations and information for the sampling compressor.
 
 # Fields
-- `cardinality::Cardinality`, the cardinality of the compressor. The
+- `cardinality::C`, the cardinality of the compressor. The
     value is either `Left()` or `Right()`.
 - `compression_dim::Int64`, the target compression dimension.
 - `n_rows::Int64`, number of rows of compression matrix.
 - `n_cols::Int64`, number of columns of compression matrix.
-- `distribution_recipe::DistributionRecipe`, the user-specified distribution recipe.
+- `distribution_recipe::D`, the user-specified distribution recipe.
 - `idx::Vector{Int64}`, the index set that contains all the chosen indices.
-- `idx_v::SubArray`, the view of the `idx`.
+- `idx_v::V`, the view of the `idx`.
 """
-mutable struct SamplingRecipe{C<:Cardinality} <: CompressorRecipe
-    cardinality::Cardinality
+mutable struct SamplingRecipe{C<:Cardinality,D<:DistributionRecipe,V<:SubArray} <:
+               CompressorRecipe
+    cardinality::C
     compression_dim::Int64
     n_rows::Int64
     n_cols::Int64
-    distribution_recipe::DistributionRecipe
+    distribution_recipe::D
     idx::Vector{Int64}
-    idx_v::SubArray
+    idx_v::V
 end
 
 # Computes the dimensions of the CompressorRecipe 
@@ -123,14 +124,14 @@ function complete_compressor(sub_sampling::Sampling, A::AbstractMatrix)
     idx_v = view(idx,:)
     # Randomly generate samples from index set based on weights
     sample_distribution!(idx, dist_recipe)
-    return SamplingRecipe{typeof(sub_sampling.cardinality)}(
-        sub_sampling.cardinality, 
-        compression_dim, 
-        n_rows, 
-        n_cols, 
-        dist_recipe, 
-        idx, 
-        idx_v
+    return SamplingRecipe{typeof(sub_sampling.cardinality),typeof(dist_recipe),typeof(idx_v)}(
+        sub_sampling.cardinality,
+        compression_dim,
+        n_rows,
+        n_cols,
+        dist_recipe,
+        idx,
+        idx_v,
     )
 end
 
@@ -288,13 +289,11 @@ function mul!(
     rv = rowvals(B)
     nz = nonzeros(B)
 
-    for (i, r) in enumerate(rows)
+    @inbounds for (i, r) in enumerate(rows)
         rng = nzrange(B, r)
         for k in rng
             row = rv[k]
             val = nz[k]
-            # C[i, row] += alpha * val
-            # We use atomic add if parallel? No, this is serial.
             C[i, row] += alpha * val
         end
     end

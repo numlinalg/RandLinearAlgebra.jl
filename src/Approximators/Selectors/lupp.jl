@@ -32,31 +32,30 @@ function LUPP(; compressor::Compressor = Identity())
 end
 
 """
-    LUPPRecipe <: SelectorRecipe
+    LUPPRecipe{CR, M} <: SelectorRecipe
 
-A `SelectorRecipe` that contains all the necessary preallocations for selecting column 
+A `SelectorRecipe` that contains all the necessary preallocations for selecting column
 indices from a matrix using LU with partial pivoting.
 
 
 # Fields
-- `compressor::CompressorRecipe`, the compression technique that will applied to the matrix, 
+- `compressor::CR`, the compression technique that will applied to the matrix,
     before selecting indices.
-- `SA::AbstractMatrix`, a buffer matrix for storing the sketched matrix.
+- `SA::M`, a buffer matrix for storing the sketched matrix.
 
 !!! note "Implementation Note" 
     LU with partial pivoting is classically implemented to select rows of a matrix. Here we 
     apply LU with partial pivoting to the transpose of the inputted matrix to select 
     columns.
 """
-mutable struct LUPPRecipe <: SelectorRecipe
-    compressor::CompressorRecipe
-    SA::AbstractMatrix
+mutable struct LUPPRecipe{CR<:CompressorRecipe,M<:AbstractMatrix} <: SelectorRecipe
+    compressor::CR
+    SA::M
 end
 
 function complete_selector(ingredients::LUPP, A::AbstractMatrix)
     compressor = complete_compressor(ingredients.compressor, A)
-    n_rows, n_cols = size(compressor)
-    SA = Matrix{eltype(A)}(undef, n_rows, n_cols)
+    SA = Matrix{eltype(A)}(undef, size(compressor, 1), size(A, 2))
     return LUPPRecipe(compressor, SA)
 end
 

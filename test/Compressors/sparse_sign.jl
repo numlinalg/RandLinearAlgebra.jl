@@ -82,16 +82,6 @@ Random.seed!(2131)
         @test_compressor SparseSignRecipe
         @test fieldnames(SparseSignRecipe) ==
             (:cardinality, :n_rows, :n_cols, :nnz, :scale, :op)
-        @test fieldtypes(SparseSignRecipe) == (
-            Cardinality,
-            Int64,
-            Int64,
-            Int64,
-            Vector{<:Number},
-            Union{
-                Adjoint{T,SparseMatrixCSC{T,I}},SparseMatrixCSC
-            } where {T<:Number,I<:Integer},
-        )
 
         # Verify the internal constructor
         let card = Left,

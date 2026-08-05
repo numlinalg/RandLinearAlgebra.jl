@@ -133,16 +133,18 @@ A struct that contains the preallocated memory and completed compressor to form 
     approximation. Will have the `compression_dim` number of rows and `block_size`
     number of columns.
 """
-mutable struct RandSVDRecipe <: RangeApproximatorRecipe
+mutable struct RandSVDRecipe{
+    CR<:CompressorRecipe,MU<:AbstractArray,VS<:AbstractVector,MV<:AbstractArray,MB<:AbstractArray
+} <: RangeApproximatorRecipe
     n_rows::Int64
     n_cols::Int64
-    compressor::CompressorRecipe
+    compressor::CR
     power_its::Int64
     orthogonalize::Bool
-    U::AbstractArray
-    S::AbstractVector
-    V::AbstractArray
-    buffer::AbstractArray
+    U::MU
+    S::VS
+    V::MV
+    buffer::MB
 end
 
 function complete_approximator(approx::RandSVD, A::AbstractMatrix)
@@ -180,7 +182,7 @@ function rapproximate!(approx::RandSVDRecipe, A::AbstractMatrix)
         Q = rand_power_it(A, approx)
     end
 
-    QA = Matrix{Float64}(undef, size(Q, 2), size(A, 2))
+    QA = Matrix{eltype(A)}(undef, size(Q, 2), size(A, 2))
     # Making Q an Array is far more efficient than not
     mul!(QA, Q', A)
     U, approx.S, approx.V = svd(QA)

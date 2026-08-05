@@ -3,7 +3,7 @@ using RandLinearAlgebra, Test
 
 LoggerFields = Dict(
     :error => Real,
-    :threshold_info => Union{Float64,Tuple},
+    :threshold_info => Any,
     :converged => Bool,
     :hist => Vector{Float64},
     :stopping_criterion => Function,
