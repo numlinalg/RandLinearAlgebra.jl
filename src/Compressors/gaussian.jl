@@ -80,17 +80,17 @@ value is either `Left()` or `Right()`.
 - `compression_dim::Int64`, the target compression dimension.
 - `n_rows::Int64`, the number of rows of the compression matrix.
 - `n_cols::Int64`, the number of columns of the compression matrix.
-- `scale::Number`, the standard deviation of Gaussian distribution during the 
+- `scale::T`, the standard deviation of Gaussian distribution during the
 compression matrix generation.
-- `op::Matrix{Float64}`, the Gaussian compression matrix.
+- `op::Matrix{T}`, the Gaussian compression matrix.
 """
-mutable struct GaussianRecipe{C<:Cardinality} <: CompressorRecipe
+mutable struct GaussianRecipe{C<:Cardinality,T<:Number} <: CompressorRecipe
     cardinality::C
     compression_dim::Int64
     n_rows::Int64
     n_cols::Int64
-    scale::Number
-    op::Matrix{<:Number}
+    scale::T
+    op::Matrix{T}
 end
 
 function GaussianRecipe(

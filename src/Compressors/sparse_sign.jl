@@ -172,7 +172,7 @@ function sparse_idx_update!(
 end
 
 """
-    SparseSignRecipe{C<:Cardinality} <: CompressorRecipe
+    SparseSignRecipe{C<:Cardinality,V<:AbstractVector,O} <: CompressorRecipe
 
 The recipe containing all allocations and information for the SparseSign compressor.
 
@@ -216,13 +216,13 @@ value of `cardinality`. See [SparseSign](@ref) for additional details.
     To ensure cross library compatibility please use [`complete_compressor`](@ref)
     for forming the `SparseSignRecipe`.
 """
-mutable struct SparseSignRecipe{C<:Cardinality} <: CompressorRecipe
+mutable struct SparseSignRecipe{C<:Cardinality,V<:AbstractVector,O} <: CompressorRecipe
     cardinality::C
     n_rows::Int64
     n_cols::Int64
     nnz::Int64
-    scale::Vector{<:Number}
-    op::Union{SparseMatrixCSC,Adjoint{T,SparseMatrixCSC{T,I}}} where {T<:Number,I<:Integer}
+    scale::V
+    op::O
 end
 
 
@@ -255,9 +255,7 @@ function SparseSignRecipe(
     col_ptr = collect(1:nnz:(total_nnz + 1))
     op = SparseMatrixCSC{type,Int64}(n_rows, n_cols, col_ptr, idxs, signs)
 
-    return SparseSignRecipe{typeof(cardinality)}(
-        cardinality, n_rows, n_cols, nnz, scale, op
-    )
+    return SparseSignRecipe(cardinality, n_rows, n_cols, nnz, scale, op)
 end
 
 function SparseSignRecipe(
@@ -289,9 +287,7 @@ function SparseSignRecipe(
     col_ptr = collect(1:nnz:(total_nnz + 1))
     op = adjoint(SparseMatrixCSC{type,Int64}(n_cols, n_rows, col_ptr, idxs, signs))
 
-    return SparseSignRecipe{typeof(cardinality)}(
-        cardinality, n_rows, n_cols, nnz, scale, op
-    )
+    return SparseSignRecipe(cardinality, n_rows, n_cols, nnz, scale, op)
 end
 
 function complete_compressor(ingredients::SparseSign, A::AbstractMatrix)
@@ -394,20 +390,15 @@ function mul!(
         B_rows = rowvals(B)
         B_nz = nonzeros(B)
 
-        for i in 1:size(P, 2) # For each column i of P (Row i of C)
+        @inbounds for i in 1:size(P, 2) # For each column i of P (Row i of C)
             rng_P = nzrange(P, i)
             for k_P in rng_P
-                row_P = P_rows[k_P] # Row index in P -> Column index in S.op -> Row index in A
-                val_P = P_nz[k_P]   # Value in P
-
-                # We are in Row i of C.
-                # We have a nonzero at column row_P of S.op with value conj(val_P).
-                # We need to add conj(val_P) * (Row row_P of A) to Row i of C.
-                # Row row_P of A is Column row_P of B.
+                row_P = P_rows[k_P]
+                val_P = P_nz[k_P]
 
                 rng_B = nzrange(B, row_P)
                 for k_B in rng_B
-                    col_C = B_rows[k_B] # Row index in B -> Column index in C
+                    col_C = B_rows[k_B]
                     val_B = B_nz[k_B]
 
                     C[i, col_C] += alpha * conj(val_P) * val_B
@@ -423,7 +414,7 @@ function mul!(
         B_rows = rowvals(B)
         B_nz = nonzeros(B)
 
-        for j in 1:size(S_mat, 2)
+        @inbounds for j in 1:size(S_mat, 2)
             rng_S = nzrange(S_mat, j)
             for k_S in rng_S
                 row_S = S_rows[k_S]

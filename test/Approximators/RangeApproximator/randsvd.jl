@@ -40,11 +40,11 @@ end
 
 @testset "RandSVD" begin 
     @testset "RandSVD" begin
-        supertype(RandSVD) == Approximator
+        @test supertype(RandSVD) <: Approximator
 
         # test the fieldnames and types
-        fieldnames(RandSVD) == (:compressor, :power_its, :orthogonalize, :block_size)
-        fieldtypes(RandSVD) == (Compressor, Int64, Bool, Int64)
+        @test fieldnames(RandSVD) == (:compressor, :power_its, :orthogonalize, :block_size)
+        @test fieldtypes(RandSVD) == (Compressor, Int64, Bool, Int64)
         
         # test errors
         let compressor = TestCompressor(),
@@ -89,23 +89,24 @@ end
 
     @testset "RandSVD Recipe" begin
         @test_range_approximator RandSVDRecipe
-        supertype(RandSVDRecipe) == ApproximatorRecipe
+        @test supertype(RandSVDRecipe) <: ApproximatorRecipe
 
         # test the fieldnames and types
         @test fieldnames(RandSVDRecipe) == (
             :n_rows, :n_cols, :compressor, :power_its, :orthogonalize, :U, :S, :V, :buffer
         )
-        @test fieldtypes(RandSVDRecipe) == (
-            Int64, 
-            Int64, 
-            CompressorRecipe, 
-            Int64, 
-            Bool, 
-            AbstractArray, 
-            AbstractVector, 
+        expected_supertypes = (
+            Int64,
+            Int64,
+            CompressorRecipe,
+            Int64,
+            Bool,
             AbstractArray,
-            AbstractArray
+            AbstractVector,
+            AbstractArray,
+            AbstractArray,
         )
+        @test all(ft <: st for (ft, st) in zip(fieldtypes(RandSVDRecipe), expected_supertypes))
     end
     
     @testset "RandSVD: Complete Approximator" begin
@@ -492,6 +493,23 @@ end
 
     end
 
+    @testset "RandSVD: Float32 type preservation" begin
+        let n_rows = 20,
+            n_cols = 10,
+            compression_dim = 5,
+            A = Float32.(randn(n_rows, n_cols)),
+            compressor = Gaussian(
+                cardinality=Right(), compression_dim=compression_dim, type=Float32
+            )
+
+            approx = RandSVD(compressor=compressor)
+            approx_rec = rapproximate(approx, A)
+            @test eltype(approx_rec.U) == Float32
+            @test eltype(approx_rec.S) == Float32
+            @test eltype(approx_rec.V) == Float32
+        end
+    end
+
     @testset "RandSVD Recipe: mul!" begin
         n_rows = 10
         n_cols = 10
@@ -508,10 +526,10 @@ end
         approx = RandSVD(compressor, power_its, orthogonalize, block_size)
         approx_rec = rapproximate(approx, A)
         # Check that the size function works
-        size(approx_rec) == (approx_rec.n_rows, approx_rec.n_cols)
-        size(approx_rec') == (approx_rec.n_cols, approx_rec.n_rows)
+        @test size(approx_rec) == (approx_rec.n_rows, approx_rec.n_cols)
+        @test size(approx_rec') == (approx_rec.n_cols, approx_rec.n_rows)
         # also test that the tranpose is the same as the parent
-        ApproximatorAdjoint(approx_rec) == transpose(approx_rec)
+        @test ApproximatorAdjoint(approx_rec) == transpose(approx_rec)
         approx_rec = transpose(transpose(approx_rec))
         # test multiplication from the left
         let approx_rec = approx_rec, 

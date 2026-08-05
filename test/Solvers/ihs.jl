@@ -173,7 +173,7 @@ end
             @test solver.alpha == 1.0
             @test typeof(solver.compressor) == SparseSign 
             @test typeof(solver.compressor.cardinality) == Left 
-            @test typeof(solver.log) == BasicLogger
+            @test typeof(solver.log) <: BasicLogger
             @test typeof(solver.error) == FullResidual
         end
 

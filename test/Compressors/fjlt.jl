@@ -1,5 +1,6 @@
 module fjlt 
 using Test, RandLinearAlgebra, Random
+import SparseArrays
 import SparseArrays: sparse, SparseMatrixCSC, sprand
 import LinearAlgebra: mul!, Adjoint, Diagonal
 import Hadamard: hadamard
@@ -311,6 +312,25 @@ Random.seed!(2131)
             @test compressor_recipe.sparsity == sp 
             @test compressor_recipe.op != oldmat
             @test compressor_recipe.signs != oldsigns
+        end
+
+        # test that update_compressor! is allocation-free
+        let A = rand(16, 10),
+            recipe = complete_compressor(
+                FJLT(;
+                    cardinality=Left(),
+                    compression_dim=4,
+                    sparsity=0.5,
+                    type=Float64,
+                ),
+                A,
+            )
+
+            update_compressor!(recipe)
+            nnz_before = SparseArrays.nnz(recipe.op)
+            allocs = @allocated update_compressor!(recipe)
+            @test allocs == 0
+            @test SparseArrays.nnz(recipe.op) == nnz_before
         end
 
     end

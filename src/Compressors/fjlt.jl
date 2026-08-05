@@ -243,11 +243,7 @@ function complete_compressor(ingredients::FJLT, A::AbstractMatrix)
 end
 
 function update_compressor!(S::FJLTRecipe)
-    n_rows, n_cols = size(S.op)
-    type = eltype(S.op)
-    # Generate a new sparse matrix
-    S.op = sprandn(type, n_rows, n_cols, S.sparsity)
-    # Resample the non-zero values 
+    randn!(nonzeros(S.op))
     rand!(S.signs)
 
     return nothing

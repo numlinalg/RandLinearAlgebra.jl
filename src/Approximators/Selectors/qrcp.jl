@@ -27,19 +27,19 @@ function QRCP(; compressor::Compressor = Identity())
 end
 
 """
-    QRCPRecipe <: SelectorRecipe
+    QRCPRecipe{CR, M} <: SelectorRecipe
 
-A `SelectorRecipe` that contains all the necessary preallocations for selecting column 
+A `SelectorRecipe` that contains all the necessary preallocations for selecting column
 indices from a matrix using QR with column norm pivoting.
 
 # Fields
-- `compressor::Compressor`, the compression technique that will be applied to the matrix, 
+- `compressor::CR`, the compression technique that will be applied to the matrix,
     before selecting indices.
-- `SA::AbstractMatrix`, a buffer matrix for storing the compressed matrix.
+- `SA::M`, a buffer matrix for storing the compressed matrix.
 """
-mutable struct QRCPRecipe <: SelectorRecipe
-    compressor::CompressorRecipe
-    SA::AbstractMatrix
+mutable struct QRCPRecipe{CR<:CompressorRecipe,M<:AbstractMatrix} <: SelectorRecipe
+    compressor::CR
+    SA::M
 end
 
 function complete_selector(ingredients::QRCP, A::AbstractMatrix)
