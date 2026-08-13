@@ -17,24 +17,24 @@ factorization of ``A^\\top``.
 If an approximate compressor is provided, leverage scores are estimated using the
 randomized algorithm of [drineas2012fast](@citet): a sketch ``B = \\Pi_1 A`` is
 formed via the supplied compressor, and the QR factorization of ``B`` yields ``R``.
-A second, lightweight Gaussian sketch ``\\Pi_2 \\in \\mathbb{R}^{d \\times r_2}``
-(sized automatically from ``n``) is then used to compute ``M = R^{-1}\\Pi_2`` and
-``\\Omega = AM``, whose row norms approximate the exact leverage scores. Solving
-for ``M`` before multiplying by ``A`` avoids ever materializing the ``n \\times d``
-matrix ``AR^{-1}``, giving an ``O(nd \\log n)`` estimator rather than the
-``O(nd^2)`` cost of the direct approach. Only `Left()` cardinality is supported in
-approximate mode.
+By default, leverage scores are then the row norms of ``AR^{-1}``. If `r2` is also
+given, a second sketch ``\\Pi_2 \\in \\mathbb{R}^{d \\times r_2}`` further reduces
+``AR^{-1}`` to ``\\Omega = AR^{-1}\\Pi_2`` before its row norms are taken instead,
+giving ``O(nd \\, r_2)`` (e.g. ``O(nd \\log n)`` for ``r_2 = O(\\log n)``) rather
+than the ``O(nd^2)`` cost of forming ``AR^{-1}`` directly; this only helps when
+``r_2 < d``, so `r2` must be chosen accordingly. Only `Left()` cardinality is
+supported in approximate mode.
 
 !!! note "Approximate Mode Accuracy"
-    The relative-error guarantee in [drineas2012fast](@citet) (Theorem 2) holds with
-    the sketch sizes the paper specifies, which carry large constants; sketches sized
-    for the ``O(nd \\log n)`` asymptotic target (as used here) trade tight per-row
-    accuracy for speed. In particular, rows whose true leverage score is small relative
-    to the others are the hardest to estimate to tight relative error, since the
-    estimator's noise floor dominates a small true value. Approximate mode is best
-    suited to producing a sampling distribution (where the aggregate weighting matters
-    more than any single row's exact value), not to recovering individual leverage
-    scores precisely; use exact mode, or a much larger `compressor`, when precision
+    Inverting the sketch-based `R` is a biased estimator of `A'A`'s inverse (`R'R`
+    is Wishart-distributed, and matrix inversion is convex, so the naive estimate
+    is systematically too large by Jensen's inequality). This has an exact,
+    closed-form correction, applied internally. It does not fix per-row variance,
+    though: rows with small true leverage score are the hardest to pin down to
+    tight relative error, since the estimator's noise floor dominates a small
+    true value. Approximate mode is best suited to producing a sampling
+    distribution (where aggregate weighting matters more than any single row's
+    exact value); use exact mode, or a much larger `compressor`, when precision
     matters.
 
 # Fields
@@ -47,10 +47,14 @@ approximate mode.
     computed via a thin QR factorization of `A`. If a `Compressor` with `Left()`
     cardinality is provided, approximate leverage scores are computed following
     [drineas2012fast](@citet).
+- `r2::Union{Nothing, Int}`, only used when `compressor` is provided. If `nothing`
+    (the default), leverage scores are the row norms of ``AR^{-1}``. Otherwise, a
+    second sketch of size `r2` is used instead, as described above; `r2` must
+    satisfy `1 <= r2 < size(A, 2)`.
 
 # Constructor
 
-    LeverageScore(; cardinality=Undef(), replace=false, compressor=nothing)
+    LeverageScore(; cardinality=Undef(), replace=false, compressor=nothing, r2=nothing)
 
 ## Returns
 - A `LeverageScore` object.
@@ -59,10 +63,13 @@ mutable struct LeverageScore <: Distribution
     cardinality::Cardinality
     replace::Bool
     compressor::Union{Nothing, Compressor}
+    r2::Union{Nothing, Int}
 end
 
-function LeverageScore(; cardinality = Undef(), replace = false, compressor = nothing)
-    return LeverageScore(cardinality, replace, compressor)
+function LeverageScore(;
+    cardinality = Undef(), replace = false, compressor = nothing, r2 = nothing
+)
+    return LeverageScore(cardinality, replace, compressor, r2)
 end
 
 """
@@ -79,6 +86,7 @@ The recipe containing all allocations and information for the leverage score dis
 - `weights::ProbabilityWeights`, the leverage score of each element in the state space.
 - `compressor_recipe::Union{Nothing, CompressorRecipe}`, the completed compressor for
     approximate leverage score computation, or `nothing` in exact mode.
+- `r2::Union{Nothing, Int}`, carried over from `LeverageScore`; see its docstring.
 """
 mutable struct LeverageScoreRecipe <: DistributionRecipe
     cardinality::Cardinality
@@ -86,12 +94,13 @@ mutable struct LeverageScoreRecipe <: DistributionRecipe
     state_space::Vector{Int64}
     weights::ProbabilityWeights
     compressor_recipe::Union{Nothing, CompressorRecipe}
+    r2::Union{Nothing, Int}
 end
 
 """
     complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
 
-A function that generates a `LeverageScoreRecipe` given the arguments. Computes
+Creates a `LeverageScoreRecipe` for the given distribution and matrix. Computes
 leverage scores of `A` either exactly via a thin QR factorization, or approximately
 using the randomized algorithm of [drineas2012fast](@citet).
 
@@ -106,11 +115,14 @@ using the randomized algorithm of [drineas2012fast](@citet).
 - `ArgumentError` if `distribution.cardinality` is `Undef()`.
 - `ArgumentError` if approximate mode is requested with `Right()` cardinality.
 - `ArgumentError` if the provided compressor does not have `Left()` cardinality.
-- `ArgumentError` if the compressor's compression dimension is less than `size(A, 2)`.
+- `ArgumentError` if the compressor's compression dimension is less than `size(A, 2) + 2`.
+- `ArgumentError` if `distribution.r2` is given without a `compressor`, or does not
+    satisfy `1 <= r2 < size(A, 2)`.
 """
 function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
     cardinality = distribution.cardinality
     compressor = distribution.compressor
+    r2 = distribution.r2
 
     if cardinality == Undef()
         throw(
@@ -139,67 +151,85 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
         )
     end
 
+    if r2 !== nothing && compressor === nothing
+        throw(
+            ArgumentError(
+                "`LeverageScore`'s `r2` may only be set when `compressor` is also \
+                provided."
+            ),
+        )
+    end
+
     compressor_recipe = nothing
 
     if compressor === nothing
         if cardinality == Left()
-            n_rows = size(A, 1)
-            state_space = collect(1:n_rows)
+            n = size(A, 1)
+            state_space = collect(1:n)
             F = qr(A)
-            # multiply by identity to extract thin Q (n×d) without materializing full n×n Q
-            Q = F.Q * Matrix(I, n_rows, size(A, 2))
+            # multiply by identity to extract thin Q (n×d) without materializing full Q
+            Q = F.Q * Matrix(I, n, size(A, 2))
             weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         else
-            n_cols = size(A, 2)
-            state_space = collect(1:n_cols)
+            d = size(A, 2)
+            state_space = collect(1:d)
             # A' is d×n; its Q factor is already d×d (thin = full for fat matrices)
             Q = Matrix(qr(Matrix(A')).Q)
             weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         end
     else
         compressor_recipe = complete_compressor(compressor, A)
-        if compressor_recipe.n_rows < size(A, 2)
+        d = size(A, 2)
+        r1 = compressor_recipe.n_rows
+        if r1 < d + 2
             throw(
                 ArgumentError(
-                    "The compressor's compression dimension must be at least `size(A, 2)` \
-                    for approximate leverage score computation."
+                    "The compressor's compression dimension must be at least \
+                    `size(A, 2) + 2` for approximate leverage score computation."
                 ),
             )
         end
-        n_rows = size(A, 1)
-        d = size(A, 2)
-        state_space = collect(1:n_rows)
-        B = similar(A, compressor_recipe.n_rows, d)
+        if r2 !== nothing && !(1 <= r2 < d)
+            throw(ArgumentError("`r2` must satisfy `1 <= r2 < size(A, 2)`."))
+        end
+        n = size(A, 1)
+        state_space = collect(1:n)
+        B = similar(A, r1, d)
         mul!(B, compressor_recipe, A, 1, 0)
         R = UpperTriangular(qr(B).R)
-        # Simpler O(nd²) estimator: materialize the full A*R⁻¹ and take its row
-        # norms directly. Superseded below by the O(nd log n) two-sketch estimator
-        # (Algorithm 1, steps 3-4 of drineas2012fast); kept here for reference.
-        # X = A / R
-        # weights = ProbabilityWeights(vec(sum(abs2, X, dims = 2)))
 
-        # Second (Johnson-Lindenstrauss) sketch Π₂ ∈ R^{d × r2}. Solving
-        # M = R⁻¹Π₂ first (a cheap d×d triangular solve) and only then forming
-        # Ω = A*M avoids ever materializing the n×d matrix A*R⁻¹, which is what
-        # gets the algorithm down to O(nd log n) instead of O(nd²).
-        r2 = max(2, ceil(Int, 20 * log(n_rows)))
-        Π2 = randn(d, r2) ./ sqrt(r2)
-        M = R \ Π2
-        Ω = A * M
-        weights = ProbabilityWeights(vec(sum(abs2, Ω, dims = 2)))
+        # R'R is Wishart(A'A/r1, r1)-distributed, so E[(R'R)⁻¹] = r1(A'A)⁻¹/(r1-d-1),
+        # not (A'A)⁻¹ (textbook Wishart identity: inverting a noisy sketch of A'A
+        # is biased). Exact fix: scale the raw weights by (r1-d-1)/r1.
+        bias_correction = (r1 - d - 1) / r1
+
+        # Π₂ ∈ R^{d×r2}, if requested: a second sketch reducing AR⁻¹'s d columns
+        # before taking row norms. Solving M = R⁻¹Π₂ then Ω = A*M avoids ever
+        # forming the n×d matrix A*R⁻¹, giving O(nd*r2) instead of O(nd²).
+        if r2 !== nothing
+            Π2 = randn(d, r2) ./ sqrt(r2)
+            M = R \ Π2
+            Ω = A * M
+            weights =
+                ProbabilityWeights(bias_correction .* vec(sum(abs2, Ω, dims = 2)))
+        else
+            X = A / R
+            weights =
+                ProbabilityWeights(bias_correction .* vec(sum(abs2, X, dims = 2)))
+        end
     end
 
     return LeverageScoreRecipe(
-        cardinality, distribution.replace, state_space, weights, compressor_recipe
+        cardinality, distribution.replace, state_space, weights, compressor_recipe, r2
     )
 end
 
 """
     update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatrix)
 
-A function that updates the `LeverageScoreRecipe` in place to correspond with a
-new matrix `A`. Recomputes leverage scores via QR factorization (exact mode) or
-via the stored compressor recipe (approximate mode).
+Updates the leverage score distribution recipe with the current matrix.
+Recomputes leverage scores via QR factorization (exact mode) or via the stored
+compressor recipe (approximate mode).
 
 # Arguments
 - `ingredients::LeverageScoreRecipe`, a fully initialized leverage score distribution.
@@ -225,16 +255,16 @@ function update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatri
 
     if ingredients.compressor_recipe === nothing
         if ingredients.cardinality == Left()
-            n_rows = size(A, 1)
-            length(ingredients.state_space) != n_rows &&
-                (ingredients.state_space = collect(1:n_rows))
+            n = size(A, 1)
+            length(ingredients.state_space) != n &&
+                (ingredients.state_space = collect(1:n))
             F = qr(A)
-            Q = F.Q * Matrix(I, n_rows, size(A, 2))  # thin Q (n×d)
+            Q = F.Q * Matrix(I, n, size(A, 2))  # thin Q (n×d)
             ingredients.weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         else
-            n_cols = size(A, 2)
-            length(ingredients.state_space) != n_cols &&
-                (ingredients.state_space = collect(1:n_cols))
+            d = size(A, 2)
+            length(ingredients.state_space) != d &&
+                (ingredients.state_space = collect(1:d))
             Q = Matrix(qr(Matrix(A')).Q)  # A' is d×n; Q is already d×d
             ingredients.weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         end
@@ -247,18 +277,27 @@ function update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatri
                 ),
             )
         end
+
         update_compressor!(ingredients.compressor_recipe)
         d = size(A, 2)
-        B = similar(A, ingredients.compressor_recipe.n_rows, d)
+        r1 = ingredients.compressor_recipe.n_rows
+        r2 = ingredients.r2
+        B = similar(A, r1, d)
         mul!(B, ingredients.compressor_recipe, A, 1, 0)
         R = UpperTriangular(qr(B).R)
-        # X = A / R
-        # ingredients.weights = ProbabilityWeights(vec(sum(abs2, X, dims = 2)))
-        r2 = max(2, ceil(Int, 20 * log(size(A, 1))))
-        Π2 = randn(d, r2) ./ sqrt(r2)
-        M = R \ Π2
-        Ω = A * M
-        ingredients.weights = ProbabilityWeights(vec(sum(abs2, Ω, dims = 2)))
+        # Exact Wishart bias correction; see the note in `complete_distribution`.
+        bias_correction = (r1 - d - 1) / r1
+        if r2 !== nothing
+            Π2 = randn(d, r2) ./ sqrt(r2)
+            M = R \ Π2
+            Ω = A * M
+            ingredients.weights =
+                ProbabilityWeights(bias_correction .* vec(sum(abs2, Ω, dims = 2)))
+        else
+            X = A / R
+            ingredients.weights =
+                ProbabilityWeights(bias_correction .* vec(sum(abs2, X, dims = 2)))
+        end
     end
 
     return nothing
@@ -267,8 +306,7 @@ end
 """
     sample_distribution!(indices::AbstractVector, distribution::LeverageScoreRecipe)
 
-A function that in place updates `indices` with sampled indices following the leverage
-score weights of `distribution`.
+Samples indices according to the leverage score distribution.
 
 # Arguments
 - `indices::AbstractVector`, an abstract vector to store the sampled indices.

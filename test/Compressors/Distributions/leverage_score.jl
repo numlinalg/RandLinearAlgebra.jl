@@ -16,8 +16,9 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
     @testset "LeverageScore: Distribution" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(LeverageScore) == Distribution
-        @test fieldnames(LeverageScore) == (:cardinality, :replace, :compressor)
-        @test fieldtypes(LeverageScore) == (Cardinality, Bool, Union{Nothing, Compressor})
+        @test fieldnames(LeverageScore) == (:cardinality, :replace, :compressor, :r2)
+        @test fieldtypes(LeverageScore) ==
+              (Cardinality, Bool, Union{Nothing, Compressor}, Union{Nothing, Int})
 
         # Default constructor
         let
@@ -25,6 +26,7 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test m.cardinality == Undef()
             @test m.replace == false
             @test m.compressor === nothing
+            @test m.r2 === nothing
         end
 
         # Custom constructor
@@ -53,7 +55,7 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(LeverageScoreRecipe) == DistributionRecipe
         @test fieldnames(LeverageScoreRecipe) ==
-              (:cardinality, :replace, :state_space, :weights, :compressor_recipe)
+              (:cardinality, :replace, :state_space, :weights, :compressor_recipe, :r2)
         @test fieldtypes(LeverageScoreRecipe)[1:4] ==
               (Cardinality, Bool, Vector{Int64}, ProbabilityWeights)
     end
@@ -128,7 +130,8 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test_throws ArgumentError complete_distribution(m, A)
         end
 
-        # Compressor's compression dimension must be at least size(A, 2)
+        # Compressor's compression dimension must be at least size(A, 2) + 2
+        # (the Wishart bias correction below is undefined otherwise)
         let A = randn(20, 5),
             comp = Gaussian(cardinality = Left(), compression_dim = 3),
             m = LeverageScore(cardinality = Left(), compressor = comp)
@@ -136,14 +139,62 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test_throws ArgumentError complete_distribution(m, A)
         end
 
-        # Valid approximate mode: weights are positive, correctly sized, and
-        # approximate the exact leverage scores for a sketch large relative to d.
-        # drineas2012fast's Theorem 2 gives an 80%-probability guarantee PER ROW,
-        # not a simultaneous guarantee across all rows in one draw, so we check
-        # that most rows (not necessarily every row) land within tolerance, plus
-        # the aggregate sum, rather than a worst-case-over-all-rows bound (which
-        # is flaky by construction for this class of estimator: see the
-        # "Approximate Mode Accuracy" note on `LeverageScore`).
+        # Wishart bias correction: averaged over repeated draws (lower variance
+        # than a single one), weights should be close to unbiased around d
+        let d = 20,
+            r1 = 40,
+            trials = 60,
+            sums = Float64[]
+
+            for _ in 1:trials
+                A = randn(300, d)
+                comp = Gaussian(cardinality = Left(), compression_dim = r1)
+                m = LeverageScore(cardinality = Left(), compressor = comp)
+                mr = complete_distribution(m, A)
+                push!(sums, sum(mr.weights))
+            end
+            @test sum(sums) / trials ≈ d rtol = 0.15
+        end
+
+        # r2 without a compressor is meaningless
+        let A = randn(20, 5),
+            m = LeverageScore(cardinality = Left(), r2 = 3)
+
+            @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # r2 must satisfy 1 <= r2 < size(A, 2)
+        let A = randn(20, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 15),
+            m = LeverageScore(cardinality = Left(), compressor = comp, r2 = 5)
+
+            @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # r2 fast path (Π2), requested explicitly: confirm the correction still
+        # holds and r2 is carried into the recipe
+        let d = 20,
+            r1 = 40,
+            r2_val = 6,
+            trials = 60,
+            sums = Float64[]
+
+            for _ in 1:trials
+                A = randn(300, d)
+                comp = Gaussian(cardinality = Left(), compression_dim = r1)
+                m = LeverageScore(cardinality = Left(), compressor = comp, r2 = r2_val)
+                mr = complete_distribution(m, A)
+                @test mr.r2 == r2_val
+                push!(sums, sum(mr.weights))
+            end
+            @test sum(sums) / trials ≈ d rtol = 0.15
+        end
+
+        # Weights should approximate the exact leverage scores. Theorem 2 in
+        # drineas2012fast is an 80%-probability guarantee PER ROW, not across all
+        # rows at once, so we check that most rows (not every row) land within
+        # tolerance, rather than a worst-case-over-all-rows bound that would be
+        # flaky by construction (see the "Approximate Mode Accuracy" note).
         let A = randn(200, 5),
             comp = Gaussian(cardinality = Left(), compression_dim = 100),
             m = LeverageScore(cardinality = Left(), compressor = comp),
@@ -238,6 +289,24 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             mr = complete_distribution(m, A1)
 
             @test_throws ArgumentError update_distribution!(mr, A2)
+        end
+
+        # Approximate mode update, r2 fast path: same averaged-sum verification
+        # as the "Complete Distribution" case above
+        let d = 20,
+            r1 = 40,
+            r2_val = 6,
+            trials = 60,
+            sums = Float64[]
+
+            comp = Gaussian(cardinality = Left(), compression_dim = r1)
+            m = LeverageScore(cardinality = Left(), compressor = comp, r2 = r2_val)
+            mr = complete_distribution(m, randn(300, d))
+            for _ in 1:trials
+                update_distribution!(mr, randn(300, d))
+                push!(sums, sum(mr.weights))
+            end
+            @test sum(sums) / trials ≈ d rtol = 0.15
         end
     end
 
