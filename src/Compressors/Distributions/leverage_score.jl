@@ -20,10 +20,9 @@ formed via the supplied compressor, and the QR factorization of ``B`` yields ``R
 By default, leverage scores are then the row norms of ``AR^{-1}``. If `r2` is also
 given, a second sketch ``\\Pi_2 \\in \\mathbb{R}^{d \\times r_2}`` further reduces
 ``AR^{-1}`` to ``\\Omega = AR^{-1}\\Pi_2`` before its row norms are taken instead,
-giving ``O(nd \\, r_2)`` (e.g. ``O(nd \\log n)`` for ``r_2 = O(\\log n)``) rather
-than the ``O(nd^2)`` cost of forming ``AR^{-1}`` directly; this only helps when
-``r_2 < d``, so `r2` must be chosen accordingly. Only `Left()` cardinality is
-supported in approximate mode.
+giving ``O(nd \\, r_2)`` rather than the ``O(nd^2)`` cost of forming ``AR^{-1}``
+directly; this only helps when ``r_2 < d``, so `r2` must be chosen accordingly.
+Only `Left()` cardinality is supported in approximate mode.
 
 !!! note "Approximate Mode Accuracy"
     Inverting the sketch-based `R` is a biased estimator of `A'A`'s inverse (`R'R`
@@ -86,7 +85,10 @@ The recipe containing all allocations and information for the leverage score dis
 - `weights::ProbabilityWeights`, the leverage score of each element in the state space.
 - `compressor_recipe::Union{Nothing, CompressorRecipe}`, the completed compressor for
     approximate leverage score computation, or `nothing` in exact mode.
-- `r2::Union{Nothing, Int}`, carried over from `LeverageScore`; see its docstring.
+- `r2::Union{Nothing, Int}`, in approximate mode, if `nothing`, leverage scores are
+    the row norms of ``AR^{-1}``; if set, a second sketch of size `r2` further
+    reduces ``AR^{-1}`` before its row norms are taken. Always `nothing` in exact
+    mode.
 """
 mutable struct LeverageScoreRecipe <: DistributionRecipe
     cardinality::Cardinality
@@ -164,24 +166,24 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
 
     if compressor === nothing
         if cardinality == Left()
-            n = size(A, 1)
-            state_space = collect(1:n)
+            n_rows = size(A, 1)
+            state_space = collect(1:n_rows)
             F = qr(A)
             # multiply by identity to extract thin Q (n×d) without materializing full Q
-            Q = F.Q * Matrix(I, n, size(A, 2))
+            Q = F.Q * Matrix(I, n_rows, size(A, 2))
             weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         else
-            d = size(A, 2)
-            state_space = collect(1:d)
+            n_cols = size(A, 2)
+            state_space = collect(1:n_cols)
             # A' is d×n; its Q factor is already d×d (thin = full for fat matrices)
             Q = Matrix(qr(Matrix(A')).Q)
             weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         end
     else
         compressor_recipe = complete_compressor(compressor, A)
-        d = size(A, 2)
-        r1 = compressor_recipe.n_rows
-        if r1 < d + 2
+        n_cols = size(A, 2)
+        r1 = compressor_recipe.n_rows  # the compressor's sketch size, not A's n_rows
+        if r1 < n_cols + 2
             throw(
                 ArgumentError(
                     "The compressor's compression dimension must be at least \
@@ -189,25 +191,25 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
                 ),
             )
         end
-        if r2 !== nothing && !(1 <= r2 < d)
+        if r2 !== nothing && !(1 <= r2 < n_cols)
             throw(ArgumentError("`r2` must satisfy `1 <= r2 < size(A, 2)`."))
         end
-        n = size(A, 1)
-        state_space = collect(1:n)
-        B = similar(A, r1, d)
+        n_rows = size(A, 1)
+        state_space = collect(1:n_rows)
+        B = similar(A, r1, n_cols)
         mul!(B, compressor_recipe, A, 1, 0)
         R = UpperTriangular(qr(B).R)
 
         # R'R is Wishart(A'A/r1, r1)-distributed, so E[(R'R)⁻¹] = r1(A'A)⁻¹/(r1-d-1),
         # not (A'A)⁻¹ (textbook Wishart identity: inverting a noisy sketch of A'A
         # is biased). Exact fix: scale the raw weights by (r1-d-1)/r1.
-        bias_correction = (r1 - d - 1) / r1
+        bias_correction = (r1 - n_cols - 1) / r1
 
         # Π₂ ∈ R^{d×r2}, if requested: a second sketch reducing AR⁻¹'s d columns
         # before taking row norms. Solving M = R⁻¹Π₂ then Ω = A*M avoids ever
         # forming the n×d matrix A*R⁻¹, giving O(nd*r2) instead of O(nd²).
         if r2 !== nothing
-            Π2 = randn(d, r2) ./ sqrt(r2)
+            Π2 = randn(n_cols, r2) ./ sqrt(r2)
             M = R \ Π2
             Ω = A * M
             weights =
@@ -255,16 +257,16 @@ function update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatri
 
     if ingredients.compressor_recipe === nothing
         if ingredients.cardinality == Left()
-            n = size(A, 1)
-            length(ingredients.state_space) != n &&
-                (ingredients.state_space = collect(1:n))
+            n_rows = size(A, 1)
+            length(ingredients.state_space) != n_rows &&
+                (ingredients.state_space = collect(1:n_rows))
             F = qr(A)
-            Q = F.Q * Matrix(I, n, size(A, 2))  # thin Q (n×d)
+            Q = F.Q * Matrix(I, n_rows, size(A, 2))  # thin Q (n×d)
             ingredients.weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         else
-            d = size(A, 2)
-            length(ingredients.state_space) != d &&
-                (ingredients.state_space = collect(1:d))
+            n_cols = size(A, 2)
+            length(ingredients.state_space) != n_cols &&
+                (ingredients.state_space = collect(1:n_cols))
             Q = Matrix(qr(Matrix(A')).Q)  # A' is d×n; Q is already d×d
             ingredients.weights = ProbabilityWeights(vec(sum(abs2, Q, dims = 2)))
         end
@@ -279,16 +281,16 @@ function update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatri
         end
 
         update_compressor!(ingredients.compressor_recipe)
-        d = size(A, 2)
-        r1 = ingredients.compressor_recipe.n_rows
+        n_cols = size(A, 2)
+        r1 = ingredients.compressor_recipe.n_rows  # sketch size, not A's n_rows
         r2 = ingredients.r2
-        B = similar(A, r1, d)
+        B = similar(A, r1, n_cols)
         mul!(B, ingredients.compressor_recipe, A, 1, 0)
         R = UpperTriangular(qr(B).R)
         # Exact Wishart bias correction; see the note in `complete_distribution`.
-        bias_correction = (r1 - d - 1) / r1
+        bias_correction = (r1 - n_cols - 1) / r1
         if r2 !== nothing
-            Π2 = randn(d, r2) ./ sqrt(r2)
+            Π2 = randn(n_cols, r2) ./ sqrt(r2)
             M = R \ Π2
             Ω = A * M
             ingredients.weights =
