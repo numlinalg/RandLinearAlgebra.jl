@@ -15,10 +15,27 @@ If compressing from the right, the leverage score of column ``j`` is
 factorization of ``A^\\top``.
 
 If an approximate compressor is provided, leverage scores are estimated using the
-randomized algorithm of [drineas2012fast](@citet): a sketch ``B = SA`` is formed,
-the QR factorization of ``B`` yields ``R``, and the row norms of ``AR^{-1}``
-approximate the exact leverage scores. Only `Left()` cardinality is supported in
+randomized algorithm of [drineas2012fast](@citet): a sketch ``B = \\Pi_1 A`` is
+formed via the supplied compressor, and the QR factorization of ``B`` yields ``R``.
+A second, lightweight Gaussian sketch ``\\Pi_2 \\in \\mathbb{R}^{d \\times r_2}``
+(sized automatically from ``n``) is then used to compute ``M = R^{-1}\\Pi_2`` and
+``\\Omega = AM``, whose row norms approximate the exact leverage scores. Solving
+for ``M`` before multiplying by ``A`` avoids ever materializing the ``n \\times d``
+matrix ``AR^{-1}``, giving an ``O(nd \\log n)`` estimator rather than the
+``O(nd^2)`` cost of the direct approach. Only `Left()` cardinality is supported in
 approximate mode.
+
+!!! note "Approximate Mode Accuracy"
+    The relative-error guarantee in [drineas2012fast](@citet) (Theorem 2) holds with
+    the sketch sizes the paper specifies, which carry large constants; sketches sized
+    for the ``O(nd \\log n)`` asymptotic target (as used here) trade tight per-row
+    accuracy for speed. In particular, rows whose true leverage score is small relative
+    to the others are the hardest to estimate to tight relative error, since the
+    estimator's noise floor dominates a small true value. Approximate mode is best
+    suited to producing a sampling distribution (where the aggregate weighting matters
+    more than any single row's exact value), not to recovering individual leverage
+    scores precisely; use exact mode, or a much larger `compressor`, when precision
+    matters.
 
 # Fields
 - `cardinality::Cardinality`, the direction the compression matrix is intended to be
@@ -150,12 +167,26 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
             )
         end
         n_rows = size(A, 1)
+        d = size(A, 2)
         state_space = collect(1:n_rows)
-        B = similar(A, compressor_recipe.n_rows, size(A, 2))
+        B = similar(A, compressor_recipe.n_rows, d)
         mul!(B, compressor_recipe, A, 1, 0)
         R = UpperTriangular(qr(B).R)
-        X = A / R  # X = A * R⁻¹; row norms² approximate exact leverage scores
-        weights = ProbabilityWeights(vec(sum(abs2, X, dims = 2)))
+        # Simpler O(nd²) estimator: materialize the full A*R⁻¹ and take its row
+        # norms directly. Superseded below by the O(nd log n) two-sketch estimator
+        # (Algorithm 1, steps 3-4 of drineas2012fast); kept here for reference.
+        # X = A / R
+        # weights = ProbabilityWeights(vec(sum(abs2, X, dims = 2)))
+
+        # Second (Johnson-Lindenstrauss) sketch Π₂ ∈ R^{d × r2}. Solving
+        # M = R⁻¹Π₂ first (a cheap d×d triangular solve) and only then forming
+        # Ω = A*M avoids ever materializing the n×d matrix A*R⁻¹, which is what
+        # gets the algorithm down to O(nd log n) instead of O(nd²).
+        r2 = max(2, ceil(Int, 20 * log(n_rows)))
+        Π2 = randn(d, r2) ./ sqrt(r2)
+        M = R \ Π2
+        Ω = A * M
+        weights = ProbabilityWeights(vec(sum(abs2, Ω, dims = 2)))
     end
 
     return LeverageScoreRecipe(
@@ -217,34 +248,40 @@ function update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatri
             )
         end
         update_compressor!(ingredients.compressor_recipe)
-        B = similar(A, ingredients.compressor_recipe.n_rows, size(A, 2))
+        d = size(A, 2)
+        B = similar(A, ingredients.compressor_recipe.n_rows, d)
         mul!(B, ingredients.compressor_recipe, A, 1, 0)
         R = UpperTriangular(qr(B).R)
-        X = A / R  # X = A * R⁻¹
-        ingredients.weights = ProbabilityWeights(vec(sum(abs2, X, dims = 2)))
+        # X = A / R
+        # ingredients.weights = ProbabilityWeights(vec(sum(abs2, X, dims = 2)))
+        r2 = max(2, ceil(Int, 20 * log(size(A, 1))))
+        Π2 = randn(d, r2) ./ sqrt(r2)
+        M = R \ Π2
+        Ω = A * M
+        ingredients.weights = ProbabilityWeights(vec(sum(abs2, Ω, dims = 2)))
     end
 
     return nothing
 end
 
 """
-    sample_distribution!(x::AbstractVector, distribution::LeverageScoreRecipe)
+    sample_distribution!(indices::AbstractVector, distribution::LeverageScoreRecipe)
 
-A function that in place updates `x` with sampled indices following the leverage
+A function that in place updates `indices` with sampled indices following the leverage
 score weights of `distribution`.
 
 # Arguments
-- `x::AbstractVector`, an abstract vector to store the sampled indices.
+- `indices::AbstractVector`, an abstract vector to store the sampled indices.
 - `distribution::LeverageScoreRecipe`, a fully initialized leverage score distribution.
 
 # Returns
-- Modifies `x` in place and returns `nothing`.
+- Modifies `indices` in place and returns `nothing`.
 """
-function sample_distribution!(x::AbstractVector, distribution::LeverageScoreRecipe)
+function sample_distribution!(indices::AbstractVector, distribution::LeverageScoreRecipe)
     wsample!(
         distribution.state_space,
         distribution.weights,
-        x,
+        indices,
         ordered = true,
         replace = distribution.replace,
     )
