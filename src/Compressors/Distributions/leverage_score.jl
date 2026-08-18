@@ -60,7 +60,8 @@ mode.
 - `epsilon::Float64`, the target relative-error tolerance used to size the
     automatic `r2` default when `r2` is not given explicitly; ignored if `r2` is
     given explicitly, or if `compressor` is `nothing`. Must satisfy
-    `0 < epsilon < 1`.
+    `0 < epsilon <= 0.5`, the validity range of the JL bound in
+    [drineas2012fast](@citet)'s Lemma 1.
 
 # Constructor
 
@@ -138,7 +139,7 @@ using the randomized algorithm of [drineas2012fast](@citet).
 - `ArgumentError` if the compressor's compression dimension is less than `size(A, 2) + 2`.
 - `ArgumentError` if `distribution.r2` is given without a `compressor`, or does not
     satisfy `1 <= r2 < size(A, 2)`.
-- `ArgumentError` if `distribution.epsilon` does not satisfy `0 < epsilon < 1`.
+- `ArgumentError` if `distribution.epsilon` does not satisfy `0 < epsilon <= 0.5`.
 """
 function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
 
@@ -147,8 +148,10 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
     r2 = distribution.r2
     epsilon = distribution.epsilon
 
-    if !(0 < epsilon < 1)
-        throw(ArgumentError("`LeverageScore`'s `epsilon` must satisfy `0 < epsilon < 1`."))
+    if !(0 < epsilon <= 0.5)
+        throw(
+            ArgumentError("`LeverageScore`'s `epsilon` must satisfy `0 < epsilon <= 0.5`.")
+        )
     end
 
     if cardinality == Undef()

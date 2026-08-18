@@ -203,10 +203,10 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
         # when it is actually smaller than d, and its value matches the formula;
         # epsilon is pushed toward 1 so the bound is small enough to beat a
         # moderately large d, matching the regime this default is meant for
-        let n_rows = 500,
-            n_cols = 200,
-            r1 = 400,
-            eps = 0.9,
+        let n_rows = 1000,
+            n_cols = 450,
+            r1 = 700,
+            eps = 0.5,
             A = randn(n_rows, n_cols),
             comp = Gaussian(cardinality = Left(), compression_dim = r1),
             m = LeverageScore(cardinality = Left(), compressor = comp, epsilon = eps)
