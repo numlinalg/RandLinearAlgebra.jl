@@ -22,17 +22,20 @@ Leverage scores are then the row norms of ``AR^{-1}\\Pi_2``, where
 forming ``AR^{-1}`` from ``O(nd^2)`` to ``O(nd \\, r_2)``; this only helps when
 ``r_2 < d``. If `r2` is explicitly given, that value is used directly. Otherwise
 `r2` defaults to the size of [drineas2012fast](@citet)'s Lemma 1 ``\\epsilon``-JLT
-bound, ``r_2 = \\lceil(12\\ln n + 6\\ln 10)/\\epsilon^2\\rceil`` (their ``\\delta =
-0.1``), using `epsilon` and ``n =`` `size(A, 1)`; when that default would not
-satisfy ``r_2 < d``, the second sketch is skipped and leverage scores are the row
-norms of ``AR^{-1}`` directly. Only `Left()` cardinality is supported in
-approximate mode.
+bound (itself [achlioptas2003database](@citet)'s Theorem 1.1), ``r_2 =
+\\lceil(12\\ln n + 6\\ln 10)/\\epsilon^2\\rceil`` (their ``\\delta = 0.1``), using
+`epsilon` and ``n =`` `size(A, 1)`; when that default would not satisfy
+``r_2 < d``, the second sketch is skipped and leverage scores are the row norms
+of ``AR^{-1}`` directly. Only `Left()` cardinality is supported in approximate
+mode.
 
 !!! note "Approximate Mode Accuracy"
     Inverting the sketch-based `R` is a biased estimator of `A'A`'s inverse (`R'R`
     is Wishart-distributed, and matrix inversion is convex, so the naive estimate
-    is systematically too large by Jensen's inequality). This has an exact,
-    closed-form correction, applied internally. It does not fix per-row variance,
+    is systematically too large by Jensen's inequality; the exact expectation
+    identity is the standard inverse-Wishart mean, e.g.
+    [muirhead1982aspects](@citet)). This has an exact, closed-form correction,
+    applied internally. It does not fix per-row variance,
     though: rows with small true leverage score are the hardest to pin down to
     tight relative error, since the estimator's noise floor dominates a small
     true value. Approximate mode is best suited to producing a sampling
@@ -82,8 +85,7 @@ function LeverageScore(;
     replace = false,
     compressor = nothing,
     r2 = nothing,
-    epsilon = 0.5,
-)
+    epsilon = 0.5)
     return LeverageScore(cardinality, replace, compressor, r2, epsilon)
 end
 
@@ -139,6 +141,7 @@ using the randomized algorithm of [drineas2012fast](@citet).
 - `ArgumentError` if `distribution.epsilon` does not satisfy `0 < epsilon < 1`.
 """
 function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
+
     cardinality = distribution.cardinality
     compressor = distribution.compressor
     r2 = distribution.r2
@@ -278,6 +281,7 @@ compressor recipe (approximate mode).
     `complete_distribution` again to reinitialize for a matrix of different size.
 """
 function update_distribution!(ingredients::LeverageScoreRecipe, A::AbstractMatrix)
+    
     if ingredients.cardinality == Undef()
         throw(
             ArgumentError(
