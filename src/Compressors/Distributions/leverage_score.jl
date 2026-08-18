@@ -17,12 +17,16 @@ factorization of ``A^\\top``.
 If an approximate compressor is provided, leverage scores are estimated using the
 randomized algorithm of [drineas2012fast](@citet): a sketch ``B = \\Pi_1 A`` is
 formed via the supplied compressor, and the QR factorization of ``B`` yields ``R``.
-By default, leverage scores are then the row norms of ``AR^{-1}``. If `r2` is also
-given, a second sketch ``\\Pi_2 \\in \\mathbb{R}^{d \\times r_2}`` further reduces
-``AR^{-1}`` to ``\\Omega = AR^{-1}\\Pi_2`` before its row norms are taken instead,
-giving ``O(nd \\, r_2)`` rather than the ``O(nd^2)`` cost of forming ``AR^{-1}``
-directly; this only helps when ``r_2 < d``, so `r2` must be chosen accordingly.
-Only `Left()` cardinality is supported in approximate mode.
+Leverage scores are then the row norms of ``AR^{-1}\\Pi_2``, where
+``\\Pi_2 \\in \\mathbb{R}^{d \\times r_2}`` is a second sketch reducing the cost of
+forming ``AR^{-1}`` from ``O(nd^2)`` to ``O(nd \\, r_2)``; this only helps when
+``r_2 < d``. If `r2` is explicitly given, that value is used directly. Otherwise
+`r2` defaults to the size of [drineas2012fast](@citet)'s Lemma 1 ``\\epsilon``-JLT
+bound, ``r_2 = \\lceil(12\\ln n + 6\\ln 10)/\\epsilon^2\\rceil`` (their ``\\delta =
+0.1``), using `epsilon` and ``n =`` `size(A, 1)`; when that default would not
+satisfy ``r_2 < d``, the second sketch is skipped and leverage scores are the row
+norms of ``AR^{-1}`` directly. Only `Left()` cardinality is supported in
+approximate mode.
 
 !!! note "Approximate Mode Accuracy"
     Inverting the sketch-based `R` is a biased estimator of `A'A`'s inverse (`R'R`
@@ -46,14 +50,21 @@ Only `Left()` cardinality is supported in approximate mode.
     computed via a thin QR factorization of `A`. If a `Compressor` with `Left()`
     cardinality is provided, approximate leverage scores are computed following
     [drineas2012fast](@citet).
-- `r2::Union{Nothing, Int}`, only used when `compressor` is provided. If `nothing`
-    (the default), leverage scores are the row norms of ``AR^{-1}``. Otherwise, a
-    second sketch of size `r2` is used instead, as described above; `r2` must
-    satisfy `1 <= r2 < size(A, 2)`.
+- `r2::Union{Nothing, Int}`, only used when `compressor` is provided. If given
+    explicitly, must satisfy `1 <= r2 < size(A, 2)`. If `nothing` (the default),
+    `r2` is instead computed automatically from `epsilon` and `size(A, 1)`, as
+    described above.
+- `epsilon::Float64`, the target relative-error tolerance used to size the
+    automatic `r2` default when `r2` is not given explicitly; ignored if `r2` is
+    given explicitly, or if `compressor` is `nothing`. Must satisfy
+    `0 < epsilon < 1`.
 
 # Constructor
 
-    LeverageScore(; cardinality=Undef(), replace=false, compressor=nothing, r2=nothing)
+    LeverageScore(;
+        cardinality=Undef(), replace=false, compressor=nothing, r2=nothing,
+        epsilon=0.5,
+    )
 
 ## Returns
 - A `LeverageScore` object.
@@ -63,12 +74,17 @@ mutable struct LeverageScore <: Distribution
     replace::Bool
     compressor::Union{Nothing, Compressor}
     r2::Union{Nothing, Int}
+    epsilon::Float64
 end
 
 function LeverageScore(;
-    cardinality = Undef(), replace = false, compressor = nothing, r2 = nothing
+    cardinality = Undef(),
+    replace = false,
+    compressor = nothing,
+    r2 = nothing,
+    epsilon = 0.5,
 )
-    return LeverageScore(cardinality, replace, compressor, r2)
+    return LeverageScore(cardinality, replace, compressor, r2, epsilon)
 end
 
 """
@@ -85,10 +101,10 @@ The recipe containing all allocations and information for the leverage score dis
 - `weights::ProbabilityWeights`, the leverage score of each element in the state space.
 - `compressor_recipe::Union{Nothing, CompressorRecipe}`, the completed compressor for
     approximate leverage score computation, or `nothing` in exact mode.
-- `r2::Union{Nothing, Int}`, in approximate mode, if `nothing`, leverage scores are
-    the row norms of ``AR^{-1}``; if set, a second sketch of size `r2` further
-    reduces ``AR^{-1}`` before its row norms are taken. Always `nothing` in exact
-    mode.
+- `r2::Union{Nothing, Int}`, the resolved second-sketch size: either the value the
+    user supplied, the automatically computed default (see `LeverageScore`'s
+    `epsilon` field), or `nothing` if no second sketch is used (leverage scores are
+    then the row norms of ``AR^{-1}`` directly). Always `nothing` in exact mode.
 """
 mutable struct LeverageScoreRecipe <: DistributionRecipe
     cardinality::Cardinality
@@ -120,11 +136,17 @@ using the randomized algorithm of [drineas2012fast](@citet).
 - `ArgumentError` if the compressor's compression dimension is less than `size(A, 2) + 2`.
 - `ArgumentError` if `distribution.r2` is given without a `compressor`, or does not
     satisfy `1 <= r2 < size(A, 2)`.
+- `ArgumentError` if `distribution.epsilon` does not satisfy `0 < epsilon < 1`.
 """
 function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
     cardinality = distribution.cardinality
     compressor = distribution.compressor
     r2 = distribution.r2
+    epsilon = distribution.epsilon
+
+    if !(0 < epsilon < 1)
+        throw(ArgumentError("`LeverageScore`'s `epsilon` must satisfy `0 < epsilon < 1`."))
+    end
 
     if cardinality == Undef()
         throw(
@@ -191,10 +213,20 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
                 ),
             )
         end
-        if r2 !== nothing && !(1 <= r2 < n_cols)
-            throw(ArgumentError("`r2` must satisfy `1 <= r2 < size(A, 2)`."))
-        end
         n_rows = size(A, 1)
+        if r2 !== nothing
+            if !(1 <= r2 < n_cols)
+                throw(ArgumentError("`r2` must satisfy `1 <= r2 < size(A, 2)`."))
+            end
+        else
+            # Auto-size the second sketch via the ε-JLT bound of drineas2012fast's
+            # Lemma 1 (δ=0.1): r2 = (12 ln n + 6 ln 10) / ε². This is what makes the
+            # algorithm's headline O(nd log n) complexity the default; falls back to
+            # the full AR⁻¹ path (no speedup, but still correct) when this bound
+            # isn't actually smaller than d.
+            auto_r2 = ceil(Int, (12 * log(n_rows) + 6 * log(10)) / epsilon^2)
+            r2 = auto_r2 < n_cols ? auto_r2 : nothing
+        end
         state_space = collect(1:n_rows)
         B = similar(A, r1, n_cols)
         mul!(B, compressor_recipe, A, 1, 0)

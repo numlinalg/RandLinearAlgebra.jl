@@ -16,9 +16,11 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
     @testset "LeverageScore: Distribution" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(LeverageScore) == Distribution
-        @test fieldnames(LeverageScore) == (:cardinality, :replace, :compressor, :r2)
-        @test fieldtypes(LeverageScore) ==
-              (Cardinality, Bool, Union{Nothing, Compressor}, Union{Nothing, Int})
+        @test fieldnames(LeverageScore) ==
+              (:cardinality, :replace, :compressor, :r2, :epsilon)
+        @test fieldtypes(LeverageScore) == (
+            Cardinality, Bool, Union{Nothing, Compressor}, Union{Nothing, Int}, Float64
+        )
 
         # Default constructor
         let
@@ -27,6 +29,7 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test m.replace == false
             @test m.compressor === nothing
             @test m.r2 === nothing
+            @test m.epsilon == 0.5
         end
 
         # Custom constructor
@@ -48,6 +51,12 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             comp = Gaussian(cardinality = Left(), compression_dim = 10)
             m4 = LeverageScore(cardinality = Left(), compressor = comp)
             @test m4.compressor === comp
+        end
+
+        # Custom epsilon
+        let
+            m5 = LeverageScore(cardinality = Left(), epsilon = 0.2)
+            @test m5.epsilon == 0.2
         end
     end
 
@@ -188,6 +197,47 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
                 push!(sums, sum(mr.weights))
             end
             @test sum(sums) / trials ≈ d rtol = 0.15
+        end
+
+        # r2's automatic default (drineas2012fast's Lemma 1 JL bound) activates
+        # when it is actually smaller than d, and its value matches the formula;
+        # epsilon is pushed toward 1 so the bound is small enough to beat a
+        # moderately large d, matching the regime this default is meant for
+        let n_rows = 500,
+            n_cols = 200,
+            r1 = 400,
+            eps = 0.9,
+            A = randn(n_rows, n_cols),
+            comp = Gaussian(cardinality = Left(), compression_dim = r1),
+            m = LeverageScore(cardinality = Left(), compressor = comp, epsilon = eps)
+
+            expected_r2 = ceil(Int, (12 * log(n_rows) + 6 * log(10)) / eps^2)
+            @test expected_r2 < n_cols  # sanity: test only meaningful if it helps
+
+            mr = complete_distribution(m, A)
+            @test mr.r2 == expected_r2
+            w = Vector(mr.weights)
+            @test all(w .> 0)
+            @test sum(w) ≈ n_cols rtol = 0.5
+        end
+
+        # ...and falls back to the full AR⁻¹ path (r2 === nothing) when the JL
+        # bound would not be smaller than d -- the common case for the small
+        # matrices and default epsilon used throughout the rest of this file
+        let A = randn(200, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 100),
+            m = LeverageScore(cardinality = Left(), compressor = comp)
+
+            mr = complete_distribution(m, A)
+            @test mr.r2 === nothing
+        end
+
+        # epsilon must lie in (0, 1)
+        let A = randn(20, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 15),
+            m = LeverageScore(cardinality = Left(), compressor = comp, epsilon = 1.0)
+
+            @test_throws ArgumentError complete_distribution(m, A)
         end
 
         # Weights should approximate the exact leverage scores. Theorem 2 in
