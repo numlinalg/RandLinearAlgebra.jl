@@ -24,7 +24,7 @@ randomized algorithm of [drineas2012fast](@citet), following one of three tiers:
     `compression_dim`; the QR factorization of ``B`` yields ``R``, and leverage
     scores are the row norms of ``AR^{-1}``.
 3. **Two sketches**: as above, but also compress with a second compressor
-    `S2` (`compressor2`), an ``d \\times r_2`` matrix, where ``r_2`` is `S2`'s
+    `S2` (`compressor2`), a ``d \\times r_2`` matrix, where ``r_2`` is `S2`'s
     `compression_dim`, and leverage scores are instead the row norms of
     ``AR^{-1}S_2``, reducing the cost of forming ``AR^{-1}`` from
     ``O(nd^2)`` to ``O(nd \\, r_2)``; this only helps when ``r_2 < d``.
@@ -190,7 +190,6 @@ using the randomized algorithm of [drineas2012fast](@citet).
 - `ArgumentError` if `distribution.epsilon` does not satisfy `0 < epsilon <= 0.5`.
 """
 function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
-    
     cardinality = distribution.cardinality
     compressor = distribution.compressor
     compressor2 = distribution.compressor2
@@ -360,7 +359,8 @@ function complete_distribution(distribution::LeverageScore, A::AbstractMatrix)
     )
 end
 
-function check_leverage_score_update(ingredients::LeverageScoreRecipe, ::AbstractMatrix)
+# Shared Undef() guard for every update_distribution! tier below.
+function check_leverage_score_update(ingredients::LeverageScoreRecipe)
     if ingredients.cardinality == Undef()
         throw(
             ArgumentError(
@@ -395,7 +395,7 @@ one sketch, or two sketches -- see `LeverageScore`'s docstring).
 function update_distribution!(
     ingredients::LeverageScoreRecipe{Nothing, Nothing}, A::AbstractMatrix
 )
-    check_leverage_score_update(ingredients, A)
+    check_leverage_score_update(ingredients)
     if ingredients.cardinality == Left()
         n_rows = size(A, 1)
         length(ingredients.state_space) != n_rows &&
@@ -416,7 +416,7 @@ end
 function update_distribution!(
     ingredients::LeverageScoreRecipe{<:CompressorRecipe, Nothing}, A::AbstractMatrix
 )
-    check_leverage_score_update(ingredients, A)
+    check_leverage_score_update(ingredients)
     if length(ingredients.state_space) != size(A, 1)
         throw(
             ArgumentError(
@@ -444,7 +444,7 @@ function update_distribution!(
     ingredients::LeverageScoreRecipe{<:CompressorRecipe, <:CompressorRecipe},
     A::AbstractMatrix,
 )
-    check_leverage_score_update(ingredients, A)
+    check_leverage_score_update(ingredients)
     if length(ingredients.state_space) != size(A, 1)
         throw(
             ArgumentError(
