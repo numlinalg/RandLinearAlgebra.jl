@@ -17,9 +17,14 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(LeverageScore) == Distribution
         @test fieldnames(LeverageScore) ==
-              (:cardinality, :replace, :compressor, :r2, :epsilon)
+              (:cardinality, :replace, :compressor, :compressor2, :r2, :epsilon)
         @test fieldtypes(LeverageScore) == (
-            Cardinality, Bool, Union{Nothing, Compressor}, Union{Nothing, Int}, Float64
+            Cardinality,
+            Bool,
+            Union{Nothing, Compressor},
+            Union{Nothing, Compressor},
+            Union{Nothing, Int},
+            Float64,
         )
 
         # Default constructor
@@ -28,6 +33,7 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test m.cardinality == Undef()
             @test m.replace == false
             @test m.compressor === nothing
+            @test m.compressor2 === nothing
             @test m.r2 === nothing
             @test m.epsilon == 0.5
         end
@@ -58,13 +64,27 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             m5 = LeverageScore(cardinality = Left(), epsilon = 0.2)
             @test m5.epsilon == 0.2
         end
+
+        # Constructor with a second compressor (S2) supplied explicitly
+        let
+            comp = Gaussian(cardinality = Left(), compression_dim = 10)
+            comp2 = Gaussian(cardinality = Right(), compression_dim = 3)
+            m6 = LeverageScore(cardinality = Left(), compressor = comp, compressor2 = comp2)
+            @test m6.compressor2 === comp2
+        end
     end
 
     @testset "LeverageScore: DistributionRecipe" begin
         # Verify supertypes, fieldnames and fieldtypes
-        @test supertype(LeverageScoreRecipe) == DistributionRecipe
-        @test fieldnames(LeverageScoreRecipe) ==
-              (:cardinality, :replace, :state_space, :weights, :compressor_recipe, :r2)
+        @test supertype(LeverageScoreRecipe) <: DistributionRecipe
+        @test fieldnames(LeverageScoreRecipe) == (
+            :cardinality,
+            :replace,
+            :state_space,
+            :weights,
+            :compressor_recipe,
+            :compressor_recipe_2,
+        )
         @test fieldtypes(LeverageScoreRecipe)[1:4] ==
               (Cardinality, Bool, Vector{Int64}, ProbabilityWeights)
     end
@@ -79,6 +99,7 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test mr.cardinality == Left()
             @test mr.replace == false
             @test mr.compressor_recipe === nothing
+            @test mr.compressor_recipe_2 === nothing
             @test mr.state_space == collect(1:20)
             @test Vector(mr.weights) ≈ left_leverage(A) atol = 1e-8
             @test sum(mr.weights) ≈ 5 atol = 1e-8
@@ -180,8 +201,9 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test_throws ArgumentError complete_distribution(m, A)
         end
 
-        # r2 fast path (Π2), requested explicitly: confirm the correction still
-        # holds and r2 is carried into the recipe
+        # r2 fast path (tier 3, default Gaussian S2), requested explicitly via
+        # r2: confirm the correction still holds and r2 is carried into S2's
+        # completed recipe
         let d = 20,
             r1 = 40,
             r2_val = 6,
@@ -193,7 +215,8 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
                 comp = Gaussian(cardinality = Left(), compression_dim = r1)
                 m = LeverageScore(cardinality = Left(), compressor = comp, r2 = r2_val)
                 mr = complete_distribution(m, A)
-                @test mr.r2 == r2_val
+                @test mr.compressor_recipe_2 !== nothing
+                @test mr.compressor_recipe_2.n_cols == r2_val
                 push!(sums, sum(mr.weights))
             end
             @test sum(sums) / trials ≈ d rtol = 0.15
@@ -201,8 +224,8 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
 
         # r2's automatic default (drineas2012fast's Lemma 1 JL bound) activates
         # when it is actually smaller than d, and its value matches the formula;
-        # epsilon is pushed toward 1 so the bound is small enough to beat a
-        # moderately large d, matching the regime this default is meant for
+        # epsilon is pushed toward its max (0.5) so the bound is small enough to
+        # beat a moderately large d, matching the regime this default is meant for
         let n_rows = 1000,
             n_cols = 450,
             r1 = 700,
@@ -215,29 +238,108 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test expected_r2 < n_cols  # sanity: test only meaningful if it helps
 
             mr = complete_distribution(m, A)
-            @test mr.r2 == expected_r2
+            @test mr.compressor_recipe_2 !== nothing
+            @test mr.compressor_recipe_2.n_cols == expected_r2
             w = Vector(mr.weights)
             @test all(w .> 0)
             @test sum(w) ≈ n_cols rtol = 0.5
         end
 
-        # ...and falls back to the full AR⁻¹ path (r2 === nothing) when the JL
-        # bound would not be smaller than d -- the common case for the small
+        # ...and falls back to tier 2 (compressor_recipe_2 === nothing) when the
+        # JL bound would not be smaller than d -- the common case for the small
         # matrices and default epsilon used throughout the rest of this file
         let A = randn(200, 5),
             comp = Gaussian(cardinality = Left(), compression_dim = 100),
             m = LeverageScore(cardinality = Left(), compressor = comp)
 
             mr = complete_distribution(m, A)
-            @test mr.r2 === nothing
+            @test mr.compressor_recipe_2 === nothing
         end
 
-        # epsilon must lie in (0, 1)
+        # epsilon must lie in (0, 0.5], the range Lemma 1 is proven for
         let A = randn(20, 5),
             comp = Gaussian(cardinality = Left(), compression_dim = 15),
             m = LeverageScore(cardinality = Left(), compressor = comp, epsilon = 1.0)
 
             @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # compressor2 (S2) without compressor (S1) is meaningless
+        let A = randn(20, 5),
+            comp2 = Gaussian(cardinality = Right(), compression_dim = 3),
+            m = LeverageScore(cardinality = Left(), compressor2 = comp2)
+
+            @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # compressor2 must itself have Right() cardinality
+        let A = randn(20, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 15),
+            comp2 = Gaussian(cardinality = Left(), compression_dim = 3),
+            m = LeverageScore(cardinality = Left(), compressor = comp, compressor2 = comp2)
+
+            @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # compressor2 and r2 may not both be set -- ambiguous which one sizes S2
+        let A = randn(20, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 15),
+            comp2 = Gaussian(cardinality = Right(), compression_dim = 3),
+            m = LeverageScore(
+                cardinality = Left(), compressor = comp, compressor2 = comp2, r2 = 3
+            )
+
+            @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # compressor2's own compression_dim must satisfy 1 <= r2 < size(A, 2)
+        let A = randn(20, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 15),
+            comp2 = Gaussian(cardinality = Right(), compression_dim = 5),
+            m = LeverageScore(cardinality = Left(), compressor = comp, compressor2 = comp2)
+
+            @test_throws ArgumentError complete_distribution(m, A)
+        end
+
+        # Explicit compressor2 (tier 3, user-chosen S2 rather than the default
+        # Gaussian): bias correction still holds on average, and the completed
+        # recipe carries the explicit S2's own recipe
+        let d = 20,
+            r1 = 40,
+            r2_val = 6,
+            trials = 60,
+            sums = Float64[]
+
+            for _ in 1:trials
+                A = randn(300, d)
+                comp = Gaussian(cardinality = Left(), compression_dim = r1)
+                comp2 = Gaussian(cardinality = Right(), compression_dim = r2_val)
+                m = LeverageScore(
+                    cardinality = Left(), compressor = comp, compressor2 = comp2
+                )
+                mr = complete_distribution(m, A)
+                @test mr.compressor_recipe_2.n_cols == r2_val
+                push!(sums, sum(mr.weights))
+            end
+            @test sum(sums) / trials ≈ d rtol = 0.15
+        end
+
+        # Explicit compressor2 works with a non-Gaussian S2 type too (SRHT),
+        # confirming S2 genuinely accepts any Right()-cardinality Compressor
+        let d = 8,
+            r1 = 20,
+            r2_val = 4,
+            A = randn(64, d),
+            comp = Gaussian(cardinality = Left(), compression_dim = r1),
+            comp2 = SRHT(cardinality = Right(), compression_dim = r2_val),
+            m = LeverageScore(cardinality = Left(), compressor = comp, compressor2 = comp2)
+
+            mr = complete_distribution(m, A)
+            @test mr.compressor_recipe_2 !== nothing
+            @test mr.compressor_recipe_2.n_cols == r2_val
+            w = Vector(mr.weights)
+            @test all(w .> 0)
+            @test sum(w) ≈ d rtol = 0.6
         end
 
         # Weights should approximate the exact leverage scores. Theorem 2 in
@@ -312,15 +414,17 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test_throws ArgumentError update_distribution!(mr, A)
         end
 
-        # Approximate mode: update recomputes weights via the stored compressor
-        # recipe and still approximates the exact leverage scores (see the
-        # fraction-based rationale in the "Complete Distribution" test above)
+        # Approximate mode (tier 2): update recomputes weights via the stored
+        # compressor recipe and still approximates the exact leverage scores
+        # (see the fraction-based rationale in the "Complete Distribution" test
+        # above)
         let A1 = randn(200, 5),
             A2 = randn(200, 5),
             comp = Gaussian(cardinality = Left(), compression_dim = 100),
             m = LeverageScore(cardinality = Left(), compressor = comp),
             mr = complete_distribution(m, A1)
 
+            @test mr.compressor_recipe_2 === nothing  # confirms the tier-2 method runs
             update_distribution!(mr, A2)
             mr_exact = complete_distribution(LeverageScore(cardinality = Left()), A2)
             w = Vector(mr.weights)
@@ -341,8 +445,8 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test_throws ArgumentError update_distribution!(mr, A2)
         end
 
-        # Approximate mode update, r2 fast path: same averaged-sum verification
-        # as the "Complete Distribution" case above
+        # Approximate mode update, tier 3 (default S2) fast path: same
+        # averaged-sum verification as the "Complete Distribution" case above
         let d = 20,
             r1 = 40,
             r2_val = 6,
@@ -351,6 +455,27 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
 
             comp = Gaussian(cardinality = Left(), compression_dim = r1)
             m = LeverageScore(cardinality = Left(), compressor = comp, r2 = r2_val)
+            mr = complete_distribution(m, randn(300, d))
+            @test mr.compressor_recipe_2 !== nothing  # confirms the tier-3 method runs
+            for _ in 1:trials
+                update_distribution!(mr, randn(300, d))
+                push!(sums, sum(mr.weights))
+            end
+            @test sum(sums) / trials ≈ d rtol = 0.15
+        end
+
+        # Approximate mode update, tier 3 with an explicit compressor2: same
+        # averaged-sum verification, confirming S2's compressor also gets
+        # refreshed by update_distribution! (via update_compressor!)
+        let d = 20,
+            r1 = 40,
+            r2_val = 6,
+            trials = 60,
+            sums = Float64[]
+
+            comp = Gaussian(cardinality = Left(), compression_dim = r1)
+            comp2 = Gaussian(cardinality = Right(), compression_dim = r2_val)
+            m = LeverageScore(cardinality = Left(), compressor = comp, compressor2 = comp2)
             mr = complete_distribution(m, randn(300, d))
             for _ in 1:trials
                 update_distribution!(mr, randn(300, d))
