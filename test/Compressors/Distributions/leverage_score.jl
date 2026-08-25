@@ -445,6 +445,19 @@ right_leverage(A) = diag(A' * pinv(A * A') * A)
             @test_throws ArgumentError update_distribution!(mr, A2)
         end
 
+        # Same as above, but tier 3 (two sketches) -- this dispatches to a
+        # separate update_distribution! method from the tier-2 case above, so
+        # needs its own coverage of the same row-dimension-mismatch guard
+        let A1 = randn(200, 5),
+            A2 = randn(150, 5),
+            comp = Gaussian(cardinality = Left(), compression_dim = 100),
+            comp2 = Gaussian(cardinality = Right(), compression_dim = 3),
+            m = LeverageScore(cardinality = Left(), compressor = comp, compressor2 = comp2),
+            mr = complete_distribution(m, A1)
+
+            @test_throws ArgumentError update_distribution!(mr, A2)
+        end
+
         # Approximate mode update, tier 3 (default S2) fast path: same
         # averaged-sum verification as the "Complete Distribution" case above
         let d = 20,
