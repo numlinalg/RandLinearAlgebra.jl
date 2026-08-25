@@ -81,11 +81,11 @@ import LinearAlgebra: mul!
 
     @testset "LUPP: Select Indices" begin
         A = [0.0 10.0 0.0;
-             0.0 0.0 20.0;
-             30.0 0.0 0.0]
+             0.0 0.0 200.0;
+             3000.0 0.0 0.0]
         # test the error checking
         # start with checking n_idx not being larger than number of columns
-        let A = A,
+        let A = deepcopy(A),
             idx = zeros(Int64, 3),
             start_idx = 1,
             n_idx = 4
@@ -100,7 +100,7 @@ import LinearAlgebra: mul!
         end
         
         # check that n_idx will not go over index vector 
-        let A = A,
+        let A = deepcopy(A),
             idx = zeros(Int64, 3),
             start_idx = 3,
             n_idx = 2
@@ -115,7 +115,7 @@ import LinearAlgebra: mul!
         end
 
         # check that n_idx is not larger than the compression_dim
-        let A = A,
+        let A = deepcopy(A),
             idx = zeros(Int64, 3),
             start_idx = 1,
             n_idx = 3

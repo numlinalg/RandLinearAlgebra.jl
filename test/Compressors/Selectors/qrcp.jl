@@ -76,8 +76,8 @@ import LinearAlgebra: mul!
 
     @testset "QRCP: Select Indices" begin
         A = [0.0 10.0 0.0;
-             0.0 0.0 20.0;
-             30.0 0.0 0.0]
+             0.0 0.0 200.0;
+             3000.0 0.0 0.0]
         # test the error checking
         # start with checking n_idx not being larger than number of columns
         let A = A,
