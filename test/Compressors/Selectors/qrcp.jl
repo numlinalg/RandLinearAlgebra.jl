@@ -157,7 +157,7 @@ import LinearAlgebra: mul!
             idx = zeros(Int64, 3),
             start_idx = 2,
             n_idx = 1,
-            sel_rec = complete_selector(QRCP(compressor = Gaussian()), A)
+            sel_rec = complete_selector(QRCP(compressor = Identity()), A)
             
             select_indices!(idx, sel_rec, A, n_idx, start_idx)
             @test idx[2] == 1
@@ -168,7 +168,7 @@ import LinearAlgebra: mul!
             idx = zeros(Int64, 3),
             start_idx = 1,
             n_idx = 2,
-            sel_rec = complete_selector(QRCP(compressor = Gaussian()), A)
+            sel_rec = complete_selector(QRCP(compressor = Identity()), A)
 
             select_indices!(idx, sel_rec, A, n_idx, start_idx)
             @test idx == [1; 3; 0]
