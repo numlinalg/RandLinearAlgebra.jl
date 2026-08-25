@@ -460,3 +460,8 @@ include("Compressors/identity.jl")
 include("Compressors/sampling.jl")
 include("Compressors/sparse_sign.jl")
 include("Compressors/srht.jl")
+
+############################################
+# Include the selector files
+############################################
+include("Compressors/Selectors.jl")

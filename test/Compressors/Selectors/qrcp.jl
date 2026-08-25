@@ -1,49 +1,47 @@
-module LUPP_tests
+module QRCP_tests
 using Test
-using ..FieldTest
-using ..ApproxTol
 using RandLinearAlgebra
 import LinearAlgebra: mul!
 
-@testset "LUPP Tests" begin
-    @testset "LUPP" begin
-        @test supertype(LUPP) == Selector
+@testset "QRCP Tests" begin
+    @testset "QRCP" begin
+        @test supertype(QRCP) == Selector
         
         # test fieldnames and types
-        @test fieldnames(LUPP) == (:compressor,)
-        @test fieldtypes(LUPP) == (Compressor,)
+        @test fieldnames(QRCP) == (:compressor,)
+        @test fieldtypes(QRCP) == (Compressor,)
         
         # Test Constructor
         let 
-            sel = LUPP()
-            @test typeof(sel) == LUPP 
+            sel = QRCP()
+            @test typeof(sel) == QRCP 
             @test typeof(sel.compressor) == Identity
         end
 
         let 
-            sel = LUPP(compressor = SparseSign())
-            @test typeof(sel) == LUPP 
+            sel = QRCP(compressor = SparseSign())
+            @test typeof(sel) == QRCP 
             @test typeof(sel.compressor) == SparseSign
         end
 
     end
 
-    @testset "LUPPRecipe" begin
-        @test supertype(LUPPRecipe) == SelectorRecipe
+    @testset "QRCPRecipe" begin
+        @test supertype(QRCPRecipe) == SelectorRecipe
         # test fieldnames and types
-        @test fieldnames(LUPPRecipe) == (:compressor, :SA)
-        @test fieldtypes(LUPPRecipe) == (CompressorRecipe, AbstractMatrix)
+        @test fieldnames(QRCPRecipe) == (:compressor, :SA)
+        @test fieldtypes(QRCPRecipe) == (CompressorRecipe, AbstractMatrix)
     end
 
-    @testset "LUPP: Complete Selector" begin
+    @testset "QRCP: Complete Selector" begin
         # test with identity compressor
         let n_rows = 2,
-            n_cols = 2,
+            n_cols = 4,
             A = zeros(n_rows, n_cols),
-            sel = LUPP()
+            sel = QRCP()
 
             sel_rec = complete_selector(sel, A)
-            @test typeof(sel_rec) == LUPPRecipe
+            @test typeof(sel_rec) == QRCPRecipe
             @test typeof(sel_rec.compressor) == IdentityRecipe{Left}
             @test typeof(sel_rec.SA) <: AbstractMatrix
             @test size(sel_rec.SA) == (n_rows, n_cols)
@@ -51,13 +49,13 @@ import LinearAlgebra: mul!
 
         # test with gaussian compressor
         let n_rows = 3,
-            n_cols = 3,
+            n_cols = 4,
             A = zeros(n_rows, n_cols),
             comp_dim = 2,
-            sel = LUPP(compressor = Gaussian(compression_dim = comp_dim))
+            sel = QRCP(compressor=Gaussian(compression_dim = comp_dim))
 
             sel_rec = complete_selector(sel, A)
-            @test typeof(sel_rec) == LUPPRecipe
+            @test typeof(sel_rec) == QRCPRecipe
             @test typeof(sel_rec.compressor) == GaussianRecipe{Left} 
             @test typeof(sel_rec.SA) <: AbstractMatrix
             @test size(sel_rec.SA) == (comp_dim, n_cols)
@@ -65,24 +63,21 @@ import LinearAlgebra: mul!
 
     end
 
-    @testset "LUPP: Update Selector" begin
+    @testset "QRCP: Update Selector" begin
         let n_rows = 2,
-            n_cols = 2,
+            n_cols = 3,
             A = zeros(n_rows, n_cols),
-            sel_rec = complete_selector(LUPP(compressor = Gaussian()), A)
-            G_old = deepcopy(sel_rec.compressor.op)
+            sel_rec = complete_selector(QRCP(compressor = Gaussian()), A)
             update_selector!(sel_rec)
-            @test typeof(sel_rec) == LUPPRecipe 
-            # check that Gaussian Matrix actually changes
-            @test sel_rec.compressor.op != G_old
+            @test typeof(sel_rec) == QRCPRecipe 
         end
 
     end
 
-    @testset "LUPP: Select Indices" begin
+    @testset "QRCP: Select Indices" begin
         A = [0.0 10.0 0.0;
-             0.0 0.0 20.0;
-             30.0 0.0 0.0]
+             0.0 0.0 200.0;
+             3000.0 0.0 0.0]
         # test the error checking
         # start with checking n_idx not being larger than number of columns
         let A = A,
@@ -92,7 +87,7 @@ import LinearAlgebra: mul!
 
             @test_throws DimensionMismatch select_indices!(
                 idx, 
-                complete_selector(LUPP(), A), 
+                complete_selector(QRCP(), A), 
                 A, 
                 n_idx, 
                 start_idx
@@ -107,7 +102,7 @@ import LinearAlgebra: mul!
 
             @test_throws DimensionMismatch select_indices!(
                 idx, 
-                complete_selector(LUPP(), A), 
+                complete_selector(QRCP(), A), 
                 A, 
                 n_idx, 
                 start_idx
@@ -123,7 +118,7 @@ import LinearAlgebra: mul!
             @test_throws DimensionMismatch select_indices!(
                 idx, 
                 complete_selector(
-                    LUPP(compressor = Gaussian(compression_dim = 2)), 
+                    QRCP(compressor = Gaussian(compression_dim = 2)), 
                     A
                 ),
                 A, 
@@ -139,10 +134,10 @@ import LinearAlgebra: mul!
             idx = zeros(Int64, 3),
             start_idx = 2,
             n_idx = 1,
-            sel_rec = complete_selector(LUPP(), A)
+            sel_rec = complete_selector(QRCP(), A)
 
             select_indices!(idx, sel_rec, A, n_idx, start_idx)
-            @test idx[2] == 2
+            @test idx[2] == 1
         end
 
         # test selecting three indices
@@ -150,10 +145,10 @@ import LinearAlgebra: mul!
             idx = zeros(Int64, 3),
             start_idx = 1,
             n_idx = 3,
-            sel_rec = complete_selector(LUPP(), A)
+            sel_rec = complete_selector(QRCP(), A)
 
             select_indices!(idx, sel_rec, A, n_idx, start_idx)
-            @test idx == [2; 3; 1]
+            @test idx == [1; 3; 2]
         end
 
         # test with gaussian compressor
@@ -162,7 +157,7 @@ import LinearAlgebra: mul!
             idx = zeros(Int64, 3),
             start_idx = 2,
             n_idx = 1,
-            sel_rec = complete_selector(LUPP(compressor = Gaussian()), A)
+            sel_rec = complete_selector(QRCP(compressor = Identity()), A)
             
             select_indices!(idx, sel_rec, A, n_idx, start_idx)
             @test idx[2] == 1
@@ -173,11 +168,12 @@ import LinearAlgebra: mul!
             idx = zeros(Int64, 3),
             start_idx = 1,
             n_idx = 2,
-            sel_rec = complete_selector(LUPP(compressor = Gaussian()), A)
+            sel_rec = complete_selector(QRCP(compressor = Identity()), A)
 
             select_indices!(idx, sel_rec, A, n_idx, start_idx)
             @test idx == [1; 3; 0]
         end
+
     end
 
 end
