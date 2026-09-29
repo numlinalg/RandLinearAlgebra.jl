@@ -1,9 +1,6 @@
 module CountSketch_compressor
-using Test, RandLinearAlgebra, Random
-import SparseArrays: sparse, SparseMatrixCSC, sprandn
-import LinearAlgebra: mul!, lmul!
-import Random: randn!, seed!, rand
-using ..FieldTest
+include("../test_helpers/preamble.jl")
+import Random: seed!
 
 @testset "CountSketch" begin
     @testset "CountSketch: Compressor" begin

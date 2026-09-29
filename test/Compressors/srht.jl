@@ -1,9 +1,6 @@
 module srht
-using Test, RandLinearAlgebra, Random
-import LinearAlgebra: mul!, Adjoint, Diagonal
+include("../test_helpers/preamble.jl")
 import Hadamard: hadamard
-using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(1223)
 @testset "SRHT" begin
