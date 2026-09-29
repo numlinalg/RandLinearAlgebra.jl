@@ -198,7 +198,7 @@ compression matrix.
     )
 
 An external constructor of `SparseSignRecipe` that is dispatched based on the 
-value of `cardinality`. See [SparseSign](@ref) for additional details. 
+value of `cardinality`. See [`SparseSign`](@ref) for additional details. 
 
 ## Arguments 
 - `cardinality::C where C<:Cardinality`, the cardinality of the compressor. The 
