@@ -28,6 +28,8 @@ CountSketchRecipe
 
 FJLT
 
+FixedPatternFJLT
+
 FJLTRecipe
 
 Gaussian

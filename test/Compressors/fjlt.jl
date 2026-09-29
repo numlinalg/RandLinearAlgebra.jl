@@ -1,7 +1,7 @@
 module fjlt 
 using Test, RandLinearAlgebra, Random
 import SparseArrays
-import SparseArrays: sparse, SparseMatrixCSC, sprand
+import SparseArrays: nonzeros, sparse, SparseMatrixCSC, sprand
 import LinearAlgebra: mul!, Adjoint, Diagonal
 import Hadamard: hadamard
 using ..FieldTest
@@ -22,6 +22,19 @@ Random.seed!(2131)
             :type
         )
         @test fieldtypes(FJLT) == (Cardinality, Int64, Int64, Float64, Type{<:Number})
+
+        fixed = FixedPatternFJLT(
+            cardinality=Right(),
+            compression_dim=3,
+            block_size=4,
+            sparsity=0.2,
+            type=Float32,
+        )
+        @test fixed.cardinality == Right()
+        @test fixed.compression_dim == 3
+        @test fixed.block_size == 4
+        @test fixed.sparsity == 0.2
+        @test fixed.type == Float32
 
         # Verify the Internal Constructor
         let cardinality = Left(), comp_dim = 0, bs = 2, sparsity = 0.0, type = Float64
@@ -70,7 +83,7 @@ Random.seed!(2131)
         # test supertype
         @test supertype(FJLTRecipe) == CompressorRecipe
         @test fieldnames(FJLTRecipe) ==
-            (:cardinality, :n_rows, :n_cols, :sparsity, :scale, :op, :signs, :padding)
+            (:cardinality, :n_rows, :n_cols, :sparsity, :scale, :op, :signs, :padding, :fixed_pattern)
         @test fieldtypes(FJLTRecipe) == (
             Cardinality,
             Int64,
@@ -79,7 +92,8 @@ Random.seed!(2131)
             Float64,
             SparseMatrixCSC,
             BitVector,
-            AbstractMatrix
+            AbstractMatrix,
+            Bool,
         )
 
         # test the constructors
@@ -112,6 +126,7 @@ Random.seed!(2131)
             @test typeof(recipe.signs) == BitVector
             @test size(recipe.padding) == (padded_dim, block_size) 
             @test eltype(recipe.padding) == type
+            @test !recipe.fixed_pattern
         end
 
         # test the with sparsity of 0 and non power of 2 row 
@@ -145,6 +160,7 @@ Random.seed!(2131)
             @test typeof(recipe.signs) == BitVector
             @test size(recipe.padding) == (padded_dim, block_size) 
             @test eltype(recipe.padding) == type
+            @test !recipe.fixed_pattern
         end
 
         # test the with sparsity of 0 and non power of 2 row 
@@ -178,6 +194,7 @@ Random.seed!(2131)
             @test typeof(recipe.signs) == BitVector
             @test size(recipe.padding) == (block_size, padded_dim) 
             @test eltype(recipe.padding) == type
+            @test !recipe.fixed_pattern
         end
 
     end
@@ -314,7 +331,7 @@ Random.seed!(2131)
             @test compressor_recipe.signs != oldsigns
         end
 
-        # test that update_compressor! is allocation-free
+        # Textbook FJLT resamples both the sparsity pattern and nonzero values.
         let A = rand(16, 10),
             recipe = complete_compressor(
                 FJLT(;
@@ -326,11 +343,38 @@ Random.seed!(2131)
                 A,
             )
 
+            old_op = recipe.op
+            old_colptr = copy(recipe.op.colptr)
+            old_rowval = copy(recipe.op.rowval)
             update_compressor!(recipe)
-            nnz_before = SparseArrays.nnz(recipe.op)
+            @test recipe.op !== old_op
+            @test recipe.op.colptr != old_colptr || recipe.op.rowval != old_rowval
+        end
+
+        # FixedPatternFJLT preserves sparse locations and updates without allocating.
+        let A = rand(16, 10),
+            recipe = complete_compressor(
+                FixedPatternFJLT(;
+                    cardinality=Left(),
+                    compression_dim=4,
+                    sparsity=0.5,
+                    type=Float64,
+                ),
+                A,
+            )
+
+            update_compressor!(recipe)
+            old_op = recipe.op
+            old_colptr = copy(recipe.op.colptr)
+            old_rowval = copy(recipe.op.rowval)
+            old_values = copy(nonzeros(recipe.op))
             allocs = @allocated update_compressor!(recipe)
+            @test recipe.fixed_pattern
             @test allocs == 0
-            @test SparseArrays.nnz(recipe.op) == nnz_before
+            @test recipe.op === old_op
+            @test recipe.op.colptr == old_colptr
+            @test recipe.op.rowval == old_rowval
+            @test nonzeros(recipe.op) != old_values
         end
 
     end
