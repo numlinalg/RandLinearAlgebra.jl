@@ -1,10 +1,7 @@
 module Identity_compressor
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 import Base.*
-import LinearAlgebra:mul!
-import Random:seed!
-using ..FieldTest
-using ..ApproxTol
+import Random: seed!
 
 seed!(21321)
 @testset "Identity" begin

@@ -1,7 +1,5 @@
 module logger_abstract_types
-using Test, RandLinearAlgebra
-using ..FieldTest
-using ..ApproxTol
+include("../../test_helpers/preamble.jl")
 struct TestLogger <: Logger end
 struct TestLoggerRecipe <: LoggerRecipe end
 

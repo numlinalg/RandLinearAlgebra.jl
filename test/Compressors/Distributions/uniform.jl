@@ -1,6 +1,5 @@
 module uniform_distribution
-using Test, RandLinearAlgebra
-using StatsBase: ProbabilityWeights
+include("../../test_helpers/preamble.jl")
 
 @testset "Uniform" begin
     @testset "Uniform: Distribution" begin

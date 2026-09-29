@@ -1,7 +1,5 @@
 module QRCP_tests
-using Test
-using RandLinearAlgebra
-import LinearAlgebra: mul!
+include("../../test_helpers/preamble.jl")
 
 @testset "QRCP Tests" begin
     @testset "QRCP" begin

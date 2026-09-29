@@ -1,7 +1,6 @@
 module compressor_abstract_update 
-using Test, RandLinearAlgebra
-import RandLinearAlgebra: update_compressor! 
-import LinearAlgebra: mul!
+include("../test_helpers/preamble.jl")
+import RandLinearAlgebra: update_compressor!
 
 #####################
 # Testing Parameters

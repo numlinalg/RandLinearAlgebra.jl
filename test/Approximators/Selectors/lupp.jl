@@ -1,9 +1,5 @@
 module LUPP_tests
-using Test
-using ..FieldTest
-using ..ApproxTol
-using RandLinearAlgebra
-import LinearAlgebra: mul!
+include("../../test_helpers/preamble.jl")
 
 @testset "LUPP Tests" begin
     @testset "LUPP" begin
