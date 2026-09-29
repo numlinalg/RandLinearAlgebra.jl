@@ -1,5 +1,5 @@
 module solver_abstract_types
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 import RandLinearAlgebra: complete_solver, rsolve!
 
 ###################################

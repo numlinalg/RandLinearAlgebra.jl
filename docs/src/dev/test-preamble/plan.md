@@ -40,8 +40,8 @@ No functions are added.
 
 - [x] 1. `preamble.jl` + pilots (`gaussian.jl`, `rangefinder.jl`, `kaczmarz.jl`)
 - [x] 2. Remaining Compressors files
-- [ ] 3. Remaining Approximators files — converted, awaiting review
-- [ ] 4. Remaining Solvers files and `runtests.jl` cleanup
+- [x] 3. Remaining Approximators files
+- [x] 4. Remaining Solvers files and `runtests.jl` cleanup (full `Pkg.test()` passes)
 
 ## Out of scope / potential issues
 
@@ -56,3 +56,8 @@ No functions are added.
 - Preamble includes `FieldTest`/`ApproxTol` itself so its full scope is visible in one file.
 - Broad `using` for Test, RandLinearAlgebra, Random, LinearAlgebra, SparseArrays, StatsBase;
   single-use packages stay local.
+- Plan change (increment 4): `Solvers/SubSolvers/lq.jl` and `qr.jl` were bare `@testset`
+  blocks, not modules, that relied on `runtests.jl` loading `FieldTest`/`ApproxTol` at the
+  top level (via `using ..FieldTest`, though neither file used them). They are now wrapped in
+  modules (`LQ_subsolver`, `QR_subsolver`) that include the preamble, matching every other
+  test file. This made it safe to remove the helper includes from `runtests.jl`.
