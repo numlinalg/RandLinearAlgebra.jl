@@ -38,14 +38,18 @@ No functions are added.
 
 ## Status
 
-- [ ] 1. `preamble.jl` + pilots (`gaussian.jl`, `rangefinder.jl`, `kaczmarz.jl`) — converted, awaiting review
-- [ ] 2. Remaining Compressors files
-- [ ] 3. Remaining Approximators files
+- [x] 1. `preamble.jl` + pilots (`gaussian.jl`, `rangefinder.jl`, `kaczmarz.jl`)
+- [x] 2. Remaining Compressors files
+- [ ] 3. Remaining Approximators files — converted, awaiting review
 - [ ] 4. Remaining Solvers files and `runtests.jl` cleanup
 
 ## Out of scope / potential issues
 
 - Per-file RNG seeds could be centralized later.
+- `julia --project=docs/ docs/make.jl` currently fails on four unresolved `@ref` links
+  (`RangeFinder` in `api/approximators.md`, `Gaussian` in `manual/compression.md`,
+  `SparseSign` in `api/compressors.md`, `Identity` in `api/selectors.md`). These are in
+  files untouched by this work; with `warnonly = [:cross_references]` the build succeeds.
 
 ## Decisions log
 
