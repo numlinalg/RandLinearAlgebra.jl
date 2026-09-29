@@ -130,6 +130,8 @@ mutable struct SRHTRecipe{C<:Cardinality, M<:AbstractMatrix} <: CompressorRecipe
     op::Vector{Int64}
     signs::BitVector
     padding::M
+    extraction::Matrix{Float64}
+    sign_vec::Vector{Float64}
 end
 
 function SRHTRecipe(
@@ -150,6 +152,11 @@ function SRHTRecipe(
     signs = bitrand(padded_size)
     idx = sample(1:padded_size, compression_dim, replace = false)
     scaling = type(1 / sqrt(compression_dim))
+    sign_vec = Vector{Float64}(undef, padded_size)
+    @inbounds for i in eachindex(signs)
+        sign_vec[i] = ifelse(signs[i], 1.0, -1.0)
+    end
+    extraction = zeros(Float64, compression_dim, block_size)
     return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
         cardinality,
         n_rows,
@@ -157,7 +164,9 @@ function SRHTRecipe(
         scaling,
         idx,
         signs,
-        padded_matrix
+        padded_matrix,
+        extraction,
+        sign_vec
     )
 end
 
@@ -179,6 +188,11 @@ function SRHTRecipe(
     signs = bitrand(padded_size)
     idx = sample(1:padded_size, compression_dim, replace = false)
     scaling = type(1 / sqrt(compression_dim))
+    sign_vec = Vector{Float64}(undef, padded_size)
+    @inbounds for i in eachindex(signs)
+        sign_vec[i] = ifelse(signs[i], 1.0, -1.0)
+    end
+    extraction = zeros(Float64, block_size, compression_dim)
     return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
         cardinality,
         n_rows,
@@ -186,7 +200,9 @@ function SRHTRecipe(
         scaling,
         idx,
         signs,
-        padded_matrix
+        padded_matrix,
+        extraction,
+        sign_vec
     )
 end
 
@@ -206,6 +222,9 @@ function update_compressor!(S::SRHTRecipe{Left, <:AbstractMatrix})
     padded_size = size(S.padding, 1)
     sample!(1:padded_size, S.op, replace = false)
     rand!(S.signs)
+    @inbounds for i in eachindex(S.signs)
+        S.sign_vec[i] = ifelse(S.signs[i], 1.0, -1.0)
+    end
     return nothing
 end
 
@@ -213,6 +232,9 @@ function update_compressor!(S::SRHTRecipe{Right, <:AbstractMatrix})
     padded_size = size(S.padding, 2)
     sample!(1:padded_size, S.op, replace = false)
     rand!(S.signs)
+    @inbounds for i in eachindex(S.signs)
+        S.sign_vec[i] = ifelse(S.signs[i], 1.0, -1.0)
+    end
     return nothing
 end
 
@@ -255,11 +277,16 @@ function mul!(
             fwht!(pv1, S.signs, scaling = S.scale) 
         end
 
+        # Extract selected rows into pre-allocated buffer
+        ev = view(S.extraction, :, 1:b_size)
+        @inbounds for (i, idx) in enumerate(S.op)
+            @views ev[i, :] .= S.padding[idx, :]
+        end
         # Apply the operator to the matrix
-        Cv .= beta .* Cv .+ alpha .* S.padding[S.op, :]
+        Cv .= beta .* Cv .+ alpha .* ev
         start_col = last_col + 1
     end
-    
+
     # Handle the last block that is less than the block size, if it exists.
     if last_block_size > 0
         last_col = start_col + last_block_size - 1
@@ -273,13 +300,16 @@ function mul!(
         # Apply signs and fwht to the padding matrix
         for i in 1:last_block_size
             pv1 = view(S.padding, :, i)
-            fwht!(pv1, S.signs, scaling = S.scale) 
+            fwht!(pv1, S.signs, scaling = S.scale)
         end
-        
-        # Perform accesses only up to the entries
-        pv = view(S.padding, :, 1:last_block_size)
+
+        # Extract selected rows into pre-allocated buffer
+        ev = view(S.extraction, :, 1:last_block_size)
+        @inbounds for (i, idx) in enumerate(S.op)
+            @views ev[i, :] .= S.padding[idx, 1:last_block_size]
+        end
         # Apply the operator to the matrix
-        Cv .= beta .* Cv .+ alpha .* pv[S.op, :]
+        Cv .= beta .* Cv .+ alpha .* ev
     end
 
     return nothing 
@@ -325,36 +355,36 @@ function mul!(
         end
 
         # Because apply sign transform after hadmard is different than the reverse can't
-        # using fwht with signs. Scale the rows of the 
-        S.padding .*= ifelse.(S.signs, 1, -1) 
+        # using fwht with signs. Scale the rows of the
+        S.padding .*= S.sign_vec
         pv = view(S.padding, 1:c_cols, :)
-        # add the result to C note that because of padding instead of returning padded 
+        # add the result to C note that because of padding instead of returning padded
         # matrix we only return the part that corresponds to the dimensions of C
         axpby!(one(type), pv', beta, Cv)
         start_row = last_row + 1
     end
-    
+
     # Handle the last block that is last than the block size
     if last_block_size > 0
         last_row = start_row + last_block_size - 1
         Av = view(A, start_row:last_row, :)
         Cv = view(C, start_row:last_row, :)
         pv = view(S.padding, S.op, 1:last_block_size)
-        # Everything should be stored in the transpose of padding matrix because of 
+        # Everything should be stored in the transpose of padding matrix because of
         # left padding matrix is structured with more rows than columns
         fill!(S.padding, zero(type))
-        pv' .= alpha .* Av 
+        pv' .= alpha .* Av
         # Apply signs and fwht to the padding matrix
         for i in 1:last_block_size
             pv1 = view(S.padding, :, i)
-            fwht!(pv1, scaling = S.scale) 
+            fwht!(pv1, scaling = S.scale)
         end
-        
+
         # Because apply sign transform after hadamard is different than the reverse can't
         # using fwht with signs
-        S.padding .*= ifelse.(S.signs, 1, -1) 
+        S.padding .*= S.sign_vec
         pv = view(S.padding, 1:c_cols, 1:last_block_size)
-        # add the result to C note that because of padding instead of returning padded 
+        # add the result to C note that because of padding instead of returning padded
         # matrix we only return the part that corresponds to the dimensions of C
         axpby!(one(type), pv', beta, Cv)
     end
@@ -399,11 +429,16 @@ function mul!(
             fwht!(pv1, S.signs, scaling = S.scale) 
         end
 
+        # Extract selected columns into pre-allocated buffer
+        ev = view(S.extraction, 1:b_size, :)
+        @inbounds for (j, idx) in enumerate(S.op)
+            @views ev[:, j] .= S.padding[:, idx]
+        end
         # Apply the operator to the matrix
-        Cv .= beta .* Cv .+ alpha .* S.padding[:, S.op]
+        Cv .= beta .* Cv .+ alpha .* ev
         start_row = last_row + 1
     end
-    
+
     # Handle the last block that is last than the block size
     if last_block_size > 0
         last_row = start_row + last_block_size - 1
@@ -417,12 +452,16 @@ function mul!(
         # Apply signs and fwht to the padding matrix
         for i in 1:last_block_size
             pv1 = view(S.padding, i, :)
-            fwht!(pv1, S.signs, scaling = S.scale) 
+            fwht!(pv1, S.signs, scaling = S.scale)
         end
 
-        pv = view(S.padding, 1:last_block_size, :)
+        # Extract selected columns into pre-allocated buffer
+        ev = view(S.extraction, 1:last_block_size, :)
+        @inbounds for (j, idx) in enumerate(S.op)
+            @views ev[:, j] .= S.padding[1:last_block_size, idx]
+        end
         # Apply the operator to the matrix
-        Cv .= beta .* Cv .+ alpha .* pv[:, S.op]
+        Cv .= beta .* Cv .+ alpha .* ev
     end
 
     return nothing
@@ -466,36 +505,35 @@ function mul!(
         end
 
         # Flip the signs
-        S.padding' .*= ifelse.(S.signs, 1, -1)
+        S.padding' .*= S.sign_vec
         pv = view(S.padding, :, 1:c_rows)
-        # add the result to C note that because of padding instead of returning padded 
+        # add the result to C note that because of padding instead of returning padded
         # matrix we only return the part that corresponds to the dimensions of C
         axpby!(one(type), pv', beta, Cv)
         start_col = last_col + 1
     end
-    
+
     # Handle the last block that is last than the block size
     if last_block_size > 0
         last_col = start_col + last_block_size - 1
         Av = view(A, :, start_col:last_col)
         Cv = view(C, :, start_col:last_col)
         pv = view(S.padding, 1:last_block_size, S.op)
-        # Everything should be stored in the transpose of padding matrix because of 
+        # Everything should be stored in the transpose of padding matrix because of
         # left padding matrix is structured with more rows than columns
         fill!(S.padding, zero(type))
-        pv' .= alpha .* Av 
+        pv' .= alpha .* Av
         # Apply and fwht to the padding matrix
         for i in 1:last_block_size
             pv1 = view(S.padding, i, :)
             fwht!(pv1, scaling = S.scale)
         end
-        
+
         # Apply signs to the padding matrix
-        S.padding' .*= ifelse.(S.signs, 1, -1)
-        # Because the padding 
+        S.padding' .*= S.sign_vec
         # Match padding matrix view to the output size
         pv = view(S.padding, 1:last_block_size, 1:c_rows)
-        # add the result to C note that because of padding instead of returning padded 
+        # add the result to C note that because of padding instead of returning padded
         # matrix we only return the part that corresponds to the dimensions of C
         axpby!(one(type), pv', beta, Cv)
     end

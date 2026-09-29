@@ -17,8 +17,8 @@ module basic_logger
             @test fieldnames(BasicLogger) == (
                 :max_it, :collection_rate, :threshold_info, :stopping_criterion
             )
-            @test fieldtypes(BasicLogger) == (
-                Int64, Int64, Union{Float64, Tuple}, Function
+            @test fieldtypes(BasicLogger{Float64}) == (
+                Int64, Int64, Float64, Function
             )
 
             # test internal structure
@@ -84,16 +84,16 @@ module basic_logger
                 :stopping_criterion, 
                 :hist
             )
-            @test fieldtypes(BasicLoggerRecipe) == (
-                Int64, 
-                Float64, 
-                Union{Float64, Tuple}, 
-                Int64, 
-                Int64, 
-                Int64, 
-                Bool, 
-                Function,
-                Vector{Float64}
+            @test fieldtypes(BasicLoggerRecipe{typeof(threshold_stop),Float64}) == (
+                Int64,
+                Float64,
+                Float64,
+                Int64,
+                Int64,
+                Int64,
+                Bool,
+                typeof(threshold_stop),
+                Vector{Float64},
             )
         end
 

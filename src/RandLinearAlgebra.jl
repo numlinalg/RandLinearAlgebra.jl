@@ -25,7 +25,7 @@ export Compressor, CompressorRecipe, CompressorAdjoint
 export Cardinality, Left, Right, Undef
 export complete_compressor, update_compressor!
 export CountSketch, CountSketchRecipe
-export FJLT, FJLTRecipe
+export FJLT, FixedPatternFJLT, FJLTRecipe
 export Gaussian, GaussianRecipe
 export Identity, IdentityRecipe
 export Sampling, SamplingRecipe

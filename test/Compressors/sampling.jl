@@ -129,12 +129,15 @@ Random.seed!(2131)
             idx_v_val = view(idx_val, :)
 
             # Construct SamplingRecipe
-            recipe = SamplingRecipe{card_type}(card_type(), comp_dim, actual_n_rows, actual_n_cols,
-                                         dist_recipe_val, idx_val, idx_v_val)
+            recipe = SamplingRecipe{card_type,typeof(dist_recipe_val),typeof(idx_v_val)}(
+                card_type(), comp_dim, actual_n_rows, actual_n_cols,
+                dist_recipe_val, idx_val, idx_v_val,
+            )
 
-            @test typeof(recipe) == SamplingRecipe{card_type}
-            @test recipe.cardinality == card_type() 
-            @test isa(recipe.cardinality, card_type)  
+            @test typeof(recipe) ==
+                SamplingRecipe{card_type,typeof(dist_recipe_val),typeof(idx_v_val)}
+            @test recipe.cardinality == card_type()
+            @test isa(recipe.cardinality, card_type)
             @test recipe.compression_dim == comp_dim
             @test recipe.n_rows == actual_n_rows
             @test recipe.n_cols == actual_n_cols
@@ -143,17 +146,17 @@ Random.seed!(2131)
             @test recipe.idx == idx_val
             @test recipe.idx_v == idx_v_val
             @test eltype(recipe.idx_v) == eltype(idx_val)
-            @test parent(recipe.idx_v) === recipe.idx 
+            @test parent(recipe.idx_v) === recipe.idx
         end
 
-        let card_type = Right, 
+        let card_type = Right,
             comp_dim = 6,
-            actual_n_rows = 25,       
-            actual_n_cols = comp_dim, 
+            actual_n_rows = 25,
+            actual_n_cols = comp_dim,
             replace_sampling = true
 
-            # Setup for distribution_recipe 
-            dist_state_space = collect(1:actual_n_rows) 
+            # Setup for distribution_recipe
+            dist_state_space = collect(1:actual_n_rows)
             dist_weights = ProbabilityWeights(ones(actual_n_rows) ./ actual_n_rows)
             dist_recipe_val = UniformRecipe(card_type(), replace_sampling, dist_state_space, dist_weights)
 
@@ -162,10 +165,13 @@ Random.seed!(2131)
             idx_v_val = view(idx_val, :)
 
             # Construct SamplingRecipe
-            recipe = SamplingRecipe{card_type}(card_type(), comp_dim, actual_n_rows, actual_n_cols,
-                                         dist_recipe_val, idx_val, idx_v_val)
+            recipe = SamplingRecipe{card_type,typeof(dist_recipe_val),typeof(idx_v_val)}(
+                card_type(), comp_dim, actual_n_rows, actual_n_cols,
+                dist_recipe_val, idx_val, idx_v_val,
+            )
 
-            @test typeof(recipe) == SamplingRecipe{card_type}
+            @test typeof(recipe) ==
+                SamplingRecipe{card_type,typeof(dist_recipe_val),typeof(idx_v_val)}
             @test recipe.cardinality == card_type()
             @test isa(recipe.cardinality, card_type)
             @test recipe.compression_dim == comp_dim

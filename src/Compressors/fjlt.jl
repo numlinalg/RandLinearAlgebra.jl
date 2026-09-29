@@ -99,6 +99,38 @@ function FJLT(;
 end
 
 """
+    FixedPatternFJLT <: Compressor
+
+An FJLT variant whose sparse matrix retains its sparsity pattern when
+[`update_compressor!`](@ref) is called. Only the existing nonzero values and diagonal signs
+are resampled, making updates allocation-free. Use [`FJLT`](@ref) when each update must draw
+a new sparse matrix from the textbook FJLT distribution.
+
+`FixedPatternFJLT` accepts the same keyword arguments as [`FJLT`](@ref).
+"""
+struct FixedPatternFJLT <: Compressor
+    cardinality::Cardinality
+    compression_dim::Int64
+    block_size::Int64
+    sparsity::Float64
+    type::Type{<:Number}
+    function FixedPatternFJLT(cardinality, compression_dim, block_size, sparsity, type)
+        FJLT(cardinality, compression_dim, block_size, sparsity, type)
+        return new(cardinality, compression_dim, block_size, sparsity, type)
+    end
+end
+
+function FixedPatternFJLT(;
+    cardinality::Cardinality=Left(),
+    compression_dim::Int64=2,
+    block_size::Int64=10,
+    sparsity::Float64=0.0,
+    type::Type{N}=Float64,
+) where {N<:Number}
+    return FixedPatternFJLT(cardinality, compression_dim, block_size, sparsity, type)
+end
+
+"""
     FJLTRecipe{C<:Cardinality, S<:SparseMatrixCSC, M<:AbstractMatrix} <: CompressorRecipe
 
 The recipe containing all allocations and information for the FJLT compressor.
@@ -114,6 +146,7 @@ The recipe containing all allocations and information for the FJLT compressor.
 - `signs::BitVector`, the vector of signs where `0` indicates negative one and `1` indicates
     positive one. 
 - `padding::AbstractMatrix`, the matrix containing the padding for the matrix being sketched.
+- `fixed_pattern::Bool`, whether updates preserve the sparse matrix's nonzero locations.
 
 # Constructor
 
@@ -157,6 +190,7 @@ mutable struct FJLTRecipe{
     op::S
     signs::BitVector
     padding::M
+    fixed_pattern::Bool
 end
 
 function FJLTRecipe(
@@ -165,7 +199,8 @@ function FJLTRecipe(
     cardinality::Left,
     sparsity::Float64,
     A::AbstractMatrix, 
-    type::Type{<:Number}
+    type::Type{<:Number},
+    fixed_pattern::Bool=false,
 )
     # For compressing from the left, the compressor's dimensions should be 
     # compression_dim by smallest power of 2 larger than size(A, 1)
@@ -190,7 +225,8 @@ function FJLTRecipe(
         scaling,
         sparse_mat,
         signs,
-        padded_matrix
+        padded_matrix,
+        fixed_pattern,
     )
 end
 
@@ -200,7 +236,8 @@ function FJLTRecipe(
     cardinality::Right, 
     sparsity::Float64,
     A::AbstractMatrix, 
-    type::Type{<:Number}
+    type::Type{<:Number},
+    fixed_pattern::Bool=false,
 )
     # For compressing from the right, the compressor's dimensions should be 
     # compression_dim by smallest power of 2 larger than size(A, 2)
@@ -225,7 +262,8 @@ function FJLTRecipe(
         scaling,
         sparse_mat,
         signs,
-        padded_matrix
+        padded_matrix,
+        fixed_pattern,
     )
 end
 
@@ -242,12 +280,26 @@ function complete_compressor(ingredients::FJLT, A::AbstractMatrix)
     )
 end
 
+function complete_compressor(ingredients::FixedPatternFJLT, A::AbstractMatrix)
+    return FJLTRecipe(
+        ingredients.compression_dim,
+        ingredients.block_size,
+        ingredients.cardinality,
+        ingredients.sparsity,
+        A,
+        ingredients.type,
+        true,
+    )
+end
+
 function update_compressor!(S::FJLTRecipe)
-    n_rows, n_cols = size(S.op)
-    type = eltype(S.op)
-    # Generate a new sparse matrix
-    S.op = sprandn(type, n_rows, n_cols, S.sparsity)
-    # Resample the non-zero values 
+    if S.fixed_pattern
+        # Preserve the sparse structure and only resample its existing Gaussian values.
+        randn!(nonzeros(S.op))
+    else
+        # Textbook FJLT draws a new Bernoulli-Gaussian sparse matrix on each update.
+        S.op = sprandn(eltype(S.op), size(S.op)..., S.sparsity)
+    end
     rand!(S.signs)
 
     return nothing

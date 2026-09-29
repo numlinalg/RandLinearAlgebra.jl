@@ -39,11 +39,17 @@ using LinearAlgebra: dot
     end
 
     @testset "Agmon: DistributionRecipe" begin
-        # Verify supertypes, fieldnames and fieldtypes
+        # Verify supertypes and fieldnames
         @test supertype(AgmonRecipe) == DistributionRecipe
         @test fieldnames(AgmonRecipe) == (:cardinality, :replace, :beta, :state_space,
                                              :sample_buffer, :A, :b, :x, :r)
-        @test fieldtypes(AgmonRecipe)[1:5] == (Cardinality, Bool, Int, Vector{Int64}, Vector{Int64})
+
+        # Verify concrete type parameters are inferred
+        let A = [1.0 0.0; 0.0 1.0], b = [1.0, 2.0], x = [0.5, 0.5],
+            mr = complete_distribution(Agmon(cardinality = Left(), beta = 1), x, A, b)
+            @test mr isa AgmonRecipe{typeof(Left()),Matrix{Float64},Vector{Float64},
+                                     Vector{Float64}}
+        end
     end
 
     @testset "Agmon: Complete Distribution" begin
@@ -239,15 +245,14 @@ using LinearAlgebra: dot
             @test_throws DimensionMismatch update_distribution!(mr, x2, A, b)
         end
 
-        # Test Undef cardinality guard in update_distribution!
+        # Parameterized cardinality field rejects assignment of wrong type
         let A = randn(5, 3),
             b = randn(5),
             x = randn(3),
             m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
-            mr.cardinality = Undef()
-            @test_throws ArgumentError update_distribution!(mr, x, A, b)
+            @test_throws MethodError mr.cardinality = Undef()
         end
 
         # Test that passing explicit r stores it as-is
@@ -530,29 +535,14 @@ using LinearAlgebra: dot
             @test_throws ArgumentError sample_distribution!(out, mr)
         end
 
-        # Test sample-time cardinality guard
+        # Parameterized cardinality field rejects assignment of wrong type
         let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
             b = [1.0, 2.0, 3.0],
             x = [0.5, 0.5],
             m = Agmon(cardinality = Left(), beta = 2),
             mr = complete_distribution(m, x, A, b)
 
-            mr.cardinality = Undef()
-            out = zeros(Int, 1)
-            @test_throws ArgumentError sample_distribution!(out, mr)
-        end
-
-        # Sample-time cardinality guard on the stored-residual path
-        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
-            b = [1.0, 2.0, 3.0],
-            x = [0.5, 0.5],
-            m = Agmon(cardinality = Left(), beta = 2),
-            mr = complete_distribution(m, x, A, b)
-
-            update_distribution!(mr, x, A, b; r = A * x - b)  # populate mr.r
-            mr.cardinality = Undef()                          # trip the inner else throw
-            out = zeros(Int, 1)
-            @test_throws ArgumentError sample_distribution!(out, mr)
+            @test_throws MethodError mr.cardinality = Undef()
         end
 
         # replace = true: sampling with replacement must still produce valid indices
