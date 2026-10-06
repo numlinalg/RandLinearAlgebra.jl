@@ -1,8 +1,6 @@
 module fwht_test
-using Test, RandLinearAlgebra, Random
+include("../../test_helpers/preamble.jl")
 import Hadamard: hadamard
-using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(2131)
 @testset "FWHT" begin

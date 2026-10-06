@@ -1,5 +1,5 @@
 module selector_abstract_types
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 import RandLinearAlgebra: complete_selector, update_selector!, select_indices!
 
 

@@ -3,7 +3,7 @@
 ##########################
 module column_projection_constructor 
 
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 
 @testset "ColumnProjection Structure & Constructor" begin
 
@@ -95,7 +95,7 @@ end
 ####################################
 module column_projection_recipe_structure 
 
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 
 @testset "ColumnProjectionRecipe Structure" begin
 
@@ -123,7 +123,7 @@ end
 ###################################
 module column_projection_recipe_constructor
 
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 
 @testset "ColumnProjectionRecipe complete_solver" begin
     
@@ -218,7 +218,7 @@ end
 ###################################
 module column_projection_update
 
-using Test, RandLinearAlgebra, LinearAlgebra
+include("../test_helpers/preamble.jl")
 
 @testset "ColumnProjection Update" begin
 
@@ -271,7 +271,7 @@ end
 ###################################
 module column_projection_solver 
 
-using Test, RandLinearAlgebra, LinearAlgebra
+include("../test_helpers/preamble.jl")
 
 @testset "ColumnProjection Solver: rsolve!" begin 
 

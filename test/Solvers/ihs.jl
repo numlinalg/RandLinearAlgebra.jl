@@ -1,10 +1,7 @@
 module IHSTest
-using Test, RandLinearAlgebra, LinearAlgebra
+include("../test_helpers/preamble.jl")
 import RandLinearAlgebra: complete_compressor
-import LinearAlgebra: mul!, norm
-import Random: randn!, seed!
-using ..FieldTest
-using ..ApproxTol
+import Random: seed!
 
 # Define the test structures
 ##########################

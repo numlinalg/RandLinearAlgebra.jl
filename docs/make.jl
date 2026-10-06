@@ -52,6 +52,9 @@ makedocs(
                 "ApproximatorErrors API" => "api/approximator_errors.md",
             ],
         ],
+        "Development" => [
+            "Test Preamble" => "dev/test-preamble/plan.md",
+        ],
         "References" => "references.md",
     ]
 )
