@@ -86,6 +86,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (padded_dim, block_size) 
             @test eltype(recipe.padding) == type
         end
@@ -113,6 +114,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (padded_dim, block_size) 
             @test eltype(recipe.padding) == type
         end
@@ -139,6 +141,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (block_size, padded_dim)
             @test eltype(recipe.padding) == type
         end
@@ -166,6 +169,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (block_size, padded_dim) 
             @test eltype(recipe.padding) == type
         end

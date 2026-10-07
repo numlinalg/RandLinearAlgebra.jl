@@ -103,6 +103,10 @@ The recipe containing all allocations and information for the SRHT compressor.
     positive one. 
 - `padding::AbstractMatrix`, the matrix containing the padding for the matrix being 
     sketched.
+- `extraction::Matrix{Float64}`, a preallocated buffer for extracting the sampled rows or
+    columns after the Hadamard transform.
+- `sign_vec::Vector{Float64}`, the numeric ``+1/-1`` representation of `signs`, used for
+    the post-Hadamard sign scaling without allocating a temporary vector.
 
 # Constructor
     SRHTRecipe(
@@ -156,6 +160,7 @@ function SRHTRecipe(
     @inbounds for i in eachindex(signs)
         sign_vec[i] = ifelse(signs[i], 1.0, -1.0)
     end
+
     extraction = zeros(Float64, compression_dim, block_size)
     return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
         cardinality,
@@ -192,6 +197,7 @@ function SRHTRecipe(
     @inbounds for i in eachindex(signs)
         sign_vec[i] = ifelse(signs[i], 1.0, -1.0)
     end
+
     extraction = zeros(Float64, block_size, compression_dim)
     return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
         cardinality,
