@@ -23,23 +23,28 @@ active dimension: ``d = m`` for `Left()`, ``d = n`` for `Right()`):
     highest residual within the sampled subset.
 
 # Fields
-- `cardinality::Cardinality`: the direction the compression matrix is intended to be
+- `cardinality::Cardinality`, the direction the compression matrix is intended to be
     applied to a target matrix or operator. Values allowed are `Left()`, `Right()`,
     or `Undef()`. The default value is `Undef()`.
+- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
+    effect on the `Uniform`.
 - `replace::Bool`: if `true`, then the sampling occurs with replacement; if `false`,
     then the sampling occurs without replacement. The default value is `false`.
-- `beta::Int`: the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the active
+- `beta::Int`, the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the active
     sampling dimension (``m`` for `Left()`, ``n`` for `Right()`). When ``β = 1``, this
     reduces to uniform random selection. When ``β = d``, this becomes pure greedy
     Agmon selection. The default value is 1.
 
 # Constructor
 
-    Agmon(; cardinality::Cardinality = Undef(), replace::Bool = false, beta::Int = 1)
+    Agmon(; cardinality::Cardinality = Undef(), compression_dim = 2, 
+        replace::Bool = false, beta::Int = 1)
 
 ## Keywords
 - `cardinality::Cardinality`: the direction of index selection. Must be `Left()` or
     `Right()`. The default value is `Undef()`.
+- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
+    effect on the `Uniform`.
 - `replace::Bool`: if `true`, sampling occurs with replacement. The default value is
     `false`.
 - `beta::Int`: subset size for sampling (``1 ≤ β ≤ d``). The default value is `1`.
@@ -52,9 +57,10 @@ active dimension: ``d = m`` for `Left()`, ``d = n`` for `Right()`):
 """
 mutable struct Agmon <: Distribution
     cardinality::Cardinality
+    compression_dim::Int64
     replace::Bool
     beta::Int  # Subset size for sampling (1 ≤ β ≤ d)
-    function Agmon(cardinality::Cardinality, replace::Bool, beta::Int)
+    function Agmon(cardinality::Cardinality, compression_dim::Int64, replace::Bool, beta::Int)
         if beta < 1
             throw(
                 ArgumentError(
@@ -62,12 +68,17 @@ mutable struct Agmon <: Distribution
                 )
             )
         end
-        new(cardinality, replace, beta)
+        new(cardinality, compression_dim, replace, beta)
     end
 end
 
-function Agmon(; cardinality::Cardinality = Undef(), replace::Bool = false, beta::Int = 1)
-    return Agmon(cardinality, replace, beta)
+function Agmon(; 
+    cardinality::Cardinality = Undef(), 
+    compression_dim = 2,
+    replace::Bool = false,
+    beta::Int = 1
+)
+    return Agmon(cardinality, compression_dim, replace, beta)
 end
 
 """
@@ -78,6 +89,8 @@ The recipe containing all allocations and information for the Agmon distribution
 # Fields
 - `cardinality::C where C<:Cardinality`: the cardinality of the compressor. For Agmon,
     this should be `Left()` or `Right()`.
+- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
+    effect on the `AgmonRecipe`.
 - `replace::Bool`: if `true`, then sampling is done with replacement; if `false`,
     then sampling is done without replacement.
 - `beta::Int`: the subset size for sampling (``1 ≤ β ≤ d``), where ``d`` is the
@@ -114,6 +127,7 @@ The recipe containing all allocations and information for the Agmon distribution
 """
 mutable struct AgmonRecipe <: DistributionRecipe
     cardinality::Cardinality
+    compression_dim::Int64
     replace::Bool
     beta::Int
     state_space::Vector{Int64}
@@ -155,7 +169,7 @@ function complete_distribution(
     b::AbstractVector
 )
     cardinality = distribution.cardinality
-
+    compression_dim = distribution.compression_dim
     n_rows = size(A, 1)
     n_cols = size(A, 2)
 
@@ -208,8 +222,8 @@ function complete_distribution(
     # Allocate buffer for sampled indices
     sample_buffer = zeros(Int64, distribution.beta)
 
-    return AgmonRecipe(cardinality, distribution.replace, distribution.beta,
-        state_space, sample_buffer, A, b, x, nothing)
+    return AgmonRecipe(cardinality, compression_dim, distribution.replace, 
+        distribution.beta, state_space, sample_buffer, A, b, x, nothing)
 end
 
 """

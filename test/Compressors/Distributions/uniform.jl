@@ -6,23 +6,26 @@ using StatsBase: ProbabilityWeights
     @testset "Uniform: Distribution" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(Uniform) == Distribution
-        @test fieldnames(Uniform) == (:cardinality, :replace)
-        @test fieldtypes(Uniform) == (Cardinality, Bool)
+        @test fieldnames(Uniform) == (:cardinality, :compression_dim, :replace)
+        @test fieldtypes(Uniform) == (Cardinality, Int64, Bool)
 
         # Default
         let u = Uniform()
             @test u.cardinality == Undef()
+            @test u.compression_dim == 2
             @test u.replace == false
         end
 
         # check other constructor
-        let u2 = Uniform(cardinality = Left(), replace = true)
+        let u2 = Uniform(cardinality = Left(), compression_dim = 3, replace = true)
             @test u2.cardinality == Left()
+            @test u2.compression_dim == 3
             @test u2.replace == true
         end
 
-        let u3 = Uniform(cardinality = Right(), replace = true)
+        let u3 = Uniform(cardinality = Right(), compression_dim = 3, replace = true)
             @test u3.cardinality == Right()
+            @test u3.compression_dim == 3
             @test u3.replace == true
         end
 
@@ -31,8 +34,8 @@ using StatsBase: ProbabilityWeights
     @testset "Uniform: DistributionRecipe" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(UniformRecipe) == DistributionRecipe
-        @test fieldnames(UniformRecipe) == (:cardinality, :replace, :state_space, :weights)
-        @test fieldtypes(UniformRecipe) == (Cardinality, Bool, Vector{Int64}, ProbabilityWeights)
+        @test fieldnames(UniformRecipe) == (:cardinality, :compression_dim, :replace, :state_space, :weights)
+        @test fieldtypes(UniformRecipe) == (Cardinality, Int64, Bool, Vector{Int64}, ProbabilityWeights)
     end
 
     @testset "Uniform: Complete Distribution" begin
@@ -42,6 +45,7 @@ using StatsBase: ProbabilityWeights
             ur = complete_distribution(u, A)
 
             @test ur.cardinality == Left()
+            @test ur.compression_dim == 2
             @test length(ur.state_space) == 5
             @test ur.weights == ProbabilityWeights(ones(5))
         end
@@ -52,6 +56,7 @@ using StatsBase: ProbabilityWeights
             ur = complete_distribution(u, A)
 
             @test ur.cardinality == Right()
+            @test ur.compression_dim == 2
             @test length(ur.state_space) == 5
             @test ur.weights == ProbabilityWeights(ones(5))
         end
@@ -74,6 +79,7 @@ using StatsBase: ProbabilityWeights
             
             update_distribution!(ur, A2)
             @test ur.cardinality == Right()
+            @test ur.compression_dim == 2
             @test ur.state_space == collect(1:6)
             @test ur.weights == ProbabilityWeights(ones(6))
         end
@@ -85,6 +91,7 @@ using StatsBase: ProbabilityWeights
             
             update_distribution!(ur, A2)
             @test ur.cardinality == Left()
+            @test ur.compression_dim == 2
             @test ur.state_space == collect(1:6)
             @test ur.weights == ProbabilityWeights(ones(6))
         end
@@ -95,7 +102,7 @@ using StatsBase: ProbabilityWeights
             replace = false,
             state_space = collect(1:5),
             weights = ProbabilityWeights(ones(5))
-            ur = UniformRecipe(card, replace, state_space, weights)
+            ur = UniformRecipe(card, 2, replace, state_space, weights)
             
             @test_throws ArgumentError update_distribution!(ur, A2)
         end       
