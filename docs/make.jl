@@ -18,6 +18,7 @@ makedocs(
         "Manual" => [
             "Introduction" => "manual/introduction.md", 
             "Compression" => "manual/compression.md",
+            "Streaming Architecture" => "manual/streaming.md",
             "Low-Rank Approximation" => "manual/low_rank_approximators.md",
             "Linear Systems" => "manual/linear_systems.md"
         ],
