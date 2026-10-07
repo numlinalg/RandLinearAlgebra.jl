@@ -6,28 +6,31 @@ using LinearAlgebra: dot
     @testset "Agmon: Distribution" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(Agmon) == Distribution
-        @test fieldnames(Agmon) == (:cardinality, :replace, :beta)
-        @test fieldtypes(Agmon) == (Cardinality, Bool, Int)
+        @test fieldnames(Agmon) == (:cardinality, :compression_dim, :replace, :beta)
+        @test fieldtypes(Agmon) == (Cardinality, Int64, Bool, Int)
 
         # Default constructor
         let 
             m = Agmon()
             @test m.cardinality == Undef()
+            @test m.compression_dim == 2
             @test m.replace == false
             @test m.beta == 1
         end
 
         # Custom constructor
         let 
-            m2 = Agmon(cardinality = Left(), replace = true, beta = 10)
+            m2 = Agmon(cardinality = Left(), compression_dim = 3, replace = true, beta = 10)
             @test m2.cardinality == Left()
+            @test m2.compression_dim == 3
             @test m2.replace == true
             @test m2.beta == 10
         end
 
         let
-            m3 = Agmon(cardinality = Right(), replace = true, beta = 3)
+            m3 = Agmon(cardinality = Right(), compression_dim = 3, replace = true, beta = 3)
             @test m3.cardinality == Right()
+            @test m3.compression_dim == 3
             @test m3.replace == true
             @test m3.beta == 3
         end
@@ -41,9 +44,9 @@ using LinearAlgebra: dot
     @testset "Agmon: DistributionRecipe" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(AgmonRecipe) == DistributionRecipe
-        @test fieldnames(AgmonRecipe) == (:cardinality, :replace, :beta, :state_space,
+        @test fieldnames(AgmonRecipe) == (:cardinality, :compression_dim, :replace, :beta, :state_space,
                                              :sample_buffer, :A, :b, :x, :r)
-        @test fieldtypes(AgmonRecipe)[1:5] == (Cardinality, Bool, Int, Vector{Int64}, Vector{Int64})
+        @test fieldtypes(AgmonRecipe)[1:6] == (Cardinality, Int64, Bool, Int, Vector{Int64}, Vector{Int64})
     end
 
     @testset "Agmon: Complete Distribution" begin
@@ -55,6 +58,7 @@ using LinearAlgebra: dot
             
             mr = complete_distribution(m, x, A, b)
             @test mr.cardinality == Left()
+            @test mr.compression_dim == 2
             @test mr.beta == 2
             @test mr.replace == false
             @test length(mr.state_space) == 3
@@ -73,6 +77,7 @@ using LinearAlgebra: dot
 
             mr = complete_distribution(m, x, A, b)
             @test mr.cardinality == Right()
+            @test mr.compression_dim == 2
             @test mr.beta == 2
             @test mr.replace == false
             @test length(mr.state_space) == 2

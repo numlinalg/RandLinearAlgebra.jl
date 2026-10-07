@@ -16,24 +16,27 @@ During the sampling, the distribution is defined on the domain of row/column
 # Fields
 - `cardinality::Cardinality`, the direction the compression matrix is intended to be
     applied to a target matrix or operator. Values allowed are `Left()` or `Right()` 
-    or `Undef()`. The default value is `Undef()`. 
+    or `Undef()`. The default value is `Undef()`.
+- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
+    effect on the `L2Norm`.
 - `replace::Bool`, if `true`, then the sampling occurs with replacement; if `false`, 
     then the sampling occurs without replacement. The default value is `false`. 
 
 # Constructor
 
-    L2Norm(;cardinality=Undef(), replace = false)
+    L2Norm(;cardinality=Undef(), compression_dim = 2, replace = false)
 
 ## Returns
 - A `L2Norm` object.
 """
 mutable struct L2Norm <: Distribution
     cardinality::Cardinality
+    compression_dim::Int64
     replace::Bool
 end
 
-function L2Norm(; cardinality::Cardinality = Undef(), replace::Bool = false)
-    return L2Norm(cardinality, replace)
+function L2Norm(; cardinality::Cardinality = Undef(), compression_dim = 2, replace::Bool = false)
+    return L2Norm(cardinality, compression_dim, replace)
 end
 
 """
@@ -45,6 +48,8 @@ The recipe containing all allocations and information for the
 # Fields
 - `cardinality::C where C<:Cardinality`, the cardinality of the compressor. The
     value is either `Left()` or `Right()` or `Undef()`.
+- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
+    effect on the `L2NormRecipe`.
 - `replace::Bool`, an option to replace or not during the sampling process based 
     on the given weights.
 - `state_space::Vector{Int64}`, the row/column index set.
@@ -53,6 +58,7 @@ The recipe containing all allocations and information for the
 """
 mutable struct L2NormRecipe <: DistributionRecipe
     cardinality::Cardinality
+    compression_dim::Int64
     replace::Bool
     state_space::Vector{Int64}
     weights::ProbabilityWeights
@@ -75,6 +81,7 @@ Creates an `L2NormRecipe` for the given distribution and matrix.
 """
 function complete_distribution(distribution::L2Norm, A::AbstractMatrix)
     cardinality = distribution.cardinality
+    compression_dim = distribution.compression_dim
     if cardinality == Left()
         n_rows = size(A, 1)
         state_space = collect(1: n_rows)
@@ -94,7 +101,8 @@ function complete_distribution(distribution::L2Norm, A::AbstractMatrix)
         )
     end
 
-    return L2NormRecipe(cardinality, distribution.replace, state_space, weights)
+    return L2NormRecipe(cardinality, compression_dim, 
+        distribution.replace, state_space, weights)
 end
 
 """

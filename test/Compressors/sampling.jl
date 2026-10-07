@@ -122,7 +122,7 @@ Random.seed!(2131)
             # Setup for distribution_recipe 
             dist_state_space = collect(1:actual_n_cols)
             dist_weights = ProbabilityWeights(ones(actual_n_cols) ./ actual_n_cols)
-            dist_recipe_val = UniformRecipe(card_type(), replace_sampling, dist_state_space, dist_weights)
+            dist_recipe_val = UniformRecipe(card_type(), comp_dim, replace_sampling, dist_state_space, dist_weights)
 
             # Setup for idx and idx_v
             idx_val = sort(sample(dist_state_space, comp_dim, replace=replace_sampling))
@@ -155,7 +155,7 @@ Random.seed!(2131)
             # Setup for distribution_recipe 
             dist_state_space = collect(1:actual_n_rows) 
             dist_weights = ProbabilityWeights(ones(actual_n_rows) ./ actual_n_rows)
-            dist_recipe_val = UniformRecipe(card_type(), replace_sampling, dist_state_space, dist_weights)
+            dist_recipe_val = UniformRecipe(card_type(), comp_dim, replace_sampling, dist_state_space, dist_weights)
 
             # Setup for idx and idx_v
             idx_val = sort(sample(dist_state_space, comp_dim, replace=replace_sampling))
@@ -200,6 +200,10 @@ Random.seed!(2131)
                 @test dist_instance.cardinality != card_instance 
             end
 
+            if dist_instance.compression_dim != comp_dim 
+                @test dist_instance.compression_dim != comp_dim 
+            end
+
             recipe = complete_compressor(sub_comp_settings, A)
 
             # Sampling.distribution.cardinality should be updated
@@ -215,6 +219,7 @@ Random.seed!(2131)
             @test recipe.distribution_recipe isa UniformRecipe
             dist_recipe_concrete = recipe.distribution_recipe::UniformRecipe
             @test dist_recipe_concrete.cardinality == card_instance
+            @test dist_recipe_concrete.compression_dim == comp_dim
             @test dist_recipe_concrete.replace == replace_sampling
             @test dist_recipe_concrete.state_space == collect(1:a_matrix_rows)
             @test dist_recipe_concrete.weights.values ≈ ones(a_matrix_rows) 
@@ -249,7 +254,11 @@ Random.seed!(2131)
             if dist_instance.cardinality != card_instance
                 @test dist_instance.cardinality != card_instance
             end
-            
+           
+            if dist_instance.compression_dim != comp_dim 
+                @test dist_instance.compression_dim != comp_dim 
+            end
+
             recipe = complete_compressor(sub_comp_settings, A)
 
             # Verify the update
@@ -265,6 +274,7 @@ Random.seed!(2131)
             @test recipe.distribution_recipe isa UniformRecipe
             dist_recipe_concrete = recipe.distribution_recipe::UniformRecipe
             @test dist_recipe_concrete.cardinality == card_instance
+            @test dist_recipe_concrete.compression_dim == comp_dim
             @test dist_recipe_concrete.replace == replace_sampling
             @test dist_recipe_concrete.state_space == collect(1:a_matrix_cols)
             @test dist_recipe_concrete.weights.values ≈ ones(a_matrix_cols) 
