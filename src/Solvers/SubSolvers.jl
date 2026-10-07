@@ -144,8 +144,13 @@ end
 ###########################################
 import LinearAlgebra.LAPACK
 
-_qt_char(::Type{<:Complex}) = 'C'
-_qt_char(::Type) = 'T'
+function _qt_char(::Type{<:Complex})
+    return 'C'
+end
+
+function _qt_char(::Type)
+    return 'T'
+end
 
 ###########################################
 # Include SubSolver files
