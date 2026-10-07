@@ -233,7 +233,10 @@ using Test, RandLinearAlgebra, LinearAlgebra
 
     solver = ColumnProjection()
 
-    @test (complete_solver(solver, xv, Av, bv); true)
+    recipe = complete_solver(solver, xv, Av, bv)
+    @test typeof(recipe.compressed_mat) == Matrix{Float64}
+    @test typeof(recipe.residual_vec) == Vector{Float64}
+    @test typeof(recipe.update_vec) == Vector{Float64}
 end
 
 end
