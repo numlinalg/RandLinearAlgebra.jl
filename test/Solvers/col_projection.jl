@@ -19,7 +19,7 @@ using Test, RandLinearAlgebra
         @test solver.alpha == 1.0
         @test typeof(solver.compressor) == SparseSign 
         @test typeof(solver.compressor.cardinality) == Right 
-        @test typeof(solver.log) == BasicLogger
+        @test typeof(solver.log) <: BasicLogger
         @test typeof(solver.error) == LSGradient
         @test typeof(solver.sub_solver) == QRSolver 
     end
@@ -214,7 +214,35 @@ end
 end
 
 ###################################
-# Column Project Update 
+# ColumnProjectionRecipe: View Inputs
+###################################
+module column_projection_recipe_view_inputs
+
+using Test, RandLinearAlgebra, LinearAlgebra
+
+@testset "ColumnProjectionRecipe complete_solver with views" begin
+    m = 5
+    n = 10
+    A = randn(m, n)
+    b = randn(m)
+    x = randn(n)
+
+    Av = @view A[1:end, 1:end]
+    bv = @view b[1:end]
+    xv = @view x[1:end]
+
+    solver = ColumnProjection()
+
+    recipe = complete_solver(solver, xv, Av, bv)
+    @test typeof(recipe.compressed_mat) == Matrix{Float64}
+    @test typeof(recipe.residual_vec) == Vector{Float64}
+    @test typeof(recipe.update_vec) == Vector{Float64}
+end
+
+end
+
+###################################
+# Column Project Update
 ###################################
 module column_projection_update
 

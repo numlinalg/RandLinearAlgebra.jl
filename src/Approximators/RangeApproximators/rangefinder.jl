@@ -101,13 +101,14 @@ A struct that contains the preallocated memory and completed compressor to form 
     with orthogonalization.
 - `range::AbstractMatrix`, the orthogonal matrix that approximates the range of ``A``.
 """
-mutable struct RangeFinderRecipe <: RangeApproximatorRecipe
+mutable struct RangeFinderRecipe{CR<:CompressorRecipe,M<:AbstractMatrix} <:
+               RangeApproximatorRecipe
     n_rows::Int64
     n_cols::Int64
-    compressor::CompressorRecipe
+    compressor::CR
     power_its::Int64
     orthogonalize::Bool
-    range::AbstractMatrix
+    range::M
 end
 
 function complete_approximator(approx::RangeFinder, A::AbstractMatrix)
@@ -161,7 +162,7 @@ end
 
 function mul!(
     C::AbstractArray, 
-    R::ApproximatorAdjoint{RangeFinderRecipe}, 
+    R::ApproximatorAdjoint{<:RangeFinderRecipe}, 
     A::AbstractArray, 
     alpha::Number, 
     beta::Number
@@ -183,7 +184,7 @@ end
 function mul!(
     C::AbstractArray, 
     A::AbstractArray, 
-    R::ApproximatorAdjoint{RangeFinderRecipe}, 
+    R::ApproximatorAdjoint{<:RangeFinderRecipe}, 
     alpha::Number, 
     beta::Number
 )

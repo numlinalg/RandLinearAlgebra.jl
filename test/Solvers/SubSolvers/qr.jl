@@ -14,12 +14,12 @@
 
     @testset "QR SubSolver Recipe" begin
         @test supertype(QRSolverRecipe) == SubSolverRecipe
-        @test fieldnames(QRSolverRecipe) == (:A, )
-        @test fieldtypes(QRSolverRecipe) == (AbstractArray,)
+        @test fieldnames(QRSolverRecipe) == (:A, :T, :work)
+        @test fieldtypes(QRSolverRecipe) == (AbstractArray, Matrix, AbstractVector)
     end
 
     @testset "QR SubSolver: Complete SubSolver" begin
-        # qr only works for floats and complex nums greater than 16 so we only test them 
+        # qr only works for floats and complex nums greater than 16 so we only test them
         for type in [Float32, Float64, ComplexF32, ComplexF64]
             let ss = QRSolver(),
                 A = rand(type, 12, 3),
@@ -27,8 +27,9 @@
                 ss_recipe = complete_sub_solver(ss, A)
 
                 # test the attributes of the outputs of the complete function
-                @test typeof(ss_recipe) == QRSolverRecipe{Matrix{type}}
+                @test typeof(ss_recipe) <: QRSolverRecipe{Matrix{type}}
                 @test ss_recipe.A == A
+                @test size(ss_recipe.T) == (3, 3)
             end
 
         end
@@ -37,7 +38,7 @@
 
     @testset "QR SubSolver: Update SubSolver" begin
         let A = rand(12, 3),
-            B = rand(10, 3),
+            B = rand(12, 3),
             ss = QRSolver(),
             ss_recipe = complete_sub_solver(ss, A)
 

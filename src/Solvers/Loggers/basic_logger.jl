@@ -1,24 +1,24 @@
 """
     BasicLogger <: Logger
 
-This is a mutable struct that contains the `max_it` parameter and stores the error metric 
+This is a mutable struct that contains the `max_it` parameter and stores the error metric
     in a vector. Checks convergence of the solver based on the log information.
 
 # Fields
  - `max_it::Int64`, The maximum number of iterations for the solver. If not specified by the
     user, it is set to 3 times the number of rows in the matrix.
- - `threshold_info::Union{Float64, Tuple}`, The parameters used for stopping the algorithm.
- - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is 
+ - `threshold_info::TI`, The parameters used for stopping the algorithm.
+ - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is
     always recorded.)
  - `stopping_criterion::Function`, function that evaluates the stopping criterion.
 """
-struct BasicLogger <: Logger
+struct BasicLogger{TI} <: Logger
     max_it::Int64
     collection_rate::Int64
-    threshold_info::Union{Float64, Tuple}
+    threshold_info::TI
     stopping_criterion::Function
     function BasicLogger(max_it, collection_rate, threshold_info, stopping_criterion)
-        if max_it < 0 
+        if max_it < 0
             throw(ArgumentError("Field `max_it` must be positive or 0."))
         elseif collection_rate < 1
             throw(ArgumentError("Field `colection_rate` must be positive."))
@@ -26,40 +26,41 @@ struct BasicLogger <: Logger
             throw(ArgumentError("Field `colection_rate` must be smaller than `max_it`."))
         end
 
-        return new(max_it, collection_rate, threshold_info, stopping_criterion)
+        return new{typeof(threshold_info)}(
+            max_it, collection_rate, threshold_info, stopping_criterion
+        )
     end
-
 end
 
 BasicLogger(;
             max_it::Int64 = 0,
             collection_rate::Int64 = 1,
-            threshold::Union{Float64, Tuple} = 0.0,
-            stopping_criterion::Function = threshold_stop
+            threshold = 0.0,
+            stopping_criterion::Function = threshold_stop,
            ) = BasicLogger(max_it, collection_rate, threshold, stopping_criterion)
 
 """
     BasicLoggerRecipe <: LoggerRecipe
 
-This is a mutable struct that contains the `max_it` parameter and stores the error metric 
+This is a mutable struct that contains the `max_it` parameter and stores the error metric
     in a vector. Checks convergence of the solver based on the log information.
 
 # Fields
  - `max_it::Int64`, The maximum number of iterations for the solver.
  - `error::Float64`, The current error metric.
- - `threshold_info::Union{Float64, Tuple}`, The parameters used for stopping the algorithm.
+ - `threshold_info::TI`, The parameters used for stopping the algorithm.
  - `iteration::Int64`, the current iteration of the solver.
  - `record_location::Int64`, the location in the history vector of the most recent entry.
- - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is 
+ - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is
     always recorded.)
  - `converged::Bool`, A boolean indicating whether the stopping criterion is satisfied.
  - `StoppingCriterion::Function`, function that evaluates the stopping criterion.
  - `hist:AbstractVector`, vector that contains the history of the error metric.
 """
-mutable struct BasicLoggerRecipe{F<:Function} <: LoggerRecipe
+mutable struct BasicLoggerRecipe{F<:Function,TI} <: LoggerRecipe
     max_it::Int64
     error::Float64
-    threshold_info::Union{Float64, Tuple}
+    threshold_info::TI
     iteration::Int64
     record_location::Int64
     collection_rate::Int64
@@ -76,16 +77,17 @@ function complete_logger(logger::BasicLogger)
     max_collection = Int(ceil(logger.max_it / logger.collection_rate))
     # use one more than max it form collection
     hist = zeros(max_collection + 1)
-    return BasicLoggerRecipe{typeof(logger.stopping_criterion)}(logger.max_it,
-                                                                0.0,
-                                                                logger.threshold_info,
-                                                                1,
-                                                                1,
-                                                                logger.collection_rate,
-                                                                false,
-                                                                logger.stopping_criterion,
-                                                                hist
-                                                               )
+    return BasicLoggerRecipe{typeof(logger.stopping_criterion),typeof(logger.threshold_info)}(
+        logger.max_it,
+        0.0,
+        logger.threshold_info,
+        1,
+        1,
+        logger.collection_rate,
+        false,
+        logger.stopping_criterion,
+        hist,
+    )
 end
 
 function update_logger!(logger::BasicLoggerRecipe, error::Float64, iteration::Int64)

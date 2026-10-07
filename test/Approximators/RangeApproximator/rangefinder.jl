@@ -40,11 +40,11 @@ end
 
 @testset "Randomized RangeFinder" begin 
     @testset "Randomized RangeFinder" begin
-        supertype(RangeFinder) == Approximator
+        @test supertype(RangeFinder) <: Approximator
 
         # test the fieldnames and types
-        fieldnames(RangeFinder) == (:compressor, :power_its, :orthogonalize)
-        fieldtypes(RangeFinder) == (Compressor, Int64, Bool)
+        @test fieldnames(RangeFinder) == (:compressor, :power_its, :orthogonalize)
+        @test fieldtypes(RangeFinder) == (Compressor, Int64, Bool)
         
         # test errors
         let compressor = TestCompressor(),
@@ -79,15 +79,16 @@ end
 
     @testset "Randomized RangeFinder Recipe" begin
         @test_range_approximator RangeFinderRecipe
-        supertype(RangeFinderRecipe) == ApproximatorRecipe
+        @test supertype(RangeFinderRecipe) <: ApproximatorRecipe
 
         # test the fieldnames and types
         @test fieldnames(RangeFinderRecipe) == (
             :n_rows, :n_cols, :compressor, :power_its, :orthogonalize, :range
         )
-        @test fieldtypes(RangeFinderRecipe) == (
+        expected_supertypes = (
             Int64, Int64, CompressorRecipe, Int64, Bool, AbstractMatrix
         )
+        @test all(ft <: st for (ft, st) in zip(fieldtypes(RangeFinderRecipe), expected_supertypes))
     end
     
     @testset "Randomized RangeFinder: Complete Approximator" begin
@@ -101,7 +102,7 @@ end
             compressor = TestCompressor(cardinality, compression_dim)
             approx = RangeFinder(compressor, 2, true)
             approx_rec = complete_approximator(approx, A)
-            approx_rec.compressor.cardinality == Right()
+            @test approx_rec.compressor.cardinality == Right()
 
             @test approx_rec.power_its == 2
             @test approx_rec.orthogonalize == true
@@ -122,10 +123,10 @@ end
                 "Compressor with cardinality `Left` being applied from `Right`."
             ) complete_approximator(approx, A)
             approx_rec = complete_approximator(approx, A)
-            approx_rec.compressor.cardinality == Left()
-            
+            @test approx_rec.compressor.cardinality == Left()
+
             @test approx_rec.power_its == 2
-            @test approx_rec.orthogonalize == false 
+            @test approx_rec.orthogonalize == false
             @test approx_rec.n_rows == 10
             @test approx_rec.n_cols == 5
         end
@@ -170,12 +171,12 @@ end
             approx = RangeFinder(compressor, 2, false)
             approx_rec = rapproximate(approx, A)
             
-            @test typeof(approx_rec.compressor) == TestCompressorRecipe  
-            approx_rec.compressor.cardinality == Right()
+            @test typeof(approx_rec.compressor) == TestCompressorRecipe
+            @test approx_rec.compressor.cardinality == Right()
             @test approx_rec.power_its == 2
             @test approx_rec.orthogonalize == false
             @test approx_rec.n_rows == 10
-            @test approx_rec.n_cols == 10 
+            @test approx_rec.n_cols == 10
             # Check that the matrix is orthogonal
             gram_matrix = approx_rec.range' * approx_rec.range
             # check that the norm is 1, the diagonal is all 1
@@ -227,12 +228,12 @@ end
             approx = RangeFinder(compressor, 2, true)
             approx_rec = rapproximate(approx, A)
             
-            @test typeof(approx_rec.compressor) == TestCompressorRecipe  
-            approx_rec.compressor.cardinality == Right()
+            @test typeof(approx_rec.compressor) == TestCompressorRecipe
+            @test approx_rec.compressor.cardinality == Right()
             @test approx_rec.power_its == 2
             @test approx_rec.orthogonalize == true
             @test approx_rec.n_rows == 10
-            @test approx_rec.n_cols == 10 
+            @test approx_rec.n_cols == 10
             # Check that the matrix is orthogonal
             gram_matrix = approx_rec.range' * approx_rec.range
             # check that the norm is 1, the diagonal is all 1
@@ -262,10 +263,10 @@ end
         approx = RangeFinder(compressor, 2, true)
         approx_rec = rapproximate(approx, A)
         # Check that the size function works
-        size(approx_rec) == (approx_rec.n_rows, approx_rec.n_cols)
-        size(approx_rec') == (approx_rec.n_cols, approx_rec.n_rows)
+        @test size(approx_rec) == (approx_rec.n_rows, approx_rec.n_cols)
+        @test size(approx_rec') == (approx_rec.n_cols, approx_rec.n_rows)
         # also test that the tranpose is the same as the parent
-        ApproximatorAdjoint(approx_rec) == transpose(approx_rec)
+        @test ApproximatorAdjoint(approx_rec) == transpose(approx_rec)
         approx_rec = transpose(transpose(approx_rec))
         # test multiplication from the left
         let approx_rec = approx_rec, 

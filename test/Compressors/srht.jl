@@ -55,10 +55,12 @@ Random.seed!(1223)
         #test supertype
         @test supertype(SRHTRecipe) == CompressorRecipe
         @test fieldnames(SRHTRecipe) == (
-            :cardinality, :n_rows, :n_cols, :scale, :op, :signs, :padding
+            :cardinality, :n_rows, :n_cols, :scale, :op, :signs, :padding,
+            :extraction, :sign_vec
         )
         @test fieldtypes(SRHTRecipe) == (
-            Cardinality, Int64, Int64, Float64, Vector{Int64}, BitVector, AbstractMatrix
+            Cardinality, Int64, Int64, Float64, Vector{Int64}, BitVector, AbstractMatrix,
+            Matrix{Float64}, Vector{Float64}
         )        
 
         # test the constructors
@@ -84,6 +86,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (padded_dim, block_size) 
             @test eltype(recipe.padding) == type
         end
@@ -111,6 +114,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (padded_dim, block_size) 
             @test eltype(recipe.padding) == type
         end
@@ -137,6 +141,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (block_size, padded_dim)
             @test eltype(recipe.padding) == type
         end
@@ -164,6 +169,7 @@ Random.seed!(1223)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
+            @test recipe.sign_vec == ifelse.(recipe.signs, 1.0, -1.0)
             @test size(recipe.padding) == (block_size, padded_dim) 
             @test eltype(recipe.padding) == type
         end
@@ -524,6 +530,31 @@ Random.seed!(1223)
             @test Sy ≈ Syc + 2 * pad_res[S.op]
         end
 
+    end
+
+    @testset "SRHT: mul! allocation" begin
+        Random.seed!(1234)
+        n = 128
+        A = randn(n, n)
+        k = 32
+
+        # Left cardinality: S * A
+        comp_left = SRHT(cardinality=Left(), compression_dim=k, block_size=64)
+        recipe_left = complete_compressor(comp_left, A)
+        update_compressor!(recipe_left)
+        C_left = zeros(size(recipe_left, 1), n)
+        mul!(C_left, recipe_left, A, 1.0, 0.0)
+        allocs_left = @allocated mul!(C_left, recipe_left, A, 1.0, 0.0)
+        @test allocs_left < 1024
+
+        # Right cardinality: A * S
+        comp_right = SRHT(cardinality=Right(), compression_dim=k, block_size=64)
+        recipe_right = complete_compressor(comp_right, A)
+        update_compressor!(recipe_right)
+        C_right = zeros(n, size(recipe_right, 2))
+        mul!(C_right, A, recipe_right, 1.0, 0.0)
+        allocs_right = @allocated mul!(C_right, A, recipe_right, 1.0, 0.0)
+        @test allocs_right < 1024
     end
 
 end

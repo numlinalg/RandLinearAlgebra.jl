@@ -157,22 +157,23 @@ A mutable structure containing all information relevant to the `ColumnProjection
     iteration.
 """
 mutable struct ColumnProjectionRecipe{
-    T<:Number, 
+    T<:Number,
     V<:AbstractVector,
-    M<:AbstractArray, 
+    SV<:AbstractVector,
+    M<:AbstractArray,
     MV<:SubArray,
-    C<:CompressorRecipe, 
+    C<:CompressorRecipe,
     L<:LoggerRecipe,
-    E<:SolverErrorRecipe, 
-    B<:SubSolverRecipe
-   } <: SolverRecipe
+    E<:SolverErrorRecipe,
+    B<:SubSolverRecipe,
+} <: SolverRecipe
     compressor::C
     log::L
     error::E
     sub_solver::B
     alpha::Float64
     compressed_mat::M
-    solution_vec::V
+    solution_vec::SV
     update_vec::V
     mat_view::MV
     residual_vec::V
@@ -219,8 +220,8 @@ function complete_solver(
 
 
     # Allocate the information in the buffer using the types of A and b
-    compressed_mat = typeof(A)(undef, rows_a, sample_size) #Stores A*compressor
-    residual_vec = typeof(b)(undef, rows_a) #Stores b - Ax 
+    compressed_mat = similar(A, rows_a, sample_size)
+    residual_vec = similar(b, rows_a)
 
     # Since sub_solver is applied to compressed matrices use here
     sub_solver = complete_sub_solver(solver.sub_solver, compressed_mat, residual_vec)
@@ -230,20 +231,21 @@ function complete_solver(
 
     # update_vec is the solution to the subproblem and is used as
     # x_+ = x + S * update_vec 
-    update_vec = typeof(x)(undef, sample_size)
+    update_vec = similar(x, sample_size)
     
     return ColumnProjectionRecipe{
-        eltype(A), 
-        typeof(b), 
-        typeof(A), 
+        eltype(compressed_mat),
+        typeof(residual_vec),
+        typeof(x),
+        typeof(compressed_mat),
         typeof(mat_view),
         typeof(compressor),
         typeof(logger),
         typeof(error),
-        typeof(sub_solver)
+        typeof(sub_solver),
     }(
-        compressor, 
-        logger, 
+        compressor,
+        logger,
         error,
         sub_solver,
         solver.alpha,
@@ -251,7 +253,7 @@ function complete_solver(
         x,
         update_vec,
         mat_view,
-        residual_vec
+        residual_vec,
     )
 end
 

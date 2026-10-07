@@ -37,8 +37,8 @@ The recipe containing all allocations and information for the `Identity` compres
 - `n_rows::Int64`, the number of rows of the compression matrix.
 - `n_cols::Int64`, the number of columns of the compression matrix.
 """
-mutable struct IdentityRecipe{C} <: CompressorRecipe where C<:Cardinality
-    cardinality::Cardinality
+mutable struct IdentityRecipe{C<:Cardinality} <: CompressorRecipe
+    cardinality::C
     n_rows::Int64
     n_cols::Int64
 end
