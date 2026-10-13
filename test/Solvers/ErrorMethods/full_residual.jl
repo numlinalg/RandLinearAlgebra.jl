@@ -1,8 +1,5 @@
 module residual_error 
-using Test, RandLinearAlgebra, Random
-import LinearAlgebra: mul!, norm
-using ..FieldTest
-using ..ApproxTol
+include("../../test_helpers/preamble.jl")
 Random.seed!(1232)
 
 mutable struct TestSolver <: Solver end

@@ -1,8 +1,6 @@
 module solver_error_abstract_types
-using Test, RandLinearAlgebra
+include("../../test_helpers/preamble.jl")
 import Random: seed!
-using ..FieldTest
-using ..ApproxTol
 seed!(1232)
 
 struct TestSolver <: Solver end

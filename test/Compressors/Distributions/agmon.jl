@@ -1,6 +1,5 @@
 module agmon_distribution
-using Test, RandLinearAlgebra
-using LinearAlgebra: dot
+include("../../test_helpers/preamble.jl")
 
 @testset "Agmon" begin
     @testset "Agmon: Distribution" begin

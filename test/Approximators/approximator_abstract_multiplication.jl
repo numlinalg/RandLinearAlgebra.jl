@@ -1,8 +1,5 @@
 module approximator_abstract_multiplication
-using Test, RandLinearAlgebra
-import LinearAlgebra: mul!
-using ..FieldTest
-using ..ApproxTol
+include("../test_helpers/preamble.jl")
 
 #####################
 # Testing Parameters

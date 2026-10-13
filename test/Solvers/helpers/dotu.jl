@@ -1,7 +1,6 @@
 module DotU
-using Test, RandLinearAlgebra, LinearAlgebra
+include("../../test_helpers/preamble.jl")
 import RandLinearAlgebra: dotu
-import LinearAlgebra: dot
 @testset "Dotu" begin
     # begin by testing the size error
     let n = 10,

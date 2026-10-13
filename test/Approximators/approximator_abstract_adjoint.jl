@@ -1,6 +1,5 @@
 module approximators_abstract_adjoint
-using Test, RandLinearAlgebra
-import LinearAlgebra: mul!
+include("../test_helpers/preamble.jl")
 
 #####################
 # Testing Parameters
