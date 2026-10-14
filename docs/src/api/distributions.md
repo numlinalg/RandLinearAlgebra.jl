@@ -23,6 +23,10 @@ L2NormRecipe
 Agmon
 
 AgmonRecipe
+
+LeverageScore
+
+LeverageScoreRecipe
 ```
 
 ## Exported Functions
