@@ -416,20 +416,22 @@ end
 ##################################################
 # Binary Operator Approximator-Array Multiplications
 ##################################################
-# R * A 
+# R * A
 function (*)(R::ApproximatorRecipe, A::AbstractArray)
     r_rows = size(R, 1)
     a_cols = size(A, 2)
-    C = a_cols == 1 ? zeros(eltype(A), r_rows) : zeros(eltype(A), r_rows, a_cols)
+    C = a_cols == 1 ? fill!(similar(A, eltype(A), r_rows), zero(eltype(A))) :
+                      fill!(similar(A, eltype(A), r_rows, a_cols), zero(eltype(A)))
     mul!(C, R, A)
     return C
 end
 
-# A * R 
+# A * R
 function (*)(A::AbstractArray, R::ApproximatorRecipe)
     r_cols = size(R, 2)
     a_rows = size(A, 1)
-    C = a_rows == 1 ? zeros(eltype(A), r_cols)' : zeros(eltype(A), a_rows, r_cols)
+    C = a_rows == 1 ? fill!(similar(A, eltype(A), r_cols), zero(eltype(A)))' :
+                      fill!(similar(A, eltype(A), a_rows, r_cols), zero(eltype(A)))
     mul!(C, A, R)
     return C
 end
@@ -438,7 +440,8 @@ end
 function (*)(R::ApproximatorAdjoint, A::AbstractArray)
     r_rows = size(R, 1)
     a_cols = size(A, 2)
-    C = a_cols == 1 ? zeros(eltype(A), r_rows) : zeros(eltype(A), r_rows, a_cols)
+    C = a_cols == 1 ? fill!(similar(A, eltype(A), r_rows), zero(eltype(A))) :
+                      fill!(similar(A, eltype(A), r_rows, a_cols), zero(eltype(A)))
     mul!(C, R, A)
     return C
 end
@@ -447,7 +450,8 @@ end
 function (*)(A::AbstractArray, R::ApproximatorAdjoint)
     r_cols = size(R, 2)
     a_rows = size(A, 1)
-    C = a_rows == 1 ? zeros(eltype(A), r_cols)' : zeros(eltype(A), a_rows, r_cols)
+    C = a_rows == 1 ? fill!(similar(A, eltype(A), r_cols), zero(eltype(A)))' :
+                      fill!(similar(A, eltype(A), a_rows, r_cols), zero(eltype(A)))
     mul!(C, A, R)
     return C
 end

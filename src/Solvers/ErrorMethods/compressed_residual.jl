@@ -29,7 +29,7 @@ function complete_error(
     A::AbstractMatrix, 
     b::AbstractVector
 )
-    residual = zeros(eltype(A), size(b,1))
+    residual = fill!(similar(A, eltype(A), size(b,1)), zero(eltype(A)))
     residual_view = view(residual, 1:1)
     return CompressedResidualRecipe{typeof(residual),typeof(residual_view)}(
         residual, 

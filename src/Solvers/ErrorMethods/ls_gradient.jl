@@ -30,8 +30,8 @@ function complete_error(
     A::AbstractMatrix, 
     b::AbstractVector
 )
-    gradient = zeros(size(A,2))
-    return LSGradientRecipe{typeof(b)}(gradient)
+    gradient = fill!(similar(A, eltype(A), size(A,2)), zero(eltype(A)))
+    return LSGradientRecipe{typeof(gradient)}(gradient)
 end
 
 function compute_error(

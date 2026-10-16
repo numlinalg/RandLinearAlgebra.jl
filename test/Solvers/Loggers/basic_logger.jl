@@ -89,7 +89,7 @@ module basic_logger
                 Int64, 
                 Bool, 
                 Function,
-                Vector{Float64}
+                AbstractVector{Float64}
             )
         end
 

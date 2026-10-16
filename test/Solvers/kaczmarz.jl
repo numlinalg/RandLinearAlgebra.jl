@@ -255,8 +255,8 @@ end
             Float64, 
             AbstractArray, 
             AbstractVector, 
-            Vector{T} where T<:Number, 
-            Vector{T} where T<:Number,
+            AbstractVector{T} where T<:Number,
+            AbstractVector{T} where T<:Number,
             SubArray, 
             SubArray,
         )  

@@ -158,11 +158,12 @@ mutable struct KaczmarzRecipe{
     alpha::Float64
     compressed_mat::M
     compressed_vec::V
-    solution_vec::Vector{T}
-    update_vec::Vector{T}
+    solution_vec::AbstractVector{T}
+    update_vec::AbstractVector{T}
     mat_view::MV
     vec_view::VV
 end
+Adapt.@adapt_structure KaczmarzRecipe
 
 function complete_solver(
     ingredients::Kaczmarz, 
@@ -203,15 +204,15 @@ function complete_solver(
         compressed_mat = spzeros(eltype(A), sample_size, cols_a)
     else
         # Allocate the information in the buffer using the types of A
-        compressed_mat = zeros(eltype(A), sample_size, cols_a)
+        compressed_mat = fill!(similar(A, eltype(A), sample_size, cols_a), zero(eltype(A)))
     end
-   
+
     # because sampling recipe use subsets sparse vectors will be problematic
     if typeof(compressor) <: SamplingRecipe && typeof(b) <: SparseVector
         compressed_vec = spzeros(eltype(b), sample_size)
     else
         # Allocate the information in the buffer using the type of b
-        compressed_vec = zeros(eltype(b), sample_size)
+        compressed_vec = fill!(similar(b, eltype(b), sample_size), zero(eltype(b)))
     end
 
     # Since sub_solver is applied to compressed matrices use here
@@ -219,7 +220,7 @@ function complete_solver(
     mat_view = view(compressed_mat, 1:sample_size, :)
     vec_view = view(compressed_vec, 1:sample_size)
     solution_vec = x
-    update_vec = zeros(eltype(x), cols_a)
+    update_vec = fill!(similar(x, eltype(x), cols_a), zero(eltype(x)))
     return KaczmarzRecipe{
         eltype(A), 
         typeof(b), 

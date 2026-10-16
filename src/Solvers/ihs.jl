@@ -180,10 +180,10 @@ function complete_solver(
             )
         )
     end
-    compressed_mat = zeros(eltype(A), sample_size, cols_a)
-    res = zeros(eltype(A), rows_a) 
-    grad = zeros(eltype(A), cols_a) 
-    buffer_vec = zeros(eltype(A), cols_a) 
+    compressed_mat = fill!(similar(A, eltype(A), sample_size, cols_a), zero(eltype(A)))
+    res = fill!(similar(A, eltype(A), rows_a), zero(eltype(A)))
+    grad = fill!(similar(A, eltype(A), cols_a), zero(eltype(A)))
+    buffer_vec = fill!(similar(A, eltype(A), cols_a), zero(eltype(A)))
     solution_vec = x
     mat_view = view(compressed_mat, 1:sample_size, :)
     R = UpperTriangular(mat_view[1:cols_a, :])
@@ -235,8 +235,8 @@ function rsolve!(solver::IHSRecipe, x::AbstractVector, A::AbstractMatrix, b::Abs
         # Compress the matrix
         mul!(solver.mat_view, solver.compressor, A)
         # Update the subsolver 
-        # This is the only piece of allocating code
-        solver.R = UpperTriangular(qr!(solver.mat_view).R)
+        # Note: qr (non-mutating) is used for GPU compatibility; qr! is not supported on GPU
+        solver.R = UpperTriangular(qr(solver.mat_view).R)
         # Compute first R' solver R'R x = g
         ldiv!(solver.buffer_vec, solver.R', solver.gradient_vec)
         # Compute second R Solve Rx = (R')^(-1)g will be stored in gradient_vec
