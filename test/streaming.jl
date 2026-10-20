@@ -1,6 +1,8 @@
 using LinearAlgebra
 using Random
 
+struct UnimplementedRowSource <: AbstractRowSource{Float64} end
+
 mutable struct GuardedGeneratedSource{T,F} <: AbstractRowSource{T}
     dimensions::Tuple{Int,Int}
     entry::F
@@ -37,6 +39,8 @@ end
     @test buffer == A[2:4, :]
     @test size(source) == size(A)
     @test eltype(source) == Float64
+    @test eltype(typeof(source)) == Float64
+    @test size(source, 2) == size(A, 2)
     @test_throws DimensionMismatch readrows!(zeros(2, 4), source, 2:4)
 end
 
@@ -71,8 +75,9 @@ end
         bucket = Int(mod(code, UInt64(size(S, 1)))) + 1
         S[bucket, row] = isodd(code >> 63) ? -1.0 : 1.0
     end
-    @test SA == S * A
-    @test Sb == S * b
+    # Dense BLAS products may sum in a different order across platforms.
+    @test SA ≈ S * A rtol = 1.0e-12
+    @test Sb ≈ S * b rtol = 1.0e-12
 
     x, solve_stats = sketched_least_squares(
         MatrixRowSource(A),
@@ -115,6 +120,8 @@ end
 end
 
 @testset "Streaming input validation" begin
+    @test_throws MethodError readrows!(zeros(1, 1), UnimplementedRowSource(), 1:1)
+
     source = MatrixRowSource(ones(4, 2))
     @test_throws DimensionMismatch streaming_count_sketch(source, ones(3); sketch_size=2)
     @test_throws ArgumentError streaming_count_sketch(source, ones(4); sketch_size=0)
