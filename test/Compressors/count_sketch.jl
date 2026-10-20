@@ -1,6 +1,5 @@
 module CountSketch_compressor
 include("../test_helpers/preamble.jl")
-import Random: seed!
 
 @testset "CountSketch" begin
     @testset "CountSketch: Compressor" begin
