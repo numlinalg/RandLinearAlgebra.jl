@@ -52,6 +52,13 @@ makedocs(
                 "ApproximatorErrors API" => "api/approximator_errors.md",
             ],
         ],
+        "Development" => [
+            "Test Mocks" => [
+                "dev/test-mocks/overview.md",
+                "Mock 1: Compressors" => "dev/test-mocks/mock1_compressors.md",
+                "Mocks 2-8" => "dev/test-mocks/mocks_2_to_8.md",
+            ],
+        ],
         "References" => "references.md",
     ]
 )
