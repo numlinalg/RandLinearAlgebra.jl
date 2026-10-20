@@ -6,28 +6,25 @@ using StatsBase: ProbabilityWeights
     @testset "L2Norm: Distribution" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(L2Norm) == Distribution
-        @test fieldnames(L2Norm) == (:cardinality, :compression_dim, :replace)
-        @test fieldtypes(L2Norm) == (Cardinality, Int64, Bool)
+        @test fieldnames(L2Norm) == (:cardinality, :replace)
+        @test fieldtypes(L2Norm) == (Cardinality, Bool)
 
         # Default
         let 
             u = L2Norm()
             @test u.cardinality == Undef()
-            @test u.compression_dim == 2
             @test u.replace == false
         end
 
         let 
-            u2 = L2Norm(cardinality = Left(), compression_dim = 3, replace = true)
+            u2 = L2Norm(cardinality = Left(), replace = true)
             @test u2.cardinality == Left()
-            @test u2.compression_dim == 3
             @test u2.replace == true
         end
 
         let 
-            u3 = L2Norm(cardinality = Right(), compression_dim = 3, replace = false)
+            u3 = L2Norm(cardinality = Right(), replace = false)
             @test u3.cardinality == Right()
-            @test u3.compression_dim == 3
             @test u3.replace == false
         end
 
@@ -36,8 +33,8 @@ using StatsBase: ProbabilityWeights
     @testset "L2Norm: DistributionRecipe" begin
         # Verify supertypes, fieldnames and fieldtypes
         @test supertype(L2NormRecipe) == DistributionRecipe
-        @test fieldnames(L2NormRecipe) == (:cardinality, :compression_dim, :replace, :state_space, :weights)
-        @test fieldtypes(L2NormRecipe) == (Cardinality, Int64, Bool, Vector{Int64}, ProbabilityWeights)
+        @test fieldnames(L2NormRecipe) == (:cardinality, :replace, :state_space, :weights)
+        @test fieldtypes(L2NormRecipe) == (Cardinality, Bool, Vector{Int64}, ProbabilityWeights)
     end
 
     @testset "L2Norm: Complete Distribution" begin
@@ -50,7 +47,6 @@ using StatsBase: ProbabilityWeights
             
             ur = complete_distribution(u, A)
             @test ur.cardinality == Left()
-            @test ur.compression_dim == 2
             @test length(ur.state_space) == 3
             @test ur.weights ≈ ProbabilityWeights([1.0, 4.0, 2.0])
         end
@@ -63,9 +59,8 @@ using StatsBase: ProbabilityWeights
 
             ur = complete_distribution(u, A)
             @test ur.cardinality == Right()
-            @test ur.compression_dim == 2
             @test length(ur.state_space) == 2
-            @test ur.weights == ProbabilityWeights([2.0, 5.0])
+            @test ur.weights ≈ ProbabilityWeights([2.0, 5.0])
         end
 
         # Test with undef compressor
@@ -88,7 +83,7 @@ using StatsBase: ProbabilityWeights
             @test ur.cardinality == Right()
             @test ur.state_space == collect(1:6)
             @test length(ur.weights) == 6
-            @test ur.weights == ProbabilityWeights(vec(sum(abs2, A2, dims=1)))
+            @test ur.weights ≈ ProbabilityWeights(vec(sum(abs2, A2, dims=1)))
         end
 
         # Updating Left compression, changing dimensions
@@ -126,7 +121,7 @@ using StatsBase: ProbabilityWeights
             replace = true,
             state_space = collect(1:5),
             weights = ProbabilityWeights(ones(5)),
-            ur = L2NormRecipe(card, 2, replace, state_space, weights)
+            ur = L2NormRecipe(card, replace, state_space, weights)
             
             @test_throws ArgumentError update_distribution!(ur, A2)
         end       

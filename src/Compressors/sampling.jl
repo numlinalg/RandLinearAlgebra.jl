@@ -115,8 +115,14 @@ end
 function complete_compressor(sub_sampling::Sampling, A::AbstractMatrix)
     n_rows, n_cols = get_dims(sub_sampling.compression_dim, sub_sampling.cardinality, A)
     # Pull out the variables from ingredients
-    sub_sampling.distribution.compression_dim = sub_sampling.compression_dim
-    sub_sampling.distribution.cardinality = sub_sampling.cardinality
+    if isdefined(sub_sampling.distribution, :compression_dim)
+        sub_sampling.distribution.compression_dim = sub_sampling.compression_dim
+    end
+
+    if isdefined(sub_sampling.distribution, :cardinality)
+        sub_sampling.distribution.cardinality = sub_sampling.cardinality
+    end
+    
     # Compute the weight for each index
     dist_recipe = complete_distribution(sub_sampling.distribution, A)
     idx = Vector{Int64}(undef, sub_sampling.compression_dim)

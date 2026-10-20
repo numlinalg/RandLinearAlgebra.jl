@@ -14,30 +14,23 @@ has the same probability weight.
 - `cardinality::Cardinality`, the direction the compression matrix is intended to be
     applied to a target matrix or operator. Values allowed are `Left()` or `Right()` 
     or `Undef()`.
-- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
-    effect on the `Uniform`.
 - `replace::Bool`, if `true`, then the sampling occurs with replacement; if `false`, 
     then the sampling occurs without replacement.
 
 # Constructor
 
-    Uniform(;cardinality=Undef(), compression_dim = 2, replace = false)
+    Uniform(;cardinality=Undef(), replace = false)
 
 ## Returns
 - A `Uniform` object.
 """
 mutable struct Uniform <: Distribution
     cardinality::Cardinality
-    compression_dim::Int64
     replace::Bool
 end
 
-function Uniform(; 
-    cardinality::Cardinality = Undef(), 
-    compression_dim = 2, 
-    replace::Bool = false
-)
-    return Uniform(cardinality, compression_dim, replace)
+function Uniform(; cardinality::Cardinality = Undef(), replace::Bool = false)
+    return Uniform(cardinality, replace)
 end
 
 """
@@ -48,8 +41,6 @@ The recipe containing all allocations and information for the uniform distributi
 # Fields
 - `cardinality::C where C<:Cardinality`, the cardinality of the compressor. The
     value is either `Left()` or `Right()` or `Undef()`.
-- `compression_dim::Int64`, the dimension of the returned sample. Changing this has no 
-    effect on the `Uniform`.
 - `replace::Bool`, an option to replace or not during the sampling process based 
     on the given weights.
 - `state_space::Vector{Int64}`, the row/column index set.
@@ -57,7 +48,6 @@ The recipe containing all allocations and information for the uniform distributi
 """
 mutable struct UniformRecipe <: DistributionRecipe
     cardinality::Cardinality
-    compression_dim::Int64
     replace::Bool
     state_space::Vector{Int64}
     weights::ProbabilityWeights
@@ -80,7 +70,6 @@ Creates a `UniformRecipe` for the given uniform distribution and matrix.
 """
 function complete_distribution(distribution::Uniform, A::AbstractMatrix)
     cardinality = distribution.cardinality
-    compression_dim = distribution.compression_dim
     if cardinality == Left()
         n_rows = size(A, 1)
         state_space = collect(1: n_rows)
@@ -94,8 +83,7 @@ function complete_distribution(distribution::Uniform, A::AbstractMatrix)
         `Undef()` is not allowed in `complete_distribution`."))
     end
 
-    return UniformRecipe(cardinality, compression_dim, 
-        distribution.replace, state_space, weights)
+    return UniformRecipe(cardinality, distribution.replace, state_space, weights)
 end
 
 """
