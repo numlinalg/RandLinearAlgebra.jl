@@ -1,10 +1,7 @@
 module Gaussian_compressor
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 import Base.*
-import LinearAlgebra: mul!, lmul!
-import Random: randn!, seed!, rand
-using ..FieldTest
-using ..ApproxTol
+import Random: seed!
 
 seed!(21321)
 @testset "Gaussian" begin
