@@ -1,9 +1,7 @@
 module Identity_compressor
 include("../test_helpers/preamble.jl")
-import Base.*
-import Random: seed!
 
-seed!(21321)
+Random.seed!(21321)
 @testset "Identity" begin
     @testset "Identity: Compressor" begin
         # Verify supertype
