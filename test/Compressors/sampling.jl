@@ -1,7 +1,33 @@
 module Sampling_compressor
 include("../test_helpers/preamble.jl")
+import RandLinearAlgebra: complete_distribution, sample_distribution!
 
 Random.seed!(2131)
+
+mutable struct TestDist <: Distribution
+    compression_dim::Int64
+    cardinality::Cardinality
+end
+
+function TestDist(;compression_dim = 2, cardinality = Left())
+    TestDist(compression_dim, cardinality)
+end
+
+struct TestDistRecipe <: DistributionRecipe
+
+end
+
+function complete_distribution(
+    distribution::TestDist,
+    A::AbstractMatrix
+)
+    return TestDistRecipe()
+end
+
+function sample_distribution!(indices::AbstractVector, distribution::TestDistRecipe)
+    indices .= 1:length(indices)
+end
+
 @testset "Sampling" begin
     @testset "Sampling: Compressor" begin
         # Verify Supertype
@@ -186,13 +212,17 @@ Random.seed!(2131)
             A = randn(a_matrix_rows, a_matrix_cols)
 
             # Create the distribution instance. Its cardinality will be updated by complete_compressor
-            dist_instance = Uniform(cardinality=Undef(), replace=replace_sampling)
+            dist_instance = TestDist(cardinality=Undef())
             
             sub_comp_settings = Sampling(cardinality=card_instance, compression_dim=comp_dim, distribution=dist_instance)
             
             # First, check it's not already set to card_instance
             if dist_instance.cardinality != card_instance
                 @test dist_instance.cardinality != card_instance 
+            end
+
+            if dist_instance.compression_dim != comp_dim 
+                @test dist_instance.compression_dim != comp_dim 
             end
 
             recipe = complete_compressor(sub_comp_settings, A)
@@ -207,12 +237,7 @@ Random.seed!(2131)
             @test recipe.n_rows == comp_dim       
             @test recipe.n_cols == a_matrix_rows  
             
-            @test recipe.distribution_recipe isa UniformRecipe
-            dist_recipe_concrete = recipe.distribution_recipe::UniformRecipe
-            @test dist_recipe_concrete.cardinality == card_instance
-            @test dist_recipe_concrete.replace == replace_sampling
-            @test dist_recipe_concrete.state_space == collect(1:a_matrix_rows)
-            @test dist_recipe_concrete.weights.values ≈ ones(a_matrix_rows) 
+            @test recipe.distribution_recipe isa TestDistRecipe
 
             @test length(recipe.idx) == comp_dim
             @test eltype(recipe.idx) == Int64
@@ -236,7 +261,7 @@ Random.seed!(2131)
             A = randn(a_matrix_rows, a_matrix_cols)
             
             # Create the distribution instance
-            dist_instance = Uniform(cardinality=Undef(), replace=replace_sampling)
+            dist_instance = TestDist(cardinality=Undef())
             
             sub_comp_settings = Sampling(cardinality=card_instance, compression_dim=comp_dim, distribution=dist_instance)
 
@@ -244,7 +269,11 @@ Random.seed!(2131)
             if dist_instance.cardinality != card_instance
                 @test dist_instance.cardinality != card_instance
             end
-            
+           
+            if dist_instance.compression_dim != comp_dim 
+                @test dist_instance.compression_dim != comp_dim 
+            end
+
             recipe = complete_compressor(sub_comp_settings, A)
 
             # Verify the update
@@ -257,12 +286,7 @@ Random.seed!(2131)
             @test recipe.n_rows == a_matrix_cols  
             @test recipe.n_cols == comp_dim        
             
-            @test recipe.distribution_recipe isa UniformRecipe
-            dist_recipe_concrete = recipe.distribution_recipe::UniformRecipe
-            @test dist_recipe_concrete.cardinality == card_instance
-            @test dist_recipe_concrete.replace == replace_sampling
-            @test dist_recipe_concrete.state_space == collect(1:a_matrix_cols)
-            @test dist_recipe_concrete.weights.values ≈ ones(a_matrix_cols) 
+            @test recipe.distribution_recipe isa TestDistRecipe
 
             @test length(recipe.idx) == comp_dim
             @test eltype(recipe.idx) == Int64
