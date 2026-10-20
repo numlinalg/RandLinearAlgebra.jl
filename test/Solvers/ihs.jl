@@ -1,7 +1,5 @@
 module IHSTest
 include("../test_helpers/preamble.jl")
-import RandLinearAlgebra: complete_compressor
-import Random: seed!
 
 # Define the test structures
 ##########################
@@ -150,7 +148,7 @@ end
 
 
 @testset "IHS" begin
-    seed!(12312)
+    Random.seed!(12312)
     n_rows = 20
     n_cols = 2
     A = rand(n_rows, n_cols)

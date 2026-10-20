@@ -1,6 +1,5 @@
 module KaczmarzTest
 include("../test_helpers/preamble.jl")
-import RandLinearAlgebra: complete_compressor, update_compressor!
 
 # Define the test structures
 ##########################

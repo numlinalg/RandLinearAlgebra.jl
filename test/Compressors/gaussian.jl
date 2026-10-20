@@ -1,9 +1,7 @@
 module Gaussian_compressor
 include("../test_helpers/preamble.jl")
-import Base.*
-import Random: seed!
 
-seed!(21321)
+Random.seed!(21321)
 @testset "Gaussian" begin
     @testset "Gaussian: Compressor" begin
         # Verify Supertype
