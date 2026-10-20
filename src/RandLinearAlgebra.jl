@@ -11,6 +11,7 @@ import SparseArrays: SparseMatrixCSC, SparseVector, nonzeros, nzrange, rowvals, 
 include("Compressors.jl")
 include("Solvers.jl")
 include("Approximators.jl")
+include("Streaming.jl")
 include("helpers/mul_dim_checks.jl")
 
 # Export Approximator types and functions
@@ -61,6 +62,10 @@ export SolverError, SolverErrorRecipe
 export complete_error, compute_error
 export FullResidual, FullResidualRecipe, CompressedResidual, CompressedResidualRecipe
 export LSGradient, LSGradientRecipe
+
+# Export experimental streaming interfaces
+export AbstractRowSource, MatrixRowSource, StreamingSketchStats
+export readrows!, streaming_count_sketch, sketched_least_squares
 
 # Export ApproximatorError types and functions
 export ApproximatorError, ApproximatorErrorRecipe
