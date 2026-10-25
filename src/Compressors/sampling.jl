@@ -45,7 +45,7 @@ in the `distribution` field.
 - `ArgumentError` if `compression_dim` is non-positive
 - `ArgumentError` if `Undef()` is taken as the input for `cardinality`
 """
-struct Sampling <: Compressor
+mutable struct Sampling <: Compressor
     cardinality::Cardinality
     compression_dim::Int64
     distribution::Distribution # Function that returns a probability vector over indices

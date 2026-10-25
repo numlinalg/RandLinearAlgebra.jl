@@ -23,6 +23,10 @@ L2NormRecipe
 Agmon
 
 AgmonRecipe
+
+RandLinearAlgebra.LUPP
+
+LUPPRecipe
 ```
 
 ## Exported Functions

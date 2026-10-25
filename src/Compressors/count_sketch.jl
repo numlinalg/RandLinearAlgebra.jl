@@ -57,7 +57,7 @@ The compressed matrix is then formed by multiplying S A (for left compression) o
 - `ArgumentError` if `compression_dim` is non-positive
 - `ArgumentError` if `Undef()` is taken as the input for `cardinality`
 """
-struct CountSketch <: Compressor
+mutable struct CountSketch <: Compressor
     cardinality::Cardinality
     compression_dim::Int64
     type::Type{<:Number}

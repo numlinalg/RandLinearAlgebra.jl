@@ -57,7 +57,7 @@ to reflect the number of columns in ``A``.
 - `ArgumentError` if `compression_dim` is non-positive or if `block_size` is non-positive.
 - `ArgumentError` if Cardinality is not either `Left` or `Right`.
 """
-struct SRHT <: Compressor
+mutable struct SRHT <: Compressor
     cardinality::Cardinality
     compression_dim::Int64
     block_size::Int64

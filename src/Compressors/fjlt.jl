@@ -62,7 +62,7 @@ to reflect the number of columns in ``A``.
 - `ArgumentError` if `compression_dim` is non-positive, if `sparsity` is not in ``[0,1]``,
     or if `block_size` is non-positive.
 """
-struct FJLT <: Compressor
+mutable struct FJLT <: Compressor
     cardinality::Cardinality
     compression_dim::Int64
     block_size::Int64

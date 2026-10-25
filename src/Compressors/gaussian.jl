@@ -46,7 +46,7 @@ compression dimension.
 ## Throws
 - `ArgumentError` if `compression_dim` is non-positive
 """
-struct Gaussian <: Compressor
+mutable struct Gaussian <: Compressor
     cardinality::Cardinality
     compression_dim::Int64
     type::Type{<:Number}
