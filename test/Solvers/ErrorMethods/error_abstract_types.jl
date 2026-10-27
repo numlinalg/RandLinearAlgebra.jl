@@ -1,7 +1,6 @@
 module solver_error_abstract_types
 include("../../test_helpers/preamble.jl")
-import Random: seed!
-seed!(1232)
+Random.seed!(1232)
 
 struct TestSolver <: Solver end
 struct TestSolverRecipe <: SolverRecipe end
