@@ -2,7 +2,7 @@ module RandLinearAlgebra
 import Base.:*
 import Base: transpose, adjoint, setproperty!
 import LinearAlgebra: Adjoint, Transpose, axpby!, axpy!, ColumnNorm, dot, I, ldiv!
-import LinearAlgebra: lmul!, lq!, lq, LQ, lu!, mul!, norm, qr!, rmul!, svd, UpperTriangular
+import LinearAlgebra: lmul!, lq!, lq, LQ, lu!, mul!, norm, qr, qr!, rmul!, svd, UpperTriangular
 import StatsBase: ProbabilityWeights, sample, sample!, wsample!
 import Random: bitrand, rand!, randn!
 import SparseArrays: SparseMatrixCSC, SparseVector, nonzeros, nzrange, rowvals, sparse, sprandn, spzeros
@@ -36,6 +36,7 @@ export SRHT, SRHTRecipe
 export Distribution, DistributionRecipe
 export complete_distribution, update_distribution!, sample_distribution!
 export Uniform, UniformRecipe, L2Norm, L2NormRecipe, Agmon, AgmonRecipe
+export LeverageScore, LeverageScoreRecipe
 
 # Export Solver types and functions
 export Solver, SolverRecipe
