@@ -1,7 +1,5 @@
 @testset "LSQR SubSolver Tests" begin
     using Test, RandLinearAlgebra, Random, LinearAlgebra, SparseArrays
-    using ..FieldTest
-    using ..ApproxTol
 
     @testset "LSQR SubSolver" begin
         @test supertype(LSQRSolver{NoPreconditioner}) == KrylovSubSolver
