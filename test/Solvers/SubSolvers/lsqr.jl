@@ -69,7 +69,7 @@ Base.adjoint(p::LSQRScaledIdentity) = p
         @test fieldnames(LSQRSolverRecipe) ==
             (:A, :max_it, :atol, :btol, :zero_init, :u, :v, :w, :precond, :t, :s)
         @test fieldtypes(LSQRSolverRecipe) == (
-            AbstractArray,
+            Any,
             Int64,
             Float64,
             Float64,
@@ -81,6 +81,18 @@ Base.adjoint(p::LSQRScaledIdentity) = p
             AbstractVector,
             AbstractVector
         )
+    end
+
+    @testset "LSQR SubSolver: Preconditioner Buffer Size" begin
+        # `NoPreconditioner` must dispatch to the specialized method that requests no work
+        # buffers, while any other preconditioner falls back to the generic method that
+        # requests a buffer of length `m`. Contrasting the two return values confirms the
+        # `NoPreconditioner` method is the one selected.
+        for m in (0, 1, 12)
+            @test RandLinearAlgebra.preconditioner_buffer_size(NoPreconditioner(), m) == 0
+            @test RandLinearAlgebra.preconditioner_buffer_size(Diagonal(ones(m)), m) == m
+        end
+
     end
 
     @testset "LSQR SubSolver: Complete SubSolver" begin

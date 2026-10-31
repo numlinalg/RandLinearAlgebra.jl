@@ -143,7 +143,7 @@ end
     LSQRSolverRecipe{
         T<:Number,
         V<:AbstractVector,
-        M<:AbstractArray,
+        M,
         P
     } <: KrylovSubSolverRecipe
 
@@ -151,7 +151,13 @@ A mutable type containing information relevant to solving the linear subsystems 
     the Solver routines with the LSQR method.
 
 # Fields
-- `A::M`, the matrix in the linear system that will be solved with the LSQR solver.
+- `A::M`, the operator in the linear system that will be solved with the LSQR solver. It
+    need not be an `AbstractMatrix`: any object `A` may be supplied provided that it
+    implements `size(A)` and `eltype(A)`, the five-argument in-place product
+    `mul!(y, A, x, a, b)` (which computes `y = a * A * x + b * y`) and its adjoint
+    counterpart through `adjoint(A)` (equivalently `A'`). The LSQR iteration accesses `A`
+    only through these operations, so any linear operator supporting them, such as a
+    matrix-free operator, may be used.
 - `max_it::Int64`, the maximum number of LSQR iterations. If `0` then the number of
     columns of `A` is used.
 - `atol::Float64`, the tolerance on the relative error in the matrix ``A``.
@@ -171,7 +177,7 @@ A mutable type containing information relevant to solving the linear subsystems 
 mutable struct LSQRSolverRecipe{
     T<:Number,
     V<:AbstractVector,
-    M<:AbstractArray,
+    M,
     P
 } <: KrylovSubSolverRecipe
     A::M
@@ -193,7 +199,7 @@ end
 const LSQRNoPrecRecipe = LSQRSolverRecipe{
     <:Number,
     <:AbstractVector,
-    <:AbstractArray,
+    <:Any,
     NoPreconditioner
 }
 
@@ -271,7 +277,15 @@ check_preconditioner(::NoPreconditioner, m::Int, ::Type{V}) where {V<:AbstractVe
 preconditioner_buffer_size(::NoPreconditioner, m::Int) = 0
 preconditioner_buffer_size(precond, m::Int) = m
 
-function complete_sub_solver(solver::LSQRSolver, A::AbstractMatrix)
+# The LSQR iteration accesses `A` only through `size`, `eltype`, `mul!` and `adjoint`, so it
+# accepts any operator providing them, not just an `AbstractArray`. The `AbstractArray`
+# method is declared explicitly so that it is strictly more specific than the generic
+# `complete_sub_solver` fallback and no dispatch ambiguity arises; both forward to the same
+# implementation.
+complete_sub_solver(solver::LSQRSolver, A::AbstractArray) = _complete_sub_solver(solver, A)
+complete_sub_solver(solver::LSQRSolver, A) = _complete_sub_solver(solver, A)
+
+function _complete_sub_solver(solver::LSQRSolver, A)
     T = eltype(A)
     m, n = size(A)
     u = zeros(T, m)
@@ -307,7 +321,13 @@ function update_work_buffers!(solver::LSQRSolverRecipe, m::Int)
     return nothing
 end
 
-function update_sub_solver!(solver::LSQRSolverRecipe, A::AbstractMatrix)
+# As with `complete_sub_solver`, the `AbstractArray` method disambiguates against the
+# generic `update_sub_solver!` fallback while the general method accepts any operator.
+update_sub_solver!(solver::LSQRSolverRecipe, A::AbstractArray) =
+    _update_sub_solver!(solver, A)
+update_sub_solver!(solver::LSQRSolverRecipe, A) = _update_sub_solver!(solver, A)
+
+function _update_sub_solver!(solver::LSQRSolverRecipe, A)
     solver.A = A
     m, n = size(A)
     # Only resize the buffers if the dimensions of the new matrix have changed
@@ -399,8 +419,9 @@ end
     t = solver.t
     s = solver.s
     # u = N \ (A * v) - alpha * u, which needs two buffers because the previous value of
-    # u is required after the product has been formed
-    mul!(t, solver.A, solver.v)
+    # u is required after the product has been formed. The product is written with the
+    # five-argument `mul!` (beta = 0) so that `A` need only implement that one form.
+    mul!(t, solver.A, solver.v, one(T), zero(T))
     ldiv!(s, solver.precond, t)
     axpby!(one(T), s, -alpha, u)
     beta = norm(u)
@@ -433,7 +454,7 @@ end
 
 function ldiv!(
     x::AbstractVector,
-    solver::LSQRSolverRecipe{<:Number, <:AbstractVector, <:AbstractMatrix},
+    solver::LSQRSolverRecipe{<:Number, <:AbstractVector},
     b::AbstractVector
 )
     T = eltype(solver.A)
