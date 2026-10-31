@@ -1,3 +1,26 @@
+using LinearAlgebra
+
+# A preconditioner that reports a size and can be applied from the left but provides no
+# `adjoint`. `complete_sub_solver` should reject it, since the bidiagonalization applies
+# the adjoint of the preconditioner.
+struct LSQRNoAdjointPrecond
+    n::Int
+end
+Base.size(p::LSQRNoAdjointPrecond) = (p.n, p.n)
+LinearAlgebra.ldiv!(y::AbstractVector, ::LSQRNoAdjointPrecond, x::AbstractVector) =
+    copyto!(y, x)
+
+# A dimension-agnostic scaled-identity preconditioner. It implements no `size` method, so
+# it validates against a coefficient matrix with any number of rows. This lets the
+# preconditioner buffers be resized when the matrix dimensions change rather than the
+# preconditioner being rejected.
+struct LSQRScaledIdentity
+    c::Float64
+end
+LinearAlgebra.ldiv!(y::AbstractVector, p::LSQRScaledIdentity, x::AbstractVector) =
+    (y .= x ./ p.c)
+Base.adjoint(p::LSQRScaledIdentity) = p
+
 @testset "LSQR SubSolver Tests" begin
     using Test, RandLinearAlgebra, Random, LinearAlgebra, SparseArrays
     using ..FieldTest
@@ -129,6 +152,11 @@
             @test_throws ArgumentError complete_sub_solver(
                 LSQRSolver(; precond = "not a preconditioner"), A
             )
+            # A preconditioner that can be applied from the left but has no `adjoint`,
+            # which the bidiagonalization requires
+            @test_throws ArgumentError complete_sub_solver(
+                LSQRSolver(; precond = LSQRNoAdjointPrecond(12)), A
+            )
         end
 
     end
@@ -180,6 +208,28 @@
             ss_recipe = complete_sub_solver(ss, A)
 
             @test_throws ArgumentError update_sub_solver!(ss_recipe, B)
+        end
+
+        # A matrix with a new number of rows should resize the preconditioner buffers when
+        # the preconditioner remains valid at the new dimension
+        let A = rand(12, 3),
+            B = rand(10, 4),
+            b = rand(10),
+            ss = LSQRSolver(; atol = 1e-12, btol = 1e-12, max_it = 100,
+                precond = LSQRScaledIdentity(2.0)),
+            ss_recipe = complete_sub_solver(ss, A)
+
+            @test size(ss_recipe.t) == (12,)
+            @test size(ss_recipe.s) == (12,)
+            update_sub_solver!(ss_recipe, B)
+            @test ss_recipe.A == B
+            @test size(ss_recipe.u) == (10,)
+            @test size(ss_recipe.t) == (10,)
+            @test size(ss_recipe.s) == (10,)
+            # The resized recipe should still solve the new system
+            x_sol = zeros(4)
+            ldiv!(x_sol, ss_recipe, b)
+            @test x_sol ≈ qr(B) \ b
         end
 
     end
