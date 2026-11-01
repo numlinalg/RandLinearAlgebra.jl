@@ -21,6 +21,8 @@ LinearAlgebra.ldiv!(y::AbstractVector, p::LSQRScaledIdentity, x::AbstractVector)
     (y .= x ./ p.c)
 Base.adjoint(p::LSQRScaledIdentity) = p
 
+Base.eltype(A::GaussianRecipe) = eltype(A.op)
+
 @testset "LSQR SubSolver Tests" begin
     using Test, RandLinearAlgebra, Random, LinearAlgebra, SparseArrays
 
@@ -183,6 +185,19 @@ Base.adjoint(p::LSQRScaledIdentity) = p
             @test size(ss_recipe.u) == (12,)
             @test size(ss_recipe.v) == (3,)
             @test size(ss_recipe.w) == (3,)
+        end
+
+        # Try when A is not a matrix
+        let A = complete_compressor(Gaussian(cardinality = Left(), compression_dim = 5), rand(5, 3)),
+            B = complete_compressor(Gaussian(cardinality = Left(), compression_dim = 5), rand(5, 3)),
+            ss = LSQRSolver(),
+            ss_recipe = complete_sub_solver(ss, A)
+
+            update_sub_solver!(ss_recipe, B)
+            @test ss_recipe.A == B
+            @test size(ss_recipe.u) == (5,)
+            @test size(ss_recipe.v) == (5,)
+            @test size(ss_recipe.w) == (5,)
         end
 
         # Different dimensions should resize the buffers
