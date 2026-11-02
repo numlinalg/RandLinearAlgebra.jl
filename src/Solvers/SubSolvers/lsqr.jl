@@ -109,7 +109,7 @@ The preconditioner is applied through `ldiv!`, so it is the inverse of ``N`` tha
     and never a residual. When `zero_init` is `false` the initial residual
     ``b - A x_0`` is formed internally from the incoming solution vector.
 """
-struct LSQRSolver{P} <: KrylovSubSolver
+mutable struct LSQRSolver{P} <: KrylovSubSolver
     max_it::Int64
     atol::Float64
     btol::Float64
