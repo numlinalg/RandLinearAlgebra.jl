@@ -62,13 +62,6 @@ makedocs(
             "Test Mocks" => "developer/test_mocks.md",
             
         ],
-        "Development" => [
-            "Test Mocks" => [
-                "dev/test-mocks/overview.md",
-                "Mock 1: Compressors" => "dev/test-mocks/mock1_compressors.md",
-                "Mocks 2-8" => "dev/test-mocks/mocks_2_to_8.md",
-            ],
-        ],
         "References" => "references.md",
     ]
 )
