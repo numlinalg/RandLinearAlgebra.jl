@@ -2,6 +2,9 @@ using Documenter
 using DocumenterCitations
 using RandLinearAlgebra
 
+# Load the test mocks so the Developer Guide can render their docstrings
+include(joinpath(@__DIR__, "..", "test", "test_helpers", "mocks", "mock_compressors.jl"))
+
 bib = CitationBibliography(
     joinpath(@__DIR__, "src", "refs.bib");
     style=:numeric
@@ -12,7 +15,7 @@ makedocs(
     collapselevel=1,
     ),
     plugins=[bib],
-    modules = [RandLinearAlgebra],
+    modules = [RandLinearAlgebra, MockCompressors],
     pages = [
         "Home" => "index.md",
         "Manual" => [
@@ -51,6 +54,13 @@ makedocs(
                 "Selectors API" => "api/selectors.md",
                 "ApproximatorErrors API" => "api/approximator_errors.md",
             ],
+        ],
+        "Developer Guide" => [
+            "developer/testing_overview.md",
+            "Writing Tests" => "developer/writing_tests.md",
+            "Test Preamble and Helpers" => "developer/test_preamble_helpers.md",
+            "Test Mocks" => "developer/test_mocks.md",
+            
         ],
         "References" => "references.md",
     ]

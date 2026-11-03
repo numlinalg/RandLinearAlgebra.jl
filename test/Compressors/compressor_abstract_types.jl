@@ -1,7 +1,6 @@
 module compressor_abstract_types
 include("../test_helpers/preamble.jl")
-struct TestCompressor <: Compressor end
-struct TestCompressorRecipe <: CompressorRecipe end
+using .MockCompressors
 
 @testset "Compressor Abstract Types" begin
     @test isdefined(Main, :Compressor)
@@ -18,14 +17,14 @@ end
     b = rand(2)
     x = rand(2)
 
-    @test_throws ArgumentError complete_compressor(TestCompressor(), A)
-    @test_throws ArgumentError complete_compressor(TestCompressor(), b)
-    @test_throws ArgumentError complete_compressor(TestCompressor(), A, b)
-    @test_throws ArgumentError complete_compressor(TestCompressor(), x, A, b)
-    @test_throws ArgumentError update_compressor!(TestCompressorRecipe())
-    @test_throws ArgumentError update_compressor!(TestCompressorRecipe(), A)
-    @test_throws ArgumentError update_compressor!(TestCompressorRecipe(), A, b)
-    @test_throws ArgumentError update_compressor!(TestCompressorRecipe(), x, A, b)
+    @test_throws ArgumentError complete_compressor(MockCompressor(), A)
+    @test_throws ArgumentError complete_compressor(MockCompressor(), b)
+    @test_throws ArgumentError complete_compressor(MockCompressor(), A, b)
+    @test_throws ArgumentError complete_compressor(MockCompressor(), x, A, b)
+    @test_throws ArgumentError update_compressor!(MockCompressorRecipe(2, 2))
+    @test_throws ArgumentError update_compressor!(MockCompressorRecipe(2, 2), A)
+    @test_throws ArgumentError update_compressor!(MockCompressorRecipe(2, 2), A, b)
+    @test_throws ArgumentError update_compressor!(MockCompressorRecipe(2, 2), x, A, b)
 end
 
 end

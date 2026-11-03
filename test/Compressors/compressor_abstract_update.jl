@@ -1,25 +1,11 @@
 module compressor_abstract_update 
 include("../test_helpers/preamble.jl")
-import RandLinearAlgebra: update_compressor!
-
-#####################
-# Testing Parameters
-##################### 
-mutable struct TestCompressorRecipe <: CompressorRecipe
-    n_rows::Int64
-    n_cols::Int64
-    status::Bool
-end
-
-function update_compressor!(compressor::TestCompressorRecipe) 
-    compressor.status = true
-    return true 
-end
+using .MockCompressors
 
 @testset "Compressor Recipe Update" begin
 
     # Check Single Argument Update 
-    let compressor = TestCompressorRecipe(3, 4, false)
+    let compressor = MockUpdateCompressorRecipe(3, 4, false)
         # Check initial status 
         @test compressor.status == false
 
@@ -32,7 +18,7 @@ end
     end
 
     # Check Two Argument Update 
-    let compressor = TestCompressorRecipe(3, 4, false),
+    let compressor = MockUpdateCompressorRecipe(3, 4, false),
         A = randn(5, 6)
 
         # Check initial status 
@@ -47,7 +33,7 @@ end
     end
 
     # Check Three Argument Update 
-    let compressor = TestCompressorRecipe(3, 4, false),
+    let compressor = MockUpdateCompressorRecipe(3, 4, false),
         A = randn(5, 6),
         b = randn(7)
 
@@ -63,7 +49,7 @@ end
     end
 
     # Check Four Argument Update 
-    let compressor = TestCompressorRecipe(3, 4, false),
+    let compressor = MockUpdateCompressorRecipe(3, 4, false),
         A = randn(5, 6),
         b = randn(7),
         x = randn(8)
