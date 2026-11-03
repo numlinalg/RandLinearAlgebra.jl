@@ -1,6 +1,5 @@
 module l2norm_distribution
-using Test, RandLinearAlgebra
-using StatsBase: ProbabilityWeights
+include("../../test_helpers/preamble.jl")
 
 @testset "L2Norm" begin
     @testset "L2Norm: Distribution" begin

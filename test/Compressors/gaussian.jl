@@ -1,12 +1,7 @@
 module Gaussian_compressor
-using Test, RandLinearAlgebra
-import Base.*
-import LinearAlgebra: mul!, lmul!
-import Random: randn!, seed!, rand
-using ..FieldTest
-using ..ApproxTol
+include("../test_helpers/preamble.jl")
 
-seed!(21321)
+Random.seed!(21321)
 @testset "Gaussian" begin
     @testset "Gaussian: Compressor" begin
         # Verify Supertype

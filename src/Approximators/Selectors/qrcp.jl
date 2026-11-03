@@ -13,7 +13,7 @@ a matrix.
 
 ## Keywords
 - `compressor::Compressor`, the compression technique that will applied to the matrix, 
-    before selecting indices. Defaults the [Identity](@ref) compressor.
+    before selecting indices. Defaults the [`Identity`](@ref) compressor.
 
 ## Returns
 - A `QRCP` object.

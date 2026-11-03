@@ -1,9 +1,5 @@
 module  RangeApproximator
-using Test, RandLinearAlgebra, LinearAlgebra
-import RandLinearAlgebra: complete_compressor
-import LinearAlgebra: mul!
-using ..FieldTest
-using ..ApproxTol
+include("../../test_helpers/preamble.jl")
 
 mutable struct TestCompressor <: Compressor
     cardinality::Cardinality

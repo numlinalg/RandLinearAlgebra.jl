@@ -1,11 +1,6 @@
 module fjlt 
-using Test, RandLinearAlgebra, Random
-import SparseArrays
-import SparseArrays: nonzeros, sparse, SparseMatrixCSC, sprand
-import LinearAlgebra: mul!, Adjoint, Diagonal
+include("../test_helpers/preamble.jl")
 import Hadamard: hadamard
-using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(2131)
 @testset "FJLT" begin

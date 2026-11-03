@@ -1,10 +1,5 @@
 module Sampling_compressor
-using Test, RandLinearAlgebra, Random
-using StatsBase: ProbabilityWeights, sample
-import LinearAlgebra: mul!, Adjoint
-import SparseArrays: sprandn
-using ..FieldTest
-using ..ApproxTol
+include("../test_helpers/preamble.jl")
 
 Random.seed!(2131)
 @testset "Sampling" begin

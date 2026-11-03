@@ -1,9 +1,6 @@
 
 module compressor_abstract_size
-using Test, RandLinearAlgebra
-import LinearAlgebra: mul!
-using ..FieldTest
-using ..ApproxTol
+include("../test_helpers/preamble.jl")
 
 #####################
 # Testing Parameters

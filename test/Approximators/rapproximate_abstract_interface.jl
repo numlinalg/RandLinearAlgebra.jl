@@ -1,5 +1,5 @@
 module rapproximate_abstract_interface
-using Test, RandLinearAlgebra 
+include("../test_helpers/preamble.jl")
 import RandLinearAlgebra: complete_approximator, rapproximate!
 
 #############################
