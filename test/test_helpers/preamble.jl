@@ -8,5 +8,6 @@ import LinearAlgebra: mul!
 # Local copies of the test helper modules, resolved relative to this file
 include("field_test_macros.jl")
 include("approx_tol.jl")
+include("mocks/compressors.jl")
 using .FieldTest
 using .ApproxTol

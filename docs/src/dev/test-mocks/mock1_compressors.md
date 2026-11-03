@@ -4,12 +4,15 @@ Part of the [test mock consolidation](overview.md). Risk: low.
 
 ## Current status
 
-- **State:** Not started. The plan is approved; no mock definition, preamble change or
-  migration has been written.
-- **Next step:** Increment 1 stub. Write `MockCompressor` and `MockCompressorRecipe` with
-  docstrings in `test/test_helpers/mocks/compressors.jl`, add the preamble include, and
-  outline the migration of `size`, `adjoint`, `dimchecks` and `types`. Then stop for review.
-- **Last updated:** 2026-10-20
+- **State:** Increment 1 migrations applied, awaiting review. `size`, `adjoint`,
+  `dimchecks` and `types` now use `MockCompressors`. Tests have not been run.
+- **Next step:** After approval, plan and stub increment 2 (`Mul5` and `Mul3` tiers, split
+  `multiplication`).
+- **Last updated:** 2026-11-03
+
+!!! warning "Before opening a PR"
+    Delete `docs/src/dev/` and remove the `Development` entry from `pages` in
+    `docs/make.jl`. These plan docs must not be merged.
 
 ## Goal
 
@@ -61,13 +64,31 @@ differs only in which methods the file adds. This mock is also the first use of 
 2. `Mul5` and `Mul3` tiers. Split `multiplication`.
 3. `Update` tier. Migrate `update`.
 
+## Increment 1 migration outline
+
+Each file keeps its own module and `include("../test_helpers/preamble.jl")`, adds
+`using .MockCompressors`, and replaces `TestCompressorRecipe` with `MockCompressorRecipe`.
+No test checks change.
+
+- `compressor_abstract_size.jl` (pilot): delete the local struct (lines 8-11). Construct
+  `S = MockCompressorRecipe(s, n_rows)`.
+- `compressor_abstract_adjoint.jl`: delete the local struct (lines 7-10). Rename the type in
+  the four constructors and the four `typeof` checks, e.g.
+  `CompressorAdjoint{MockCompressorRecipe}`.
+- `compressor_abstract_dimchecks.jl`: delete the local `TestCompressorRecipe` (lines 7-10)
+  only. `TestApproximatorRecipe` stays until Mock 2. Construct
+  `S = MockCompressorRecipe(s, n_rows)`.
+- `compressor_abstract_types.jl`: delete both local empty structs (lines 3-4). Replace
+  `TestCompressor()` with `MockCompressor()`. The recipe now has fields, so replace each
+  `TestCompressorRecipe()` with `MockCompressorRecipe(2, 2)`, matching the sizes of `A`.
+
 Open point for increment 2: confirm `Mul3` needs only the 3-arg methods. The 3-arg section
 appears not to call the 5-arg `mul!`, but this is unverified.
 
 ## Status checklist
 
 - [ ] Increment 1: inert tier + `size`, `adjoint`, `dimchecks`, `types`
-  - [ ] stub + migration outline approved
+  - [x] stub + migration outline approved
   - [ ] migrations approved
 - [ ] Increment 2: `Mul5`, `Mul3` tiers + split `multiplication`
   - [ ] stub + migration outline approved
@@ -75,3 +96,4 @@ appears not to call the 5-arg `mul!`, but this is unverified.
 - [ ] Increment 3: `Update` tier + `update`
   - [ ] stub + migration outline approved
   - [ ] migrations approved
+- [ ] Before PR: delete `docs/src/dev/` and the `Development` entry in `docs/make.jl`
