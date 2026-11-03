@@ -10,7 +10,7 @@ family at a time, without changing what any test checks.
 - **State:** Planned. No code written yet; these plan docs are the only changes on the
   branch `vp/test-mocks`.
 - **Next step:** Stub Mock 1, increment 1 (the inert tier in
-  `test/test_helpers/mocks/compressors.jl` plus the preamble include), then stop for review.
+  `test/test_helpers/mocks/mock_compressors.jl` plus the preamble include), then stop for review.
   See [Mock 1](mock1_compressors.md).
 - **Last updated:** 2026-10-20
 
@@ -18,7 +18,7 @@ Update this section, and the one in the active mock's file, at every gate.
 
 ## Design (applies to every mock)
 
-- **Location:** `test/test_helpers/mocks/<family>.jl`. Each file defines one module (e.g.
+- **Location:** `test/test_helpers/mocks/mock_<family>.jl`. Each file defines one module (e.g.
   `MockCompressors`) that exports `Mock*` names and imports whatever it extends
   (`LinearAlgebra.mul!`, `RandLinearAlgebra` interface functions).
 - **Loading:** `preamble.jl` `include`s every mock file, as it does `FieldTest` and

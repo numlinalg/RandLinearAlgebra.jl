@@ -4,11 +4,11 @@ Part of the [test mock consolidation](overview.md). Risk: low.
 
 ## Current status
 
-- **State:** Increment 1 done and committed (`b74a3c76`, full suite passed). Increment 2
-  migrations approved (the three new files pass; full suite not run): `Mul5`/`Mul3` `mul!` bodies filled, and
-  `multiplication` split into `_errors`, `_5arg` and `_3arg` (original deleted). The
-  `@test` count is unchanged (55).
-- **Next step:** After approval, plan and stub increment 3 (`Update` tier, migrate `update`).
+- **State:** Increments 1 and 2 committed (`b74a3c76`, `272e35fb`). Increment 3
+  migration applied, awaiting review: `update_compressor!` body filled and
+  `compressor_abstract_update.jl` migrated. The mock file was renamed to
+  `mock_compressors.jl`. Tests have not been run.
+- **Next step:** After approval, Mock 1 is complete; write the detailed plan for Mock 2.
 - **Last updated:** 2026-11-03
 
 !!! warning "Before opening a PR"
@@ -35,8 +35,8 @@ differs only in which methods the file adds. This mock is also the first use of 
 
 | File | Purpose | Change | Est. lines |
 |:-----|:--------|:-------|:-----------|
-| `test/test_helpers/mocks/compressors.jl` | `MockCompressors` module | New | ~85 |
-| `test/test_helpers/preamble.jl` | Shared preamble | Add `include("mocks/compressors.jl")` | +1 |
+| `test/test_helpers/mocks/mock_compressors.jl` | `MockCompressors` module | New | ~85 |
+| `test/test_helpers/preamble.jl` | Shared preamble | Add `include("mocks/mock_compressors.jl")` | +1 |
 | `Compressors/compressor_abstract_size.jl` | Size tests | Drop local struct, `using .MockCompressors` (pilot) | -6 |
 | `Compressors/compressor_abstract_adjoint.jl` | Adjoint tests | Same | -6 |
 | `Compressors/compressor_abstract_dimchecks.jl` | Dimension checks | Same; the local `TestApproximatorRecipe` stays until Mock 2 | -5 |
@@ -47,7 +47,7 @@ differs only in which methods the file adds. This mock is also the first use of 
 | `Compressors/compressor_abstract_multiplication_3arg.jl` | 3-arg dispatch and binary `*` | New, from lines 197-289 | ~95 |
 | `Compressors/compressor_abstract_update.jl` | Update dispatch | Use `MockUpdateCompressorRecipe` | -12 |
 
-## Functions (in `compressors.jl`)
+## Functions (in `mock_compressors.jl`)
 
 | Definition | Reason | Est. lines |
 |:-----------|:-------|:-----------|
@@ -106,6 +106,19 @@ dropped; tests construct `Mock*Recipe(s_rows, s_cols)` directly.
 Because the 5-arg file no longer defines 3-arg methods later in the same module, the file
 split removes the dependence on top-level execution order.
 
+## Increment 3 migration outline
+
+- `compressor_abstract_update.jl`: add `using .MockCompressors`. Delete the local struct
+  (lines 8-12), the local `update_compressor!` method (lines 14-17) and the
+  `import RandLinearAlgebra: update_compressor!` line, which was only needed to extend the
+  function. The mock module now does that extension. Replace each
+  `TestCompressorRecipe(3, 4, false)` with `MockUpdateCompressorRecipe(3, 4, false)`. The
+  `update_compressor!` calls are unqualified, as in `compressor_abstract_types.jl`, so they
+  resolve through the preamble. Test checks are unchanged.
+
+Decision: `status` has no default in the mock. The test passes `false` explicitly and
+asserts it before each update.
+
 ## Status checklist
 
 - [x] Increment 1: inert tier + `size`, `adjoint`, `dimchecks`, `types`
@@ -115,6 +128,6 @@ split removes the dependence on top-level execution order.
   - [x] stub + migration outline approved
   - [x] migrations approved (the three new multiplication files pass; full suite not run)
 - [ ] Increment 3: `Update` tier + `update`
-  - [ ] stub + migration outline approved
+  - [x] stub + migration outline approved
   - [ ] migrations approved
 - [ ] Before PR: delete `docs/src/dev/` and the `Development` entry in `docs/make.jl`

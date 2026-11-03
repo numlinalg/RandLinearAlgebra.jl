@@ -17,9 +17,11 @@ test one layer.
 module MockCompressors
 using RandLinearAlgebra
 import LinearAlgebra: mul!
+import RandLinearAlgebra: update_compressor!
 
 export MockCompressor, MockCompressorRecipe
 export MockMul5CompressorRecipe, MockMul3CompressorRecipe
+export MockUpdateCompressorRecipe
 
 """
     MockCompressor <: Compressor
@@ -126,6 +128,34 @@ Right three-argument multiplication. Fills `C` with `2`.
 """
 function mul!(C::AbstractArray, A::AbstractArray, S::MockMul3CompressorRecipe)
     fill!(C, 2)
+end
+
+"""
+    MockUpdateCompressorRecipe <: CompressorRecipe
+
+Working-tier `CompressorRecipe` that defines only the one-argument `update_compressor!`.
+The library's two-, three- and four-argument methods all reduce to it, so they can be tested
+through this type. The `status` field records whether an update has run.
+
+# Fields
+- `n_rows::Int64`, the number of rows of the compression matrix.
+- `n_cols::Int64`, the number of columns of the compression matrix.
+- `status::Bool`, `false` until `update_compressor!` runs.
+"""
+mutable struct MockUpdateCompressorRecipe <: CompressorRecipe
+    n_rows::Int64
+    n_cols::Int64
+    status::Bool
+end
+
+"""
+    update_compressor!(S::MockUpdateCompressorRecipe)
+
+Sets `S.status` to `true` and returns `true`.
+"""
+function update_compressor!(S::MockUpdateCompressorRecipe)
+    S.status = true
+    return true
 end
 
 end
