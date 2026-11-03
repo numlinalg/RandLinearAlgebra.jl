@@ -4,10 +4,11 @@ Part of the [test mock consolidation](overview.md). Risk: low.
 
 ## Current status
 
-- **State:** Increment 1 migrations applied, awaiting review. `size`, `adjoint`,
-  `dimchecks` and `types` now use `MockCompressors`. Tests have not been run.
-- **Next step:** After approval, plan and stub increment 2 (`Mul5` and `Mul3` tiers, split
-  `multiplication`).
+- **State:** Increment 1 done and committed (`b74a3c76`, full suite passed). Increment 2
+  migrations approved (the three new files pass; full suite not run): `Mul5`/`Mul3` `mul!` bodies filled, and
+  `multiplication` split into `_errors`, `_5arg` and `_3arg` (original deleted). The
+  `@test` count is unchanged (55).
+- **Next step:** After approval, plan and stub increment 3 (`Update` tier, migrate `update`).
 - **Last updated:** 2026-11-03
 
 !!! warning "Before opening a PR"
@@ -82,17 +83,37 @@ No test checks change.
   `TestCompressor()` with `MockCompressor()`. The recipe now has fields, so replace each
   `TestCompressorRecipe()` with `MockCompressorRecipe(2, 2)`, matching the sizes of `A`.
 
-Open point for increment 2: confirm `Mul3` needs only the 3-arg methods. The 3-arg section
-appears not to call the 5-arg `mul!`, but this is unverified.
+## Increment 2 migration outline
+
+Resolved: `Mul3` needs only the 3-arg methods. In `src/Compressors.jl` the 3-arg adjoint
+methods and binary `*` call the 3-arg `mul!`, and the mock's 3-arg methods are more specific
+than the library's 3-arg fallback, which is the only path to the 5-arg method.
+
+Split `compressor_abstract_multiplication.jl`, then delete it. Each new file keeps its own
+module (named after the file), includes the preamble, adds `using .MockCompressors`, and
+defines `s_rows = 3` and `s_cols = 4`. The local struct and the zero-argument constructor are
+dropped; tests construct `Mock*Recipe(s_rows, s_cols)` directly.
+
+- `..._multiplication_errors.jl` (old lines 1-57): `MockCompressorRecipe(s_rows, s_cols)` in
+  place of each `TestCompressorRecipe()`. Checks are unchanged.
+- `..._multiplication_5arg.jl` (old lines 59-195): `MockMul5CompressorRecipe`. Drop the two
+  `mul!` definitions, which now live in the mock, and keep `c_rows`, `c_cols`, `a_rows`,
+  `a_cols`. The testset still checks the 3-arg and binary paths, which reduce to the 5-arg
+  methods.
+- `..._multiplication_3arg.jl` (old lines 197-289): `MockMul3CompressorRecipe`. Same
+  parameters. Drop the two `mul!` definitions.
+
+Because the 5-arg file no longer defines 3-arg methods later in the same module, the file
+split removes the dependence on top-level execution order.
 
 ## Status checklist
 
-- [ ] Increment 1: inert tier + `size`, `adjoint`, `dimchecks`, `types`
+- [x] Increment 1: inert tier + `size`, `adjoint`, `dimchecks`, `types`
   - [x] stub + migration outline approved
-  - [ ] migrations approved
-- [ ] Increment 2: `Mul5`, `Mul3` tiers + split `multiplication`
-  - [ ] stub + migration outline approved
-  - [ ] migrations approved
+  - [x] migrations approved (full suite passed; committed `b74a3c76`)
+- [x] Increment 2: `Mul5`, `Mul3` tiers + split `multiplication`
+  - [x] stub + migration outline approved
+  - [x] migrations approved (the three new multiplication files pass; full suite not run)
 - [ ] Increment 3: `Update` tier + `update`
   - [ ] stub + migration outline approved
   - [ ] migrations approved

@@ -16,8 +16,10 @@ test one layer.
 """
 module MockCompressors
 using RandLinearAlgebra
+import LinearAlgebra: mul!
 
 export MockCompressor, MockCompressorRecipe
+export MockMul5CompressorRecipe, MockMul3CompressorRecipe
 
 """
     MockCompressor <: Compressor
@@ -42,6 +44,88 @@ checks), and to check that `update_compressor!` and `mul!` fallbacks throw an
 mutable struct MockCompressorRecipe <: CompressorRecipe
     n_rows::Int64
     n_cols::Int64
+end
+
+"""
+    MockMul5CompressorRecipe <: CompressorRecipe
+
+Working-tier `CompressorRecipe` that defines only the two five-argument `mul!` methods. The
+library's three-argument, adjoint and binary `*` methods all reduce to these, so they can be
+tested through this type. A left multiplication fills the output with `-1` and a right
+multiplication fills it with `-2`.
+
+# Fields
+- `n_rows::Int64`, the number of rows of the compression matrix.
+- `n_cols::Int64`, the number of columns of the compression matrix.
+"""
+mutable struct MockMul5CompressorRecipe <: CompressorRecipe
+    n_rows::Int64
+    n_cols::Int64
+end
+
+"""
+    mul!(C, S::MockMul5CompressorRecipe, A, alpha, beta)
+
+Left five-argument multiplication. Fills `C` with `-1`.
+"""
+function mul!(
+    C::AbstractArray,
+    S::MockMul5CompressorRecipe,
+    A::AbstractArray,
+    alpha::Number,
+    beta::Number,
+)
+    fill!(C, -1)
+end
+
+"""
+    mul!(C, A, S::MockMul5CompressorRecipe, alpha, beta)
+
+Right five-argument multiplication. Fills `C` with `-2`.
+"""
+function mul!(
+    C::AbstractArray,
+    A::AbstractArray,
+    S::MockMul5CompressorRecipe,
+    alpha::Number,
+    beta::Number,
+)
+    fill!(C, -2)
+end
+
+"""
+    MockMul3CompressorRecipe <: CompressorRecipe
+
+Working-tier `CompressorRecipe` that defines only the two three-argument `mul!` methods,
+which are more specific than the library's three-argument fallbacks. The five-argument
+methods are never reached. A left multiplication fills the output with `1` and a right
+multiplication fills it with `2`.
+
+# Fields
+- `n_rows::Int64`, the number of rows of the compression matrix.
+- `n_cols::Int64`, the number of columns of the compression matrix.
+"""
+mutable struct MockMul3CompressorRecipe <: CompressorRecipe
+    n_rows::Int64
+    n_cols::Int64
+end
+
+"""
+    mul!(C, S::MockMul3CompressorRecipe, A)
+
+Left three-argument multiplication. Fills `C` with `1`.
+"""
+function mul!(C::AbstractArray, S::MockMul3CompressorRecipe, A::AbstractArray)
+    fill!(C, 1)
+end
+
+"""
+    mul!(C, A, S::MockMul3CompressorRecipe)
+
+Right three-argument multiplication. Fills `C` with `2`.
+"""
+function mul!(C::AbstractArray, A::AbstractArray, S::MockMul3CompressorRecipe)
+    fill!(C, 2)
 end
 
 end
