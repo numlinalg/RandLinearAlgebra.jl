@@ -1,5 +1,6 @@
 module KaczmarzTest
 include("../test_helpers/preamble.jl")
+using Logging
 
 # Define the test structures
 ##########################
@@ -888,7 +889,51 @@ end
             end
 
         end
-    
+
+    end
+
+    @testset "Kaczmarz: sub-solver inefficiency warning" begin
+        A = rand(n_rows, n_cols)
+        b = rand(n_rows)
+        x = zeros(n_cols)
+
+        # QR with a compression dimension below the number of columns is underdetermined
+        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols - 1)
+            solver = Kaczmarz(compressor = comp, sub_solver = QRSolver())
+            @test_logs (:warn, r"QRSolver.*inefficient") match_mode = :any complete_solver(
+                solver, x, A, b
+            )
+        end
+
+        # LQ with a compression dimension above the number of columns is overdetermined
+        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols + 2)
+            solver = Kaczmarz(compressor = comp, sub_solver = LQSolver())
+            @test_logs (:warn, r"LQSolver.*inefficient") match_mode = :any complete_solver(
+                solver, x, A, b
+            )
+        end
+
+        # A matched QR sub-solver (tall sketch) should not emit the inefficiency warning
+        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols + 2)
+            solver = Kaczmarz(compressor = comp, sub_solver = QRSolver())
+            logs, _ = Test.collect_test_logs() do
+                complete_solver(solver, x, A, b)
+            end
+            @test !any(
+                l -> l.level == Logging.Warn && occursin("inefficient", l.message), logs
+            )
+        end
+
+        # A matched LQ sub-solver (wide sketch) should not emit the inefficiency warning
+        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols - 1)
+            solver = Kaczmarz(compressor = comp, sub_solver = LQSolver())
+            logs, _ = Test.collect_test_logs() do
+                complete_solver(solver, x, A, b)
+            end
+            @test !any(
+                l -> l.level == Logging.Warn && occursin("inefficient", l.message), logs
+            )
+        end
     end
 
 end

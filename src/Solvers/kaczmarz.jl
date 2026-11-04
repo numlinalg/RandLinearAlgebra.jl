@@ -198,6 +198,20 @@ function complete_solver(
     # We assume the user is using compressors to only decrease dimension
     sample_size::Int64 = compressor.n_rows
     cols_a = size(A, 2)
+    # Advise the user when the built-in sub-solver is mismatched to the sketched shape.
+    # A tall sketch (sample_size >= cols_a) is overdetermined and is best solved with QR,
+    # while a wide sketch (sample_size < cols_a) is underdetermined and is best solved with
+    # the min-norm LQ. Custom sub-solvers are left untouched.
+    if ingredients.sub_solver isa LQSolver && sample_size > cols_a
+        @warn "LQSolver (min-norm) is inefficient when the compression dimension \
+        ($sample_size) exceeds the number of columns ($cols_a): the sketched system is \
+        overdetermined. Consider QRSolver()."
+    elseif ingredients.sub_solver isa QRSolver && sample_size < cols_a
+        @warn "QRSolver (least squares) is inefficient when the compression dimension \
+        ($sample_size) is below the number of columns ($cols_a): the sketched system is \
+        underdetermined. Consider LQSolver()."
+    end
+
     # because sampling recipe use subsets sparse matrices will be problematic
     if typeof(compressor) <: SamplingRecipe && typeof(A) <: SparseMatrixCSC
         compressed_mat = spzeros(eltype(A), sample_size, cols_a)
@@ -364,5 +378,98 @@ function rsolve!(
 
     end
 
-    return nothing 
+    return nothing
+end
+
+"""
+    SketchAndSolve <: Solver
+
+An implementation of the sketch-and-solve paradigm for linear systems and least squares
+    problems. It is a single iteration of a [`Kaczmarz`](@ref) solver: the coefficient
+    matrix and constant vector are compressed once and the resulting sketched system is
+    solved directly with the `sub_solver`.
+
+# Mathematical Description
+Let ``A`` be an ``m \\times n`` matrix and consider the least squares problem
+    ``\\min_x \\|Ax - b\\|_2^2``. Given a compression matrix ``S \\in \\mathbb{R}^{s\\times
+    m}``, the sketch-and-solve estimate is the solution of the sketched problem
+    ``
+    \\hat x = \\arg\\min_x \\|S(Ax - b)\\|_2^2 = \\arg\\min_x \\|SA x - Sb\\|_2^2.
+    ``
+    When ``s \\geq n`` the sketched system ``SA`` is overdetermined and ``\\hat x`` is
+    obtained from a least squares solve (`QRSolver`); when ``s < n`` it is underdetermined
+    and the minimum-norm solution (`LQSolver`) is appropriate. See
+    [martinsson2020randomized](@cite) for an overview of the approach.
+
+!!! info
+    `SketchAndSolve` reuses the [`Kaczmarz`](@ref) machinery with a single update, so
+    `complete_solver` emits the same warning as `Kaczmarz` when the `sub_solver` is
+    mismatched to the sketched dimensions (e.g. `QRSolver` with a compression dimension
+    below the number of columns).
+
+# Fields
+- `compressor::Compressor`, a technique for forming the compressed (sketched) linear system.
+- `error::SolverError`, a method for estimating the quality of the solution.
+- `sub_solver::SubSolver`, a technique to solve the sketched system.
+
+# Constructor
+    SketchAndSolve(;
+        compressor::Compressor = SparseSign(cardinality = Left()),
+        error::SolverError = FullResidual(),
+        sub_solver::SubSolver = QRSolver()
+    )
+## Keywords
+- `compressor::Compressor`, a technique for forming the compressed (sketched) linear system.
+- `error::SolverError`, a method for estimating the quality of the solution.
+- `sub_solver::SubSolver`, a technique to solve the sketched system. Defaults to `QRSolver`,
+    which is appropriate when the compression dimension is at least the number of columns.
+
+## Returns
+- A `SketchAndSolve` object.
+"""
+mutable struct SketchAndSolve <: Solver
+    compressor::Compressor
+    error::SolverError
+    sub_solver::SubSolver
+    function SketchAndSolve(compressor, error, sub_solver)
+        if typeof(compressor.cardinality) != Left
+            @warn "Compressor has cardinality `Right` but sketch-and-solve\
+            compresses  from the  `Left`."
+        end
+
+        new(compressor, error, sub_solver)
+    end
+
+end
+
+function SketchAndSolve(;
+        compressor::Compressor = SparseSign(cardinality = Left()),
+        error::SolverError = FullResidual(),
+        sub_solver::SubSolver = QRSolver()
+    )
+    return SketchAndSolve(
+        compressor,
+        error,
+        sub_solver
+    )
+end
+
+function complete_solver(
+    ingredients::SketchAndSolve,
+    x::AbstractVector,
+    A::AbstractMatrix,
+    b::AbstractVector
+)
+    # Sketch-and-solve is a single Kaczmarz iteration. The Kaczmarz `rsolve!` loop checks
+    # convergence before performing its update, so it carries out `max_it - 1` updates;
+    # `max_it = 2` therefore produces exactly one sketch-and-solve step. A completed
+    # `SketchAndSolve` is a `KaczmarzRecipe`, so it reuses `rsolve!(::KaczmarzRecipe, ...)`.
+    kaczmarz = Kaczmarz(
+        alpha = 1.0, 
+        compressor = ingredients.compressor,
+        log = BasicLogger(max_it = 2),
+        error = ingredients.error,
+        sub_solver = ingredients.sub_solver
+    )
+    return complete_solver(kaczmarz, x, A, b)
 end
