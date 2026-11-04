@@ -1,6 +1,5 @@
 module KaczmarzTest
 include("../test_helpers/preamble.jl")
-using Logging
 
 # Define the test structures
 ##########################
