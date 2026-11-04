@@ -888,7 +888,30 @@ end
             end
 
         end
-    
+
+    end
+
+    @testset "Kaczmarz: sub-solver inefficiency warning" begin
+        A = rand(n_rows, n_cols)
+        b = rand(n_rows)
+        x = zeros(n_cols)
+
+        # QR with a compression dimension below the number of columns is underdetermined
+        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols - 1)
+            solver = Kaczmarz(compressor = comp, sub_solver = QRSolver())
+            @test_logs (:warn, r"QRSolver.*inefficient") match_mode = :any complete_solver(
+                solver, x, A, b
+            )
+        end
+
+        # LQ with a compression dimension above the number of columns is overdetermined
+        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols + 2)
+            solver = Kaczmarz(compressor = comp, sub_solver = LQSolver())
+            @test_logs (:warn, r"LQSolver.*inefficient") match_mode = :any complete_solver(
+                solver, x, A, b
+            )
+        end
+
     end
 
 end
