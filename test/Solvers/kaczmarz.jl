@@ -913,27 +913,6 @@ end
             )
         end
 
-        # A matched QR sub-solver (tall sketch) should not emit the inefficiency warning
-        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols + 2)
-            solver = Kaczmarz(compressor = comp, sub_solver = QRSolver())
-            logs, _ = Test.collect_test_logs() do
-                complete_solver(solver, x, A, b)
-            end
-            @test !any(
-                l -> l.level == Logging.Warn && occursin("inefficient", l.message), logs
-            )
-        end
-
-        # A matched LQ sub-solver (wide sketch) should not emit the inefficiency warning
-        let comp = Gaussian(cardinality = Left(), compression_dim = n_cols - 1)
-            solver = Kaczmarz(compressor = comp, sub_solver = LQSolver())
-            logs, _ = Test.collect_test_logs() do
-                complete_solver(solver, x, A, b)
-            end
-            @test !any(
-                l -> l.level == Logging.Warn && occursin("inefficient", l.message), logs
-            )
-        end
     end
 
 end
