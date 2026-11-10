@@ -244,14 +244,38 @@ include("../../test_helpers/preamble.jl")
             @test_throws DimensionMismatch update_distribution!(mr, x2, A, b)
         end
 
-        # Parameterized cardinality field rejects assignment of wrong type
-        let A = randn(5, 3),
-            b = randn(5),
-            x = randn(3),
-            m = Agmon(cardinality = Left(), beta = 2),
-            mr = complete_distribution(m, x, A, b)
+        # complete_distribution rejects Undef, so the guard is reached only by a recipe
+        # constructed directly
+        let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
+            b = [1.0, 2.0, 3.0],
+            x = [0.5, 0.5],
+            T = AgmonRecipe{Undef,Matrix{Float64},Vector{Float64},Vector{Float64}},
+            mr = T(Undef(), false, 2, [1, 2, 3], zeros(Int, 2), A, b, x, nothing)
 
-            @test_throws MethodError mr.cardinality = Undef()
+            @test_throws ArgumentError update_distribution!(mr, x, A, b)
+        end
+
+        # The residual is stored as passed, even when its type differs from that of b
+        let A = rand(20, 5),
+            x = rand(5),
+            bfull = rand(40),
+            b = view(bfull, 1:20),
+            r = A * x - b,
+            mr = complete_distribution(Agmon(cardinality = Left(), beta = 3), x, A, b)
+
+            update_distribution!(mr, x, A, b; r = r)
+            @test mr.r === r
+
+            b32 = rand(Float32, 20)
+            r64 = A * x - b32
+            mr32 = complete_distribution(Agmon(cardinality = Left(), beta = 3), x, A, b32)
+            update_distribution!(mr32, x, A, b32; r = r64)
+            @test mr32.r === r64
+            @test eltype(mr32.r) == Float64
+            # Sampling with the stored residual still works
+            out = zeros(Int, 2)
+            sample_distribution!(out, mr32)
+            @test all(in(1:20), out)
         end
 
         # Test that passing explicit r stores it as-is
@@ -534,14 +558,16 @@ include("../../test_helpers/preamble.jl")
             @test_throws ArgumentError sample_distribution!(out, mr)
         end
 
-        # Parameterized cardinality field rejects assignment of wrong type
+        # complete_distribution rejects Undef, so the guards are reached only by a recipe
+        # constructed directly. Cover both the on-the-fly and stored-residual paths.
         let A = [1.0 0.0; 0.0 1.0; 1.0 1.0],
             b = [1.0, 2.0, 3.0],
             x = [0.5, 0.5],
-            m = Agmon(cardinality = Left(), beta = 2),
-            mr = complete_distribution(m, x, A, b)
+            T = AgmonRecipe{Undef,Matrix{Float64},Vector{Float64},Vector{Float64}},
+            mk = r -> T(Undef(), false, 2, [1, 2, 3], zeros(Int, 2), A, b, x, r)
 
-            @test_throws MethodError mr.cardinality = Undef()
+            @test_throws ArgumentError sample_distribution!(zeros(Int, 1), mk(nothing))
+            @test_throws ArgumentError sample_distribution!(zeros(Int, 1), mk(A * x - b))
         end
 
         # replace = true: sampling with replacement must still produce valid indices

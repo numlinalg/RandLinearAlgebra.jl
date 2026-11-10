@@ -88,8 +88,10 @@ The recipe containing all allocations and information for the Agmon distribution
 - `A::MA`: reference to the coefficient matrix.
 - `b::VB`: reference to the constant vector.
 - `x::VX`: reference to the current solution iterate (updated each iteration).
-- `r::Union{Nothing, VB}`: the residual vector ``Ax - b``. Starts as
-    `nothing`; set by `update_distribution!`. If `nothing` when `sample_distribution!`
+- `r::Union{Nothing, AbstractVector}`: the residual vector ``Ax - b``. Starts as
+    `nothing`; set by `update_distribution!`. It is a computed quantity, so its type is
+    not tied to that of `b` (e.g., `b` may be a view while `r` is a `Vector`, or the
+    element types may differ). It is stored as passed, without conversion. If `nothing` when `sample_distribution!`
     is called, residuals are computed on-the-fly for the sampled candidates only.
 
 !!! note "Determining Compression Subset"
@@ -126,7 +128,7 @@ mutable struct AgmonRecipe{
     A::MA
     b::VB
     x::VX
-    r::Union{Nothing,VB}
+    r::Union{Nothing,AbstractVector}
 end
 
 """
