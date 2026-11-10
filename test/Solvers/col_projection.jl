@@ -111,7 +111,7 @@ include("../test_helpers/preamble.jl")
     # Test Field Types 
     @test fieldtypes(ColumnProjectionRecipe) == (
         CompressorRecipe, LoggerRecipe, SolverErrorRecipe, SubSolverRecipe, 
-        Float64, AbstractArray, AbstractVector, AbstractVector, SubArray,
+        Float64, AbstractArray, AbstractVector, Vector{T} where T<:Number, SubArray,
         AbstractVector
     )
 end 
@@ -218,7 +218,7 @@ end
 ###################################
 module column_projection_recipe_view_inputs
 
-using Test, RandLinearAlgebra, LinearAlgebra
+include("../test_helpers/preamble.jl")
 
 @testset "ColumnProjectionRecipe complete_solver with views" begin
     m = 5
@@ -237,6 +237,46 @@ using Test, RandLinearAlgebra, LinearAlgebra
     @test typeof(recipe.compressed_mat) == Matrix{Float64}
     @test typeof(recipe.residual_vec) == Vector{Float64}
     @test typeof(recipe.update_vec) == Vector{Float64}
+end
+
+# A * S is dense even for sparse A, so the compressed matrix must be stored densely
+@testset "ColumnProjectionRecipe complete_solver with sparse A" begin
+    Random.seed!(11)
+    m, n = 200, 40
+    A = sprandn(m, n, 0.3)
+    x_true = randn(n)
+    b = A * x_true
+    solver = ColumnProjection(
+        compressor=SparseSign(compression_dim=8, cardinality=Right()),
+        log=BasicLogger(max_it=200, threshold=1e-8),
+    )
+
+    x = zeros(n)
+    recipe = complete_solver(solver, x, A, b)
+    @test typeof(recipe.compressed_mat) == Matrix{Float64}
+    rsolve!(recipe, x, A, b)
+    @test recipe.log.converged
+    @test norm(x - x_true) < 1e-5
+
+    # The compression step no longer allocates for a sparse A
+    mul!(recipe.compressed_mat, A, recipe.compressor)
+    @test (@allocated mul!(recipe.compressed_mat, A, recipe.compressor)) == 0
+end
+
+# update_vec is written by the sub-solver, so it follows A rather than x
+@testset "ColumnProjectionRecipe complete_solver with mixed element types" begin
+    Random.seed!(3)
+    A = rand(Float32, 40, 6)
+    x_true = rand(Float32, 6)
+    b = A * x_true
+    x = zeros(Float64, 6)
+    solver = ColumnProjection(log=BasicLogger(max_it=2000, threshold=1e-6))
+
+    recipe = complete_solver(solver, x, A, b)
+    @test eltype(recipe.update_vec) == Float32
+    @test recipe.solution_vec === x
+    rsolve!(recipe, x, A, b)
+    @test isapprox(x, x_true; rtol=1e-3)
 end
 
 end

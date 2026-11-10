@@ -146,11 +146,12 @@ A mutable structure containing all information relevant to the `ColumnProjection
     onto the compressed column space.
 - `alpha::Float64`, the over-relaxation parameter. It is multiplied by the update and can 
     affect convergence.
-- `compressed_mat::AbstractMatrix`, a matrix container for storing the compressed matrix. 
-    Will be set to be the largest possible block size.
+- `compressed_mat::M`, a dense matrix container for storing the compressed matrix. Will be
+    set to be the largest possible block size.
 - `solution_vec::AbstractVector`, a vector container for storing the current solution 
     to the linear system.
-- `update_vec::AbstractVector`, a vector container for storing the update to the solution.
+- `update_vec::Vector{T}`, a vector container for storing the update to the solution. It
+    is written by the sub-solver, so `T` is the element type of `compressed_mat`.
 - `mat_view::SubArray`, a container for storing a view of the compressed matrix container. 
     Using views here allows for variable block sizes.
 - `residual_vec::AbstractVector`, a vector container for storing the residual at each 
@@ -174,7 +175,7 @@ mutable struct ColumnProjectionRecipe{
     alpha::Float64
     compressed_mat::M
     solution_vec::SV
-    update_vec::V
+    update_vec::Vector{T}
     mat_view::MV
     residual_vec::V
 end
@@ -219,8 +220,10 @@ function complete_solver(
     sample_size = compressor.n_cols
 
 
-    # Allocate the information in the buffer using the types of A and b
-    compressed_mat = similar(A, rows_a, sample_size)
+    # A * S is dense even when A is sparse, so the compressed matrix is stored densely
+    # with the element type of A. The residual follows b (similar gives a Vector for a
+    # view of b).
+    compressed_mat = Matrix{eltype(A)}(undef, rows_a, sample_size)
     residual_vec = similar(b, rows_a)
 
     # Since sub_solver is applied to compressed matrices use here
@@ -231,7 +234,8 @@ function complete_solver(
 
     # update_vec is the solution to the subproblem and is used as
     # x_+ = x + S * update_vec 
-    update_vec = similar(x, sample_size)
+    # It is written by the sub-solver, so it follows the compressed matrix
+    update_vec = Vector{eltype(compressed_mat)}(undef, sample_size)
     
     return ColumnProjectionRecipe{
         eltype(compressed_mat),
