@@ -39,12 +39,10 @@ include("test_helpers/preamble.jl")
 
     @testset "Approximators" begin
         right = Gaussian(compression_dim=5, cardinality=Right())
-        @test nonconcrete_fields(
-            complete_approximator(RandSVD(compressor=right), A)
-        ) == Symbol[]
-        @test nonconcrete_fields(
-            complete_approximator(RangeFinder(compressor=right), A)
-        ) == Symbol[]
+        @test nonconcrete_fields(complete_approximator(RandSVD(compressor=right), A)) ==
+            Symbol[]
+        @test nonconcrete_fields(complete_approximator(RangeFinder(compressor=right), A)) ==
+            Symbol[]
     end
 
     @testset "Selectors" begin
