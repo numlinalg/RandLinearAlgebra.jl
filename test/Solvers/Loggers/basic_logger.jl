@@ -51,6 +51,14 @@ module basic_logger
                 ) BasicLogger(max_it, cr, threshold, stop)
             end
 
+            # The threshold must be a Float64 or a Tuple, through either constructor
+            @test_throws TypeError BasicLogger(max_it=10, threshold="oops")
+            @test_throws TypeError BasicLogger(max_it=10, threshold=nothing)
+            @test_throws TypeError BasicLogger(10, 1, "oops", threshold_stop)
+            @test BasicLogger(max_it=10, threshold=1e-6) isa BasicLogger{Float64}
+            @test BasicLogger(max_it=10, threshold=(1e-6, 2)) isa
+                BasicLogger{Tuple{Float64,Int64}}
+
             # Test key word defaults in constructor
             let 
         	    L1 = BasicLogger()

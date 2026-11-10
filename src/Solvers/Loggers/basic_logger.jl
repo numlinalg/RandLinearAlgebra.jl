@@ -1,5 +1,5 @@
 """
-    BasicLogger <: Logger
+    BasicLogger{TI<:Union{Float64,Tuple}} <: Logger
 
 This is a mutable struct that contains the `max_it` parameter and stores the error metric
     in a vector. Checks convergence of the solver based on the log information.
@@ -7,12 +7,13 @@ This is a mutable struct that contains the `max_it` parameter and stores the err
 # Fields
  - `max_it::Int64`, The maximum number of iterations for the solver. If not specified by the
     user, it is set to 3 times the number of rows in the matrix.
- - `threshold_info::TI`, The parameters used for stopping the algorithm.
+ - `threshold_info::TI`, The parameters used for stopping the algorithm. `TI` must be
+    `Float64` or a `Tuple`.
  - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is
     always recorded.)
  - `stopping_criterion::Function`, function that evaluates the stopping criterion.
 """
-struct BasicLogger{TI} <: Logger
+struct BasicLogger{TI<:Union{Float64,Tuple}} <: Logger
     max_it::Int64
     collection_rate::Int64
     threshold_info::TI
@@ -35,12 +36,12 @@ end
 BasicLogger(;
             max_it::Int64 = 0,
             collection_rate::Int64 = 1,
-            threshold = 0.0,
+            threshold::Union{Float64, Tuple} = 0.0,
             stopping_criterion::Function = threshold_stop,
            ) = BasicLogger(max_it, collection_rate, threshold, stopping_criterion)
 
 """
-    BasicLoggerRecipe <: LoggerRecipe
+    BasicLoggerRecipe{F<:Function,TI<:Union{Float64,Tuple}} <: LoggerRecipe
 
 This is a mutable struct that contains the `max_it` parameter and stores the error metric
     in a vector. Checks convergence of the solver based on the log information.
@@ -48,7 +49,8 @@ This is a mutable struct that contains the `max_it` parameter and stores the err
 # Fields
  - `max_it::Int64`, The maximum number of iterations for the solver.
  - `error::Float64`, The current error metric.
- - `threshold_info::TI`, The parameters used for stopping the algorithm.
+ - `threshold_info::TI`, The parameters used for stopping the algorithm. `TI` must be
+    `Float64` or a `Tuple`.
  - `iteration::Int64`, the current iteration of the solver.
  - `record_location::Int64`, the location in the history vector of the most recent entry.
  - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is
@@ -57,7 +59,7 @@ This is a mutable struct that contains the `max_it` parameter and stores the err
  - `StoppingCriterion::Function`, function that evaluates the stopping criterion.
  - `hist:AbstractVector`, vector that contains the history of the error metric.
 """
-mutable struct BasicLoggerRecipe{F<:Function,TI} <: LoggerRecipe
+mutable struct BasicLoggerRecipe{F<:Function,TI<:Union{Float64,Tuple}} <: LoggerRecipe
     max_it::Int64
     error::Float64
     threshold_info::TI
