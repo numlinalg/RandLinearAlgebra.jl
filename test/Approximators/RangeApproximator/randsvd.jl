@@ -506,6 +506,25 @@ end
         end
     end
 
+    @testset "RandSVD: ComplexF64 singular values are real" begin
+        let n_rows = 30,
+            n_cols = 12,
+            rank = 4,
+            A = randn(ComplexF64, n_rows, rank) * randn(ComplexF64, rank, n_cols),
+            compressor = Gaussian(
+                cardinality=Right(), compression_dim=rank + 2, type=ComplexF64
+            )
+
+            approx_rec = rapproximate(RandSVD(compressor=compressor), A)
+            @test eltype(approx_rec.U) == ComplexF64
+            @test eltype(approx_rec.S) == Float64
+            @test eltype(approx_rec.V) == ComplexF64
+            @test all(isconcretetype, fieldtypes(typeof(approx_rec)))
+            # A has exact rank 4, so the decomposition should reproduce it
+            @test approx_rec.U * Diagonal(approx_rec.S) * approx_rec.V' ≈ A
+        end
+    end
+
     @testset "RandSVD Recipe: mul!" begin
         n_rows = 10
         n_cols = 10

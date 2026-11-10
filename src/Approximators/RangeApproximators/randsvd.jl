@@ -167,7 +167,8 @@ function complete_approximator(approx::RandSVD, A::AbstractMatrix)
         approx.power_its,
         approx.orthogonalize, 
         Matrix{type}(undef, 2, 2),
-        Vector{type}(undef,2),
+        # Singular values are real even for complex input
+        Vector{real(type)}(undef, 2),
         Matrix{type}(undef, 2, 2),
         Matrix{type}(undef, c_cols, bsize) 
     )
