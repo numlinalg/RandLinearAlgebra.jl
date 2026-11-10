@@ -143,6 +143,7 @@ end
 # Shared LAPACK utilities for sub-solvers
 ###########################################
 import LinearAlgebra.LAPACK
+import LinearAlgebra: BlasFloat
 
 function _qt_char(::Type{<:Complex})
     return 'C'
