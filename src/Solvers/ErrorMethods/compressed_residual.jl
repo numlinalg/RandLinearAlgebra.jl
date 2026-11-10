@@ -9,13 +9,13 @@ A structure for the compressed residual, `Sb-SAx`.
 struct CompressedResidual <: SolverError end
 
 """
-    CompressedResidualRecipe <: ErrorRecipe
+    CompressedResidualRecipe{V<:AbstractVector, S<:SubArray} <: SolverErrorRecipe
 
 A structure containing the preallocated structures for the compressed residual, `Sb-SAx`.
 
 # Fields
-- `residual::AbstractVector`, a container for the compressed residual, `Sb-SAx`.
-- `residual_view::SubArray`, a view of the residual container to handle varying compression
+- `residual::V`, a container for the compressed residual, `Sb-SAx`.
+- `residual_view::S`, a view of the residual container to handle varying compression
     sizes.
 """
 mutable struct CompressedResidualRecipe{V<:AbstractVector, S<:SubArray} <: SolverErrorRecipe

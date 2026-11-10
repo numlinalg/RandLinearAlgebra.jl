@@ -11,14 +11,14 @@ A `SolverError` structure for monitoring the residual of the normal equations
 struct LSGradient <: SolverError end
 
 """
-    LSGradientRecipe <: SolverErrorRecipe
+    LSGradientRecipe{V<:AbstractVector} <: SolverErrorRecipe
 
 A `SolverErrorRecipe` structure for storing the residual of the normal equations 
     of a linear system (equivalently, the gradeint of the least squares problem),
     ``-A^\\intercal (b - Ax)``.
 
 # Fields
-- `gradient::AbstractVector`, ``-A^\\top (b - Ax)``.
+- `gradient::V`, ``-A^\\top (b - Ax)``.
 """
 mutable struct LSGradientRecipe{V<:AbstractVector} <: SolverErrorRecipe
     gradient::V

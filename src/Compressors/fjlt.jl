@@ -141,16 +141,16 @@ end
 The recipe containing all allocations and information for the FJLT compressor.
 
 # Fields
-- `cardinality::Cardinality`, the direction the compression matrix is intended to
+- `cardinality::C`, the direction the compression matrix is intended to
     be applied to a target matrix or operator. Values allowed are `Left()` or `Right()`.
 - `n_rows::Int64`, the number of rows of the compression matrix.
 - `n_cols::Int64`, the number of columns of the compression matrix.
-- `sparsity:Float64`, the sparsity, ``q``, of the sparse component, ``K``.
+- `sparsity::Float64`, the sparsity, ``q``, of the sparse component, ``K``.
 - `scale::Float64`, the factor to ensure the isopmorphism of the sketch.
-- `op::SparseMatrixCSC`, the sparse matrix ``K`` in the mathematical description.
+- `op::S`, the sparse matrix ``K`` in the mathematical description.
 - `signs::BitVector`, the vector of signs where `0` indicates negative one and `1` indicates
     positive one. 
-- `padding::AbstractMatrix`, the matrix containing the padding for the matrix being sketched.
+- `padding::M`, the matrix containing the padding for the matrix being sketched.
 - `fixed_pattern::Bool`, whether updates preserve the sparse matrix's nonzero locations.
 
 # Constructor

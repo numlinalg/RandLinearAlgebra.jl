@@ -111,7 +111,13 @@ RandSVD(;
 ) = RandSVD(compressor, power_its, orthogonalize, block_size)
 
 """
-    RandSVDRecipe
+    RandSVDRecipe{
+        CR<:CompressorRecipe,
+        MU<:AbstractArray,
+        VS<:AbstractVector,
+        MV<:AbstractArray,
+        MB<:AbstractArray
+    } <: RangeApproximatorRecipe
 
 A struct that contains the preallocated memory and completed compressor to form a
     RandSVD approximation to the matrix ``A``.
@@ -119,17 +125,17 @@ A struct that contains the preallocated memory and completed compressor to form 
 # Fields
 - `n_rows::Int64`, the number of rows in the approximation. 
 - `n_cols::Int64`, the number of columns in the approximation. 
-- `compressor::CompressorRecipe`, the compressor to be applied from the right to ``A``.
+- `compressor::CR`, the compressor to be applied from the right to ``A``.
 - `power_its::Int64`, the number of power iterations that should be performed.
 - `orthogonalize::Bool`, a boolean indicating whether the `power_its` should be performed 
     with orthogonalization.
-- `U::AbstractArray`, the orthogonal matrix that approximates the top `compressor_dim` 
+- `U::MU`, the orthogonal matrix that approximates the top `compressor_dim` 
     left singular vectors of ``A``.
-- `S::AbstractVector`, a vector containing the top `compressor_dim` singular values of 
-    ``A``.
-- `V::AbstractArray`, the orthogonal matrix that approximates the top `compressor_dim` 
+- `S::VS`, a vector containing the top `compressor_dim` singular values of ``A``. Its
+    element type is real, even for complex ``A``.
+- `V::MV`, the orthogonal matrix that approximates the top `compressor_dim` 
     right singular vectors of ``A``.
-- `buffer::AbstractArray`, the storage for matrix multiplication with this low-rank 
+- `buffer::MB`, the storage for matrix multiplication with this low-rank 
     approximation. Will have the `compression_dim` number of rows and `block_size`
     number of columns.
 """

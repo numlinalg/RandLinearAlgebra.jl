@@ -181,15 +181,16 @@ end
 The recipe containing all allocations and information for the SparseSign compressor.
 
 # Fields
-- `cardinality::Cardinality`, the direction the compression matrix is intended to
+- `cardinality::C`, the direction the compression matrix is intended to
 be applied to a target matrix or operator. Values allowed are `Left()` or `Right()`.
 - `n_rows::Int64`, the number of rows of the compression matrix.
 - `n_cols::Int64`, the number of columns of the compression matrix.
 - `nnz::Int64`, the number of non-zero entries in each row if `cardinality==Left` or the
 number of non-zero entries each column if `cardinality==Right`.
-- `scale::Vector{Number}`, the set of values of the non-zero entries of the Spares Sign
+- `scale::V`, the set of values of the non-zero entries of the Spares Sign
 compression matrix.
-- `op::SparseMatrixCSC`, the Spares Sign compression matrix.
+- `op::O`, the Spares Sign compression matrix, stored as a `SparseMatrixCSC` for `Left`
+cardinality and as the adjoint of a `SparseMatrixCSC` for `Right` cardinality.
 
 # Constructors
 

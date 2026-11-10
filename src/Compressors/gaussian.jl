@@ -70,12 +70,12 @@ function Gaussian(;
 end
 
 """
-    GaussianRecipe <: CompressorRecipe
+    GaussianRecipe{C<:Cardinality, T<:Number} <: CompressorRecipe
 
 The recipe containing all allocations and information for the Gaussian compressor.
 
 # Fields
-- `cardinality::C where C<:Cardinality`, the cardinality of the compressor. The
+- `cardinality::C`, the cardinality of the compressor. The
 value is either `Left()` or `Right()`.
 - `compression_dim::Int64`, the target compression dimension.
 - `n_rows::Int64`, the number of rows of the compression matrix.

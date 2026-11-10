@@ -104,7 +104,7 @@ end
     KaczmarzRecipe{
         T<:Number, 
         V<:AbstractVector,
-        M<:AbstractMatrix, 
+        M<:AbstractArray, 
         VV<:SubArray,
         MV<:SubArray,
         C<:CompressorRecipe, 
@@ -120,17 +120,17 @@ A mutable structure containing all information relevant to the Kaczmarz solver. 
     vector `b`.
 
 # Fields
-- `compressor::CompressorRecipe`, a technique for forming the compressed rowspace of the 
+- `compressor::C`, a technique for forming the compressed rowspace of the 
     linear system.
-- `log::LoggerRecipe`, a technique for logging the progress of the solver.
-- `error::SolverErrorRecipe`, a method for estimating the progress of the solver.
-- `sub_solver::SubSolverRecipe`, a technique to perform the projection of the solution onto
+- `log::L`, a technique for logging the progress of the solver.
+- `error::E`, a method for estimating the progress of the solver.
+- `sub_solver::B`, a technique to perform the projection of the solution onto
     the compressed rowspace.
 - `alpha::Float64`, the over-relaxation parameter. It is multiplied by the update and can 
     affect convergence.
-- `compressed_mat::AbstractMatrix`, a matrix container for storing the compressed matrix. 
+- `compressed_mat::M`, a matrix container for storing the compressed matrix. 
     Will be set to be the largest possible block size.
-- `compressed_vec::AbstractVector`, a vector container for storing the compressed constant
+- `compressed_vec::V`, a vector container for storing the compressed constant
     vector. Will be set to be the largest possible block size.
 - `solution_vec::SV`, a vector container for storing the solution to the linear
     system. It is the vector `x` passed by the user, so it may be a view or have a
@@ -138,9 +138,9 @@ A mutable structure containing all information relevant to the Kaczmarz solver. 
 - `update_vec::Vector{T}`, a vector container for storing the update to the linear
     system. It is written by the sub-solver, so its element type `T` matches that of the
     compressed matrix.
-- `mat_view::SubArray`, a container for storing a view of compressed matrix container. 
+- `mat_view::MV`, a container for storing a view of compressed matrix container. 
     Using views here allows for variable block sizes.
-- `vec_view::SubArray`, a container for storing a view of the compressed vector container.
+- `vec_view::VV`, a container for storing a view of the compressed vector container.
     Using views here allows for variable block sizes.
 """
 mutable struct KaczmarzRecipe{

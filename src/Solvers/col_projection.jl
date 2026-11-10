@@ -125,6 +125,7 @@ end
     ColumnProjectionRecipe{
         T<:Number, 
         V<:AbstractVector,
+        SV<:AbstractVector,
         M<:AbstractArray, 
         MV<:SubArray,
         C<:CompressorRecipe, 
@@ -138,23 +139,23 @@ A mutable structure containing all information relevant to the `ColumnProjection
     object.
 
 # Fields
-- `compressor::CompressorRecipe`, a technique for forming the compressed column space of the 
+- `compressor::C`, a technique for forming the compressed column space of the 
     linear system.
-- `log::LoggerRecipe`, a technique for logging the progress of the solver.
-- `error::SolverErrorRecipe`, a method for estimating the progress of the solver.
-- `sub_solver::SubSolverRecipe`, a technique to perform the projection of the solution 
+- `log::L`, a technique for logging the progress of the solver.
+- `error::E`, a method for estimating the progress of the solver.
+- `sub_solver::B`, a technique to perform the projection of the solution 
     onto the compressed column space.
 - `alpha::Float64`, the over-relaxation parameter. It is multiplied by the update and can 
     affect convergence.
 - `compressed_mat::M`, a dense matrix container for storing the compressed matrix. Will be
     set to be the largest possible block size.
-- `solution_vec::AbstractVector`, a vector container for storing the current solution 
+- `solution_vec::SV`, a vector container for storing the current solution 
     to the linear system.
 - `update_vec::Vector{T}`, a vector container for storing the update to the solution. It
     is written by the sub-solver, so `T` is the element type of `compressed_mat`.
-- `mat_view::SubArray`, a container for storing a view of the compressed matrix container. 
+- `mat_view::MV`, a container for storing a view of the compressed matrix container. 
     Using views here allows for variable block sizes.
-- `residual_vec::AbstractVector`, a vector container for storing the residual at each 
+- `residual_vec::V`, a vector container for storing the residual at each 
     iteration.
 """
 mutable struct ColumnProjectionRecipe{

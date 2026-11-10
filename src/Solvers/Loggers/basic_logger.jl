@@ -56,8 +56,8 @@ This is a mutable struct that contains the `max_it` parameter and stores the err
  - `collection_rate::Int64`, the rate that history is gathered. (Note: The last value is
     always recorded.)
  - `converged::Bool`, A boolean indicating whether the stopping criterion is satisfied.
- - `StoppingCriterion::Function`, function that evaluates the stopping criterion.
- - `hist:AbstractVector`, vector that contains the history of the error metric.
+ - `stopping_criterion::F`, function that evaluates the stopping criterion.
+ - `hist::Vector{Float64}`, vector that contains the history of the error metric.
 """
 mutable struct BasicLoggerRecipe{F<:Function,TI<:Union{Float64,Tuple}} <: LoggerRecipe
     max_it::Int64

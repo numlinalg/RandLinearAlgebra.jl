@@ -90,7 +90,7 @@ function CountSketch(;
 end
 
 """
-    CountSketchRecipe <: CompressorRecipe
+    CountSketchRecipe{C<:Cardinality, S<:SparseMatrixCSC} <: CompressorRecipe
 
 The recipe containing all allocations and information for the CountSketch compressor.
 

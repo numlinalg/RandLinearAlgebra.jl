@@ -71,7 +71,12 @@ function Agmon(; cardinality::Cardinality = Undef(), replace::Bool = false, beta
 end
 
 """
-    AgmonRecipe <: DistributionRecipe
+    AgmonRecipe{
+        C<:Cardinality,
+        MA<:AbstractMatrix,
+        VB<:AbstractVector,
+        VX<:AbstractVector
+    } <: DistributionRecipe
 
 The recipe containing all allocations and information for the Agmon distribution.
 
@@ -91,8 +96,9 @@ The recipe containing all allocations and information for the Agmon distribution
 - `r::Union{Nothing, AbstractVector}`: the residual vector ``Ax - b``. Starts as
     `nothing`; set by `update_distribution!`. It is a computed quantity, so its type is
     not tied to that of `b` (e.g., `b` may be a view while `r` is a `Vector`, or the
-    element types may differ). It is stored as passed, without conversion. If `nothing` when `sample_distribution!`
-    is called, residuals are computed on-the-fly for the sampled candidates only.
+    element types may differ). It is stored as passed, without conversion. If `nothing`
+    when `sample_distribution!` is called, residuals are computed on-the-fly for the
+    sampled candidates only.
 
 !!! note "Determining Compression Subset"
     In general, the ``β`` candidates are selected uniformly with or without replacement
