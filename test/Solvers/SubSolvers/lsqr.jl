@@ -91,7 +91,8 @@ Base.eltype(A::GaussianRecipe) = eltype(A.op)
         # requests a buffer of length `m`. Contrasting the two return values confirms the
         # `NoPreconditioner` method is the one selected.
         for m in (0, 1, 12)
-            @test RandLinearAlgebra.preconditioner_buffer_size(NoPreconditioner(), m) == 0
+            np = Ref{Any}(NoPreconditioner())[]
+            @test RandLinearAlgebra.preconditioner_buffer_size(np, m) == 0
             @test RandLinearAlgebra.preconditioner_buffer_size(Diagonal(ones(m)), m) == m
         end
 
