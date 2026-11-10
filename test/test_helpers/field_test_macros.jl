@@ -130,5 +130,22 @@ macro test_range_approximator(type)
     return expr
 end
 
+"""
+    nonconcrete_fields(recipe; exclude::Tuple = ())
+
+Return the names of the fields of `typeof(recipe)` whose types are not concrete, ignoring
+the fields listed in `exclude`. Concreteness can only be checked on an instance, since the
+`UnionAll` recipe type has free type parameters. Use as
+`@test nonconcrete_fields(recipe) == Symbol[]`, so that a failure lists the offending fields.
+"""
+function nonconcrete_fields(recipe; exclude::Tuple=())
+    T = typeof(recipe)
+    return Symbol[
+        f for (f, t) in zip(fieldnames(T), fieldtypes(T))
+        if !(f in exclude) && !isconcretetype(t)
+    ]
+end
+
 export @test_projection_solver, @test_compressor, @test_logger, @test_range_approximator
+export nonconcrete_fields
 end

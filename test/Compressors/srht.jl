@@ -620,7 +620,7 @@ Random.seed!(1223)
         C_left = zeros(size(recipe_left, 1), n)
         mul!(C_left, recipe_left, A, 1.0, 0.0)
         allocs_left = @allocated mul!(C_left, recipe_left, A, 1.0, 0.0)
-        @test allocs_left < 1024
+        @test allocs_left == 0
 
         # Right cardinality: A * S
         comp_right = SRHT(cardinality=Right(), compression_dim=k, block_size=64)
@@ -629,7 +629,7 @@ Random.seed!(1223)
         C_right = zeros(n, size(recipe_right, 2))
         mul!(C_right, A, recipe_right, 1.0, 0.0)
         allocs_right = @allocated mul!(C_right, A, recipe_right, 1.0, 0.0)
-        @test allocs_right < 1024
+        @test allocs_right == 0
     end
 
 end
