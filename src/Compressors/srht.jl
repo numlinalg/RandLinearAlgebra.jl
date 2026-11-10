@@ -88,25 +88,26 @@ function SRHT(;
 end
 
 """
-    SRHTRecipe{C<:Cardinality, M<:AbstractMatrix} <: CompressorRecipe
+    SRHTRecipe{C<:Cardinality, M<:AbstractMatrix, V<:AbstractVector} <: CompressorRecipe
 
 The recipe containing all allocations and information for the SRHT compressor.
 
 # Fields
-- `cardinality::Cardinality`, the direction the compression matrix is intended to
+- `cardinality::C`, the direction the compression matrix is intended to
     be applied to a target matrix or operator. Values allowed are `Left()` or `Right()`.
 - `n_rows::Int64`, the number of rows of the compression matrix.
 - `n_cols::Int64`, the number of columns of the compression matrix.
 - `scale::Float64`, the factor to ensure the isopmorphism of the sketch.
 - `op::Vector{Int64}`, the vector of indices to be subsampled.
 - `signs::BitVector`, the vector of signs where `0` indicates negative one and `1` indicates
-    positive one. 
-- `padding::AbstractMatrix`, the matrix containing the padding for the matrix being 
-    sketched.
-- `extraction::Matrix{Float64}`, a preallocated buffer for extracting the sampled rows or
-    columns after the Hadamard transform.
-- `sign_vec::Vector{Float64}`, the numeric ``+1/-1`` representation of `signs`, used for
-    the post-Hadamard sign scaling without allocating a temporary vector.
+    positive one.
+- `padding::M`, the matrix containing the padding for the matrix being sketched. Its
+    element type is the compressor's `type`.
+- `extraction::M`, a preallocated buffer for extracting the sampled rows or columns after
+    the Hadamard transform. It has the same type as `padding`.
+- `sign_vec::V`, the numeric ``+1/-1`` representation of `signs`, used for the
+    post-Hadamard sign scaling without allocating a temporary vector. Its element type is
+    `real(type)`.
 
 # Constructor
     SRHTRecipe(
@@ -126,7 +127,7 @@ The recipe containing all allocations and information for the SRHT compressor.
 - `A::AbstractMatrix`, the matrix being compressed.
 - `type::Type{<:Number}`, the type of elements in the compressor.
 """
-mutable struct SRHTRecipe{C<:Cardinality, M<:AbstractMatrix} <: CompressorRecipe
+mutable struct SRHTRecipe{C<:Cardinality, M<:AbstractMatrix, V<:AbstractVector} <: CompressorRecipe
     cardinality::C
     n_rows::Int64
     n_cols::Int64
@@ -134,8 +135,8 @@ mutable struct SRHTRecipe{C<:Cardinality, M<:AbstractMatrix} <: CompressorRecipe
     op::Vector{Int64}
     signs::BitVector
     padding::M
-    extraction::Matrix{Float64}
-    sign_vec::Vector{Float64}
+    extraction::M
+    sign_vec::V
 end
 
 function SRHTRecipe(
@@ -156,13 +157,17 @@ function SRHTRecipe(
     signs = bitrand(padded_size)
     idx = sample(1:padded_size, compression_dim, replace = false)
     scaling = type(1 / sqrt(compression_dim))
-    sign_vec = Vector{Float64}(undef, padded_size)
+    # The signs only take values +1/-1, so a real element type suffices even for complex
+    # compressors
+    R = real(type)
+    sign_vec = Vector{R}(undef, padded_size)
     @inbounds for i in eachindex(signs)
-        sign_vec[i] = ifelse(signs[i], 1.0, -1.0)
+        sign_vec[i] = ifelse(signs[i], one(R), -one(R))
     end
 
-    extraction = zeros(Float64, compression_dim, block_size)
-    return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
+    # The extraction buffer holds rows of the padding matrix, so it must share its type
+    extraction = zeros(type, compression_dim, block_size)
+    return SRHTRecipe{typeof(cardinality), typeof(padded_matrix), typeof(sign_vec)}(
         cardinality,
         n_rows,
         n_cols,
@@ -193,13 +198,17 @@ function SRHTRecipe(
     signs = bitrand(padded_size)
     idx = sample(1:padded_size, compression_dim, replace = false)
     scaling = type(1 / sqrt(compression_dim))
-    sign_vec = Vector{Float64}(undef, padded_size)
+    # The signs only take values +1/-1, so a real element type suffices even for complex
+    # compressors
+    R = real(type)
+    sign_vec = Vector{R}(undef, padded_size)
     @inbounds for i in eachindex(signs)
-        sign_vec[i] = ifelse(signs[i], 1.0, -1.0)
+        sign_vec[i] = ifelse(signs[i], one(R), -one(R))
     end
 
-    extraction = zeros(Float64, block_size, compression_dim)
-    return SRHTRecipe{typeof(cardinality), typeof(padded_matrix)}(
+    # The extraction buffer holds columns of the padding matrix, so it must share its type
+    extraction = zeros(type, block_size, compression_dim)
+    return SRHTRecipe{typeof(cardinality), typeof(padded_matrix), typeof(sign_vec)}(
         cardinality,
         n_rows,
         n_cols,
@@ -228,8 +237,9 @@ function update_compressor!(S::SRHTRecipe{Left, <:AbstractMatrix})
     padded_size = size(S.padding, 1)
     sample!(1:padded_size, S.op, replace = false)
     rand!(S.signs)
+    R = eltype(S.sign_vec)
     @inbounds for i in eachindex(S.signs)
-        S.sign_vec[i] = ifelse(S.signs[i], 1.0, -1.0)
+        S.sign_vec[i] = ifelse(S.signs[i], one(R), -one(R))
     end
     return nothing
 end
@@ -238,8 +248,9 @@ function update_compressor!(S::SRHTRecipe{Right, <:AbstractMatrix})
     padded_size = size(S.padding, 2)
     sample!(1:padded_size, S.op, replace = false)
     rand!(S.signs)
+    R = eltype(S.sign_vec)
     @inbounds for i in eachindex(S.signs)
-        S.sign_vec[i] = ifelse(S.signs[i], 1.0, -1.0)
+        S.sign_vec[i] = ifelse(S.signs[i], one(R), -one(R))
     end
     return nothing
 end

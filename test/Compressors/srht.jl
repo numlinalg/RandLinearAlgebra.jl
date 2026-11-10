@@ -57,7 +57,7 @@ Random.seed!(1223)
         )
         @test fieldtypes(SRHTRecipe) == (
             Cardinality, Int64, Int64, Float64, Vector{Int64}, BitVector, AbstractMatrix,
-            Matrix{Float64}, Vector{Float64}
+            AbstractMatrix, AbstractVector
         )        
 
         # test the constructors
@@ -73,7 +73,8 @@ Random.seed!(1223)
             recipe = SRHTRecipe(comp_dim, block_size, card, A, type)
             @test typeof(recipe) == SRHTRecipe{
                 typeof(card), 
-                Matrix{type}
+                Matrix{type},
+                Vector{type}
             }
             @test recipe.cardinality == Left()
             @test recipe.n_rows == comp_dim
@@ -101,7 +102,8 @@ Random.seed!(1223)
             recipe = SRHTRecipe(comp_dim, block_size, card, A, type)
             @test typeof(recipe) == SRHTRecipe{
                 typeof(card), 
-                Matrix{type}
+                Matrix{type},
+                Vector{type}
             }
             @test recipe.cardinality == Left()
             @test recipe.n_rows == comp_dim
@@ -128,7 +130,8 @@ Random.seed!(1223)
             recipe = SRHTRecipe(comp_dim, block_size, card, A, type)
             @test typeof(recipe) == SRHTRecipe{
                 typeof(card), 
-                Matrix{type}
+                Matrix{type},
+                Vector{type}
             }
             @test recipe.cardinality == Right()
             @test recipe.n_rows == n_cols
@@ -156,7 +159,8 @@ Random.seed!(1223)
             recipe = SRHTRecipe(comp_dim, block_size, card, A, type)
             @test typeof(recipe) == SRHTRecipe{
                 typeof(card), 
-                Matrix{type}
+                Matrix{type},
+                Vector{type}
             }
             @test recipe.cardinality == Right()
             @test recipe.n_rows == n_cols 
@@ -240,6 +244,9 @@ Random.seed!(1223)
             @test compressor_recipe.n_cols == 10 
             @test compressor_recipe.op != oldmat
             @test compressor_recipe.signs != oldsigns
+            # sign_vec must be refreshed to match the resampled signs
+            @test compressor_recipe.sign_vec == ifelse.(compressor_recipe.signs, 1, -1)
+            @test eltype(compressor_recipe.sign_vec) == type
         end
 
         # test with right compressor
@@ -263,6 +270,9 @@ Random.seed!(1223)
             @test compressor_recipe.n_cols == c_dim
             @test compressor_recipe.op != oldmat
             @test compressor_recipe.signs != oldsigns
+            # sign_vec must be refreshed to match the resampled signs
+            @test compressor_recipe.sign_vec == ifelse.(compressor_recipe.signs, 1, -1)
+            @test eltype(compressor_recipe.sign_vec) == type
         end
 
     end
@@ -527,6 +537,74 @@ Random.seed!(1223)
             @test Sy ≈ Syc + 2 * pad_res[S.op]
         end
 
+    end
+
+    # The workspace buffers must follow the compressor's `type`: `extraction` holds entries
+    # of `padding`, and `sign_vec` only needs the real counterpart of `type`
+    @testset "SRHT: Element Types" begin
+        # n_rows = 20 pads to 32, and n_cols = 13 with block_size = 3 exercises the
+        # remainder block
+        for type in (ComplexF64, Float32)
+            let n_rows = 20,
+                pad_dim = 32,
+                n_cols = 13,
+                comp_dim = 4,
+                block_size = 3,
+                R = real(type)
+
+                H = hadamard(pad_dim)
+
+                # Left cardinality: S * A
+                A = rand(type, n_rows, n_cols)
+                S = complete_compressor(
+                    SRHT(
+                        cardinality=Left(),
+                        compression_dim=comp_dim,
+                        block_size=block_size,
+                        type=type,
+                    ),
+                    A,
+                )
+                @test eltype(S.padding) == type
+                @test typeof(S.extraction) == Matrix{type}
+                @test typeof(S.sign_vec) == Vector{R}
+                @test all(isconcretetype, fieldtypes(typeof(S)))
+
+                SA = rand(type, comp_dim, n_cols)
+                SAc = copy(SA)
+                mul!(SA, S, A, 2.0, 1.0)
+                pad_mat = zeros(type, pad_dim, n_cols)
+                pad_mat[1:n_rows, :] = A
+                ref = H * (ifelse.(S.signs, 1, -1) .* pad_mat) * S.scale
+                @test SA ≈ SAc + 2 * ref[S.op, :]
+                @test eltype(S * A) == type
+
+                # Right cardinality: A * S
+                A = rand(type, n_cols, n_rows)
+                S = complete_compressor(
+                    SRHT(
+                        cardinality=Right(),
+                        compression_dim=comp_dim,
+                        block_size=block_size,
+                        type=type,
+                    ),
+                    A,
+                )
+                @test eltype(S.padding) == type
+                @test typeof(S.extraction) == Matrix{type}
+                @test typeof(S.sign_vec) == Vector{R}
+                @test all(isconcretetype, fieldtypes(typeof(S)))
+
+                AS = rand(type, n_cols, comp_dim)
+                ASc = copy(AS)
+                mul!(AS, A, S, 2.0, 1.0)
+                pad_mat = zeros(type, n_cols, pad_dim)
+                pad_mat[:, 1:n_rows] = A
+                ref = pad_mat * Diagonal(ifelse.(S.signs, 1, -1)) * H * S.scale
+                @test AS ≈ ASc + 2 * ref[:, S.op]
+                @test eltype(A * S) == type
+            end
+        end
     end
 
     @testset "SRHT: mul! allocation" begin
