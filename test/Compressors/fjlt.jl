@@ -621,6 +621,73 @@ Random.seed!(2131)
 
     end
 
+    # FixedPatternFJLT returns an FJLTRecipe, so it shares the mul! methods with FJLT and
+    # only update_compressor! differs. Check both cardinalities after an update, so that
+    # mul! uses the resampled values in the preserved pattern.
+    @testset "FixedPatternFJLT: Update and Multiplication" begin
+        n, n_other, comp_dim, block_size = 10, 7, 4, 3
+        pad_dim = 16
+        H = hadamard(pad_dim)
+
+        # Right cardinality: pattern preserved and allocation-free updates
+        let A = rand(n_other, n),
+            S = complete_compressor(
+                FixedPatternFJLT(;
+                    cardinality=Right(),
+                    compression_dim=comp_dim,
+                    block_size=block_size,
+                    sparsity=0.5,
+                ),
+                A,
+            )
+
+            @test S.fixed_pattern
+            update_compressor!(S)
+            old_op = S.op
+            old_colptr = copy(S.op.colptr)
+            old_rowval = copy(S.op.rowval)
+            old_values = copy(nonzeros(S.op))
+            old_signs = copy(S.signs)
+            @test (@allocated update_compressor!(S)) == 0
+            @test S.op === old_op
+            @test S.op.colptr == old_colptr
+            @test S.op.rowval == old_rowval
+            @test nonzeros(S.op) != old_values
+            @test S.signs != old_signs
+
+            # A * S through mul!
+            AS = rand(n_other, comp_dim)
+            ASc = copy(AS)
+            mul!(AS, A, S, 2.0, 1.0)
+            pad_mat = zeros(n_other, pad_dim)
+            pad_mat[:, 1:n] = A
+            ref = pad_mat * Diagonal(ifelse.(S.signs, 1, -1)) * H * S.op * S.scale
+            @test AS ≈ ASc + 2 * ref
+        end
+
+        # Left cardinality: S * A through mul! after an update
+        let A = rand(n, n_other),
+            S = complete_compressor(
+                FixedPatternFJLT(;
+                    cardinality=Left(),
+                    compression_dim=comp_dim,
+                    block_size=block_size,
+                    sparsity=0.5,
+                ),
+                A,
+            )
+
+            update_compressor!(S)
+            SA = rand(comp_dim, n_other)
+            SAc = copy(SA)
+            mul!(SA, S, A, 2.0, 1.0)
+            pad_mat = zeros(pad_dim, n_other)
+            pad_mat[1:n, :] = A
+            ref = S.op * (H * (ifelse.(S.signs, 1, -1) .* pad_mat)) * S.scale
+            @test SA ≈ SAc + 2 * ref
+        end
+    end
+
 end
 
 end

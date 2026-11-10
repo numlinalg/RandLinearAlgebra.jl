@@ -1,3 +1,20 @@
+# Validate the arguments shared by `FJLT` and `FixedPatternFJLT`. Throws an `ArgumentError`
+# if `compression_dim` is non-positive, if `sparsity` is not in [0, 1], if `block_size` is
+# non-positive, or if `cardinality` is `Undef()`.
+function _check_fjlt_args(cardinality, compression_dim, block_size, sparsity)
+    if compression_dim <= 0
+        throw(ArgumentError("Field `compression_dim` must be positive."))
+    elseif (sparsity < 0 || sparsity > 1)
+        throw(ArgumentError("Field `sparsity` must be between 0 and 1."))
+    elseif block_size <= 0
+        throw(ArgumentError("Field `block_size` must be positive."))
+    elseif typeof(cardinality) == Undef
+        throw(ArgumentError("Cardinality must be of type `Left` or `Right`."))
+    end
+
+    return nothing
+end
+
 """
     FJLT <: Compressor
 
@@ -68,20 +85,8 @@ struct FJLT <: Compressor
     block_size::Int64
     sparsity::Float64
     type::Type{<:Number}
-    # perform checks on the number of non-zeros
     function FJLT(cardinality, compression_dim, block_size, sparsity, type)
-        # the compression dimension must be positive and larger than the number of 
-        # nonzeros
-        if compression_dim <= 0
-            throw(ArgumentError("Field `compression_dim` must be positive."))
-        elseif (sparsity < 0 || sparsity > 1)
-            throw(ArgumentError("Field `sparsity` must be between 0 and 1."))
-        elseif block_size <= 0
-            throw(ArgumentError("Field `block_size` must be positive."))
-        elseif typeof(cardinality) == Undef
-            throw(ArgumentError("Cardinality must be of type `Left` or `Right`."))
-        end
-
+        _check_fjlt_args(cardinality, compression_dim, block_size, sparsity)
         return new(cardinality, compression_dim, block_size, sparsity, type)
     end
 
@@ -115,7 +120,7 @@ struct FixedPatternFJLT <: Compressor
     sparsity::Float64
     type::Type{<:Number}
     function FixedPatternFJLT(cardinality, compression_dim, block_size, sparsity, type)
-        FJLT(cardinality, compression_dim, block_size, sparsity, type)
+        _check_fjlt_args(cardinality, compression_dim, block_size, sparsity)
         return new(cardinality, compression_dim, block_size, sparsity, type)
     end
 end
