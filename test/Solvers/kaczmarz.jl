@@ -254,7 +254,7 @@ end
             Float64, 
             AbstractArray, 
             AbstractVector, 
-            Vector{T} where T<:Number, 
+            AbstractVector, 
             Vector{T} where T<:Number,
             SubArray, 
             SubArray,
@@ -357,7 +357,8 @@ end
                 Main.KaczmarzTest.KTestCompressorRecipe, 
                 Main.KaczmarzTest.KTestLogRecipe, 
                 Main.KaczmarzTest.KTestErrorRecipe, 
-                Main.KaczmarzTest.KTestSubSolverRecipe
+                Main.KaczmarzTest.KTestSubSolverRecipe,
+                Vector{Float64}
             }
             @test typeof(solver_rec.compressor) == KTestCompressorRecipe
             @test typeof(solver_rec.log) == KTestLogRecipe
@@ -888,7 +889,40 @@ end
             end
 
         end
-    
+
+    end
+
+    # The solution is written into the caller's `x`, so `x` must be stored as given even
+    # when it is a view or its element type differs from that of `A` and `b`
+    @testset "Kaczmarz: views and mixed element types" begin
+        Random.seed!(7)
+        n_rows, n_cols = 40, 6
+        A = rand(n_rows, n_cols)
+        x_true = rand(n_cols)
+        bfull = zeros(2 * n_rows)
+        bfull[1:n_rows] = A * x_true
+        b = view(bfull, 1:n_rows)
+        solver = Kaczmarz(log=BasicLogger(max_it=2000, threshold=1e-10))
+
+        # views for both x and b
+        xfull = zeros(2 * n_cols)
+        x = view(xfull, 1:n_cols)
+        solver_rec = complete_solver(solver, x, A, b)
+        @test typeof(solver_rec.compressed_vec) == Vector{Float64}
+        @test solver_rec.solution_vec === x
+        rsolve!(solver_rec, x, A, b)
+        @test x ≈ x_true
+        @test all(iszero, view(xfull, (n_cols + 1):(2 * n_cols)))
+
+        # Float32 system with a Float64 solution vector
+        A32 = Float32.(A)
+        b32 = A32 * Float32.(x_true)
+        x64 = zeros(n_cols)
+        solver_rec = complete_solver(solver, x64, A32, b32)
+        @test solver_rec.solution_vec === x64
+        @test eltype(solver_rec.update_vec) == Float32
+        rsolve!(solver_rec, x64, A32, b32)
+        @test isapprox(x64, x_true; rtol=1e-4)
     end
 
 end

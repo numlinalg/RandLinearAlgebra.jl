@@ -110,7 +110,8 @@ end
         C<:CompressorRecipe, 
         L<:LoggerRecipe,
         E<:SolverErrorRecipe, 
-        B<:SubSolverRecipe
+        B<:SubSolverRecipe,
+        SV<:AbstractVector
     } <: SolverRecipe
 
 A mutable structure containing all information relevant to the Kaczmarz solver. It is
@@ -131,10 +132,12 @@ A mutable structure containing all information relevant to the Kaczmarz solver. 
     Will be set to be the largest possible block size.
 - `compressed_vec::AbstractVector`, a vector container for storing the compressed constant
     vector. Will be set to be the largest possible block size.
-- `solution_vec::AbstractVector`, a vector container for storing the solution to the linear
-    system.
-- `update_vec::AbstractVector`, a vector container for storing the update to the linear 
-    system.
+- `solution_vec::SV`, a vector container for storing the solution to the linear
+    system. It is the vector `x` passed by the user, so it may be a view or have a
+    different element type than `A`.
+- `update_vec::Vector{T}`, a vector container for storing the update to the linear
+    system. It is written by the sub-solver, so its element type `T` matches that of the
+    compressed matrix.
 - `mat_view::SubArray`, a container for storing a view of compressed matrix container. 
     Using views here allows for variable block sizes.
 - `vec_view::SubArray`, a container for storing a view of the compressed vector container.
@@ -149,7 +152,8 @@ mutable struct KaczmarzRecipe{
     C<:CompressorRecipe, 
     L<:LoggerRecipe,
     E<:SolverErrorRecipe, 
-    B<:SubSolverRecipe
+    B<:SubSolverRecipe,
+    SV<:AbstractVector
 } <: SolverRecipe
     compressor::C
     log::L
@@ -158,7 +162,7 @@ mutable struct KaczmarzRecipe{
     alpha::Float64
     compressed_mat::M
     compressed_vec::V
-    solution_vec::Vector{T}
+    solution_vec::SV
     update_vec::Vector{T}
     mat_view::MV
     vec_view::VV
@@ -219,17 +223,19 @@ function complete_solver(
     mat_view = view(compressed_mat, 1:sample_size, :)
     vec_view = view(compressed_vec, 1:sample_size)
     solution_vec = x
-    update_vec = zeros(eltype(x), cols_a)
+    # update_vec is written by the sub-solver, so it follows the compressed system
+    update_vec = zeros(eltype(compressed_mat), cols_a)
     return KaczmarzRecipe{
-        eltype(A), 
-        typeof(b), 
+        eltype(update_vec), 
+        typeof(compressed_vec), 
         typeof(compressed_mat), 
         typeof(vec_view),
         typeof(mat_view),
         typeof(compressor),
         typeof(logger),
         typeof(error),
-        typeof(sub_solver)
+        typeof(sub_solver),
+        typeof(solution_vec)
     }(
         compressor, 
         logger, 
