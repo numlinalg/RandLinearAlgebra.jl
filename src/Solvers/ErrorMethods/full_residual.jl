@@ -9,12 +9,12 @@ A `SolverError` structure for computing the norm of the full residual, ``b-Ax``.
 struct FullResidual <: SolverError end
 
 """
-    FullResidual <: SolverErrorRecipe
+    FullResidualRecipe{V<:AbstractVector} <: SolverErrorRecipe
 
-A `SolverErrorResidual` structure for computing the norm of the full residual, ``b-Ax``
+A `SolverErrorRecipe` structure for computing the norm of the full residual, ``b-Ax``.
 
 # Fields
-- `residual::AbstractVector`, a container for the residual ``b-Ax``.
+- `residual::V`, a container for the residual ``b-Ax``.
 """
 mutable struct FullResidualRecipe{V<:AbstractVector} <: SolverErrorRecipe
     residual::V
@@ -26,7 +26,9 @@ function complete_error(
     A::AbstractMatrix, 
     b::AbstractVector
 )
-    return FullResidualRecipe{typeof(b)}(zeros(size(b,1)))
+    # Type the recipe by the allocated buffer, not by `b`, which may be a view
+    residual = zeros(eltype(b), size(b, 1))
+    return FullResidualRecipe{typeof(residual)}(residual)
 end
 
 function compute_error(

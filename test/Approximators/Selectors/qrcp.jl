@@ -39,7 +39,7 @@ include("../../test_helpers/preamble.jl")
             sel = QRCP()
 
             sel_rec = complete_selector(sel, A)
-            @test typeof(sel_rec) == QRCPRecipe
+            @test typeof(sel_rec) <: QRCPRecipe
             @test typeof(sel_rec.compressor) == IdentityRecipe{Left}
             @test typeof(sel_rec.SA) <: AbstractMatrix
             @test size(sel_rec.SA) == (n_rows, n_cols)
@@ -53,8 +53,8 @@ include("../../test_helpers/preamble.jl")
             sel = QRCP(compressor=Gaussian(compression_dim = comp_dim))
 
             sel_rec = complete_selector(sel, A)
-            @test typeof(sel_rec) == QRCPRecipe
-            @test typeof(sel_rec.compressor) == GaussianRecipe{Left} 
+            @test typeof(sel_rec) <: QRCPRecipe
+            @test typeof(sel_rec.compressor) <: GaussianRecipe{Left}
             @test typeof(sel_rec.SA) <: AbstractMatrix
             @test size(sel_rec.SA) == (comp_dim, n_cols)
         end
@@ -67,7 +67,7 @@ include("../../test_helpers/preamble.jl")
             A = zeros(n_rows, n_cols),
             sel_rec = complete_selector(QRCP(compressor = Gaussian()), A)
             update_selector!(sel_rec)
-            @test typeof(sel_rec) == QRCPRecipe 
+            @test typeof(sel_rec) <: QRCPRecipe 
         end
 
     end

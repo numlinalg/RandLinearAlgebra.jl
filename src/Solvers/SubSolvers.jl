@@ -140,6 +140,20 @@ function ldiv!(x::AbstractVector, solver::SubSolverRecipe, b::AbstractVector)
 end
 
 ###########################################
+# Shared LAPACK utilities for sub-solvers
+###########################################
+import LinearAlgebra.LAPACK
+import LinearAlgebra: BlasFloat
+
+function _qt_char(::Type{<:Complex})
+    return 'C'
+end
+
+function _qt_char(::Type)
+    return 'T'
+end
+
+###########################################
 # Include SubSolver files
 ###########################################
 include("SubSolvers/lq.jl")

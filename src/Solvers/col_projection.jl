@@ -125,6 +125,7 @@ end
     ColumnProjectionRecipe{
         T<:Number, 
         V<:AbstractVector,
+        SV<:AbstractVector,
         M<:AbstractArray, 
         MV<:SubArray,
         C<:CompressorRecipe, 
@@ -138,42 +139,44 @@ A mutable structure containing all information relevant to the `ColumnProjection
     object.
 
 # Fields
-- `compressor::CompressorRecipe`, a technique for forming the compressed column space of the 
+- `compressor::C`, a technique for forming the compressed column space of the 
     linear system.
-- `log::LoggerRecipe`, a technique for logging the progress of the solver.
-- `error::SolverErrorRecipe`, a method for estimating the progress of the solver.
-- `sub_solver::SubSolverRecipe`, a technique to perform the projection of the solution 
+- `log::L`, a technique for logging the progress of the solver.
+- `error::E`, a method for estimating the progress of the solver.
+- `sub_solver::B`, a technique to perform the projection of the solution 
     onto the compressed column space.
 - `alpha::Float64`, the over-relaxation parameter. It is multiplied by the update and can 
     affect convergence.
-- `compressed_mat::AbstractMatrix`, a matrix container for storing the compressed matrix. 
-    Will be set to be the largest possible block size.
-- `solution_vec::AbstractVector`, a vector container for storing the current solution 
+- `compressed_mat::M`, a dense matrix container for storing the compressed matrix. Will be
+    set to be the largest possible block size.
+- `solution_vec::SV`, a vector container for storing the current solution 
     to the linear system.
-- `update_vec::AbstractVector`, a vector container for storing the update to the solution.
-- `mat_view::SubArray`, a container for storing a view of the compressed matrix container. 
+- `update_vec::Vector{T}`, a vector container for storing the update to the solution. It
+    is written by the sub-solver, so `T` is the element type of `compressed_mat`.
+- `mat_view::MV`, a container for storing a view of the compressed matrix container. 
     Using views here allows for variable block sizes.
-- `residual_vec::AbstractVector`, a vector container for storing the residual at each 
+- `residual_vec::V`, a vector container for storing the residual at each 
     iteration.
 """
 mutable struct ColumnProjectionRecipe{
-    T<:Number, 
+    T<:Number,
     V<:AbstractVector,
-    M<:AbstractArray, 
+    SV<:AbstractVector,
+    M<:AbstractArray,
     MV<:SubArray,
-    C<:CompressorRecipe, 
+    C<:CompressorRecipe,
     L<:LoggerRecipe,
-    E<:SolverErrorRecipe, 
-    B<:SubSolverRecipe
-   } <: SolverRecipe
+    E<:SolverErrorRecipe,
+    B<:SubSolverRecipe,
+} <: SolverRecipe
     compressor::C
     log::L
     error::E
     sub_solver::B
     alpha::Float64
     compressed_mat::M
-    solution_vec::V
-    update_vec::V
+    solution_vec::SV
+    update_vec::Vector{T}
     mat_view::MV
     residual_vec::V
 end
@@ -218,9 +221,11 @@ function complete_solver(
     sample_size = compressor.n_cols
 
 
-    # Allocate the information in the buffer using the types of A and b
-    compressed_mat = typeof(A)(undef, rows_a, sample_size) #Stores A*compressor
-    residual_vec = typeof(b)(undef, rows_a) #Stores b - Ax 
+    # A * S is dense even when A is sparse, so the compressed matrix is stored densely
+    # with the element type of A. The residual follows b (similar gives a Vector for a
+    # view of b).
+    compressed_mat = Matrix{eltype(A)}(undef, rows_a, sample_size)
+    residual_vec = similar(b, rows_a)
 
     # Since sub_solver is applied to compressed matrices use here
     sub_solver = complete_sub_solver(solver.sub_solver, compressed_mat, residual_vec)
@@ -230,20 +235,22 @@ function complete_solver(
 
     # update_vec is the solution to the subproblem and is used as
     # x_+ = x + S * update_vec 
-    update_vec = typeof(x)(undef, sample_size)
+    # It is written by the sub-solver, so it follows the compressed matrix
+    update_vec = Vector{eltype(compressed_mat)}(undef, sample_size)
     
     return ColumnProjectionRecipe{
-        eltype(A), 
-        typeof(b), 
-        typeof(A), 
+        eltype(compressed_mat),
+        typeof(residual_vec),
+        typeof(x),
+        typeof(compressed_mat),
         typeof(mat_view),
         typeof(compressor),
         typeof(logger),
         typeof(error),
-        typeof(sub_solver)
+        typeof(sub_solver),
     }(
-        compressor, 
-        logger, 
+        compressor,
+        logger,
         error,
         sub_solver,
         solver.alpha,
@@ -251,7 +258,7 @@ function complete_solver(
         x,
         update_vec,
         mat_view,
-        residual_vec
+        residual_vec,
     )
 end
 

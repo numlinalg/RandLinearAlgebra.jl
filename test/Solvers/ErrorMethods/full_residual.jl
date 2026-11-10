@@ -40,7 +40,7 @@ end
                 error_rec = complete_error(FullResidual(), TestSolver(), A, b)
 
                 # Test the type
-                @test typeof(error_rec) == FullResidualRecipe{typeof(b)}
+                @test typeof(error_rec) == FullResidualRecipe{Vector{type}}
                 # Test type of residual vector
                 @test eltype(error_rec.residual) == type
                 # Test residual vector to be all zeros
@@ -71,6 +71,23 @@ end
                 @test norm(res) ≈ err_val
             end
 
+        end
+
+    end
+
+    @testset "Residual: View of b" begin
+        let n_rows = 20,
+            n_cols = 6,
+            A = rand(n_rows, n_cols),
+            bfull = rand(2 * n_rows),
+            b = view(bfull, 1:n_rows),
+            x = rand(n_cols),
+            solver_rec = TestSolverRecipe(x)
+
+            error_rec = complete_error(FullResidual(), ColumnProjection(), A, b)
+            # The buffer is a dense vector even though b is a view
+            @test typeof(error_rec) == FullResidualRecipe{Vector{Float64}}
+            @test compute_error(error_rec, solver_rec, A, b) ≈ norm(b - A * x)
         end
 
     end

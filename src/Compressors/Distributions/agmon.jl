@@ -71,12 +71,17 @@ function Agmon(; cardinality::Cardinality = Undef(), replace::Bool = false, beta
 end
 
 """
-    AgmonRecipe <: DistributionRecipe
+    AgmonRecipe{
+        C<:Cardinality,
+        MA<:AbstractMatrix,
+        VB<:AbstractVector,
+        VX<:AbstractVector
+    } <: DistributionRecipe
 
 The recipe containing all allocations and information for the Agmon distribution.
 
 # Fields
-- `cardinality::C where C<:Cardinality`: the cardinality of the compressor. For Agmon,
+- `cardinality::C`: the cardinality of the compressor. For Agmon,
     this should be `Left()` or `Right()`.
 - `replace::Bool`: if `true`, then sampling is done with replacement; if `false`,
     then sampling is done without replacement.
@@ -85,12 +90,15 @@ The recipe containing all allocations and information for the Agmon distribution
 - `state_space::Vector{Int64}`: the active row/column index set.
 - `sample_buffer::Vector{Int64}`: workspace to store the randomly sampled
     subset of ``β`` indices.
-- `A::AbstractMatrix`: reference to the coefficient matrix.
-- `b::AbstractVector`: reference to the constant vector.
-- `x::AbstractVector`: reference to the current solution iterate (updated each iteration).
+- `A::MA`: reference to the coefficient matrix.
+- `b::VB`: reference to the constant vector.
+- `x::VX`: reference to the current solution iterate (updated each iteration).
 - `r::Union{Nothing, AbstractVector}`: the residual vector ``Ax - b``. Starts as
-    `nothing`; set by `update_distribution!`. If `nothing` when `sample_distribution!`
-    is called, residuals are computed on-the-fly for the sampled candidates only.
+    `nothing`; set by `update_distribution!`. It is a computed quantity, so its type is
+    not tied to that of `b` (e.g., `b` may be a view while `r` is a `Vector`, or the
+    element types may differ). It is stored as passed, without conversion. If `nothing`
+    when `sample_distribution!` is called, residuals are computed on-the-fly for the
+    sampled candidates only.
 
 !!! note "Determining Compression Subset"
     In general, the ``β`` candidates are selected uniformly with or without replacement
@@ -112,16 +120,21 @@ The recipe containing all allocations and information for the Agmon distribution
     and matches user expectations in iterative usage, where repeated sampling
     calls should produce fresh samples each time.
 """
-mutable struct AgmonRecipe <: DistributionRecipe
-    cardinality::Cardinality
+mutable struct AgmonRecipe{
+    C<:Cardinality,
+    MA<:AbstractMatrix,
+    VB<:AbstractVector,
+    VX<:AbstractVector,
+} <: DistributionRecipe
+    cardinality::C
     replace::Bool
     beta::Int
     state_space::Vector{Int64}
     sample_buffer::Vector{Int64}
-    A::AbstractMatrix
-    b::AbstractVector
-    x::AbstractVector
-    r::Union{Nothing, AbstractVector}
+    A::MA
+    b::VB
+    x::VX
+    r::Union{Nothing,AbstractVector}
 end
 
 """
