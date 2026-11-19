@@ -1,9 +1,5 @@
 module sparse_sign
-using Test, RandLinearAlgebra, Random
-import SparseArrays: sparse, SparseMatrixCSC, sprand
-import LinearAlgebra: mul!, Adjoint
-using ..FieldTest
-using ..ApproxTol
+include("../test_helpers/preamble.jl")
 
 Random.seed!(2131)
 @testset "Sparse Sign" begin

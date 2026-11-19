@@ -1,9 +1,5 @@
 module  RangeApproximator
-using Test, RandLinearAlgebra, LinearAlgebra
-import RandLinearAlgebra: complete_compressor
-import LinearAlgebra: mul!
-using ..FieldTest
-using ..ApproxTol
+include("../../test_helpers/preamble.jl")
 
 mutable struct TestCompressor <: Compressor
     cardinality::Cardinality
@@ -65,6 +61,14 @@ end
             @test typeof(rf.compressor) == TestCompressor
             @test rf.power_its == 2
             @test rf.orthogonalize == false
+        end
+
+        # Test default constructor
+        let 
+            rf = RangeFinder()
+            @test typeof(rf.compressor) <: SparseSign
+            @test rf.orthogonalize == false
+            @test rf.power_its == 0
         end
     
     end
@@ -300,7 +304,49 @@ end
             mul!(b', v', approx_rec, 2.0, 1.0)
             @test b ≈ (bc' + 2.0  * v' * approx_rec.range)'
         end
+        
+        # Perform tests with adjoint multiplications
+        # first from the left
+        let approx_rec = approx_rec, 
+            A = A, 
+            C = C,
+            Cc = deepcopy(C) 
 
+            mul!(C, approx_rec', A, 2.0, 1.0)
+            @test C ≈ Cc + 2.0 * approx_rec.range' * A
+        end
+
+        # test multiplication from the right
+        let approx_rec = approx_rec, 
+            A = A, 
+            C = C,
+            Cc = deepcopy(C) 
+
+            mul!(C, A, approx_rec', 2.0, 1.0)
+            @test C ≈ Cc + 2.0 * A * approx_rec.range'
+        end
+
+        # Test the vector multiplication
+        # from the right
+        let approx_rec = approx_rec, 
+            v = v, 
+            b = b,
+            bc = deepcopy(b) 
+
+            mul!(b, approx_rec', v, 2.0, 1.0)
+            @test b ≈ bc + 2.0 * approx_rec.range' * v
+        end
+
+        # Test the vector multiplication
+        # from the left 
+        let approx_rec = approx_rec, 
+            v = v, 
+            b = b,
+            bc = deepcopy(b) 
+
+            mul!(b', v', approx_rec', 2.0, 1.0)
+            @test b' ≈ (bc' + 2.0  * v' * approx_rec.range')
+        end
     end
 
 

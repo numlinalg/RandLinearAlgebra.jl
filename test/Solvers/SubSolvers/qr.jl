@@ -1,8 +1,7 @@
-@testset "QR SubSolver Tests" begin
-    using Test, RandLinearAlgebra, Random, LinearAlgebra
-    using ..FieldTest
-    using ..ApproxTol
+module QR_subsolver
+include("../../test_helpers/preamble.jl")
 
+@testset "QR SubSolver Tests" begin
     @testset "QR SubSolver" begin
         @test supertype(QRSolver) == SubSolver
         @test fieldnames(QRSolver) == ()
@@ -64,5 +63,7 @@
         end
 
     end
+
+end
 
 end

@@ -1,5 +1,5 @@
 # Compressing a Matrix/Vector
-Most Randomized Linear Algebra routines start by forming low-dimensional representation of 
+Most Randomized Linear Algebra routines start by forming a low-dimensional representation of 
 a matrix/vector. These representations are typically formed by multiplying a 
 random matrix with a large matrix/vector. 
 For instance, if we have ``x \in \mathbb{R}^{10,000}`` we can apply a matrix, 
@@ -61,7 +61,7 @@ arguments (see [Compressors API](@ref) for more details). The one argument is th
 ## Compressing a Matrix Example
 Knowing that compressors allow us to reduce one of the dimensions of a matrix, the next 
 important question is how do we do this in RandLinearAlgebra.jl? In the following example 
-we show how to do exactly this using a [Gaussian](@ref) compressor. In this 
+we show how to do exactly this using a [`Gaussian`](@ref) compressor. In this 
 example we will generate a `GaussianRecipe`, `S`, with `compression_dim` 10 and 
 `cardinality` `Left()`, then we will apply `S` and its transpose, `S'`, to a matrix, `A`, 
 with a 100 rows and 100 columns using `*`. 

@@ -270,7 +270,7 @@ and
 # Arguments
 - `solver::ColumnProjectionRecipe`, the solver information required for performing the update.
 
-# Outputs
+# Returns
 - returns `nothing`
 """
 function colproj_update!(solver::ColumnProjectionRecipe)
@@ -303,7 +303,7 @@ and stores it in `solver.residual_vec`.
 # Arguments
 - `solver::ColumnProjectionRecipe`, the solver information required for performing the update.
 
-# Outputs
+# Returns
 - returns `nothing`
 """
 function colproj_update_block!(solver::ColumnProjectionRecipe)

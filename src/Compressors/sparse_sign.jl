@@ -88,7 +88,7 @@ mutable struct SparseSign <: Compressor
 end
 
 function SparseSign(;
-    cardinality=Left(),
+    cardinality::Cardinality=Left(),
     compression_dim::Int64=2,
     nnz::Int64=min(8, compression_dim),
     type::Type{N}=Float64,
@@ -198,7 +198,7 @@ compression matrix.
     )
 
 An external constructor of `SparseSignRecipe` that is dispatched based on the 
-value of `cardinality`. See [SparseSign](@ref) for additional details. 
+value of `cardinality`. See [`SparseSign`](@ref) for additional details. 
 
 ## Arguments 
 - `cardinality::C where C<:Cardinality`, the cardinality of the compressor. The 

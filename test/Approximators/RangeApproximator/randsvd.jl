@@ -1,9 +1,5 @@
 module  RandomizedSVD
-using Test, RandLinearAlgebra, LinearAlgebra
-import RandLinearAlgebra: complete_compressor
-import LinearAlgebra: mul!, svd, Diagonal
-using ..FieldTest
-using ..ApproxTol
+include("../../test_helpers/preamble.jl")
 
 mutable struct TestCompressor <: Compressor
     cardinality::Cardinality

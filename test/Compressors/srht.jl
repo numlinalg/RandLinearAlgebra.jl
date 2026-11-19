@@ -1,9 +1,6 @@
 module srht
-using Test, RandLinearAlgebra, Random
-import LinearAlgebra: mul!, Adjoint, Diagonal
+include("../test_helpers/preamble.jl")
 import Hadamard: hadamard
-using ..FieldTest
-using ..ApproxTol
 
 Random.seed!(1223)
 @testset "SRHT" begin
@@ -80,7 +77,7 @@ Random.seed!(1223)
             @test recipe.n_rows == comp_dim
             @test recipe.n_cols == n_rows
             @test recipe.scale == type(
-                sqrt(comp_dim) / sqrt(padded_dim)
+                1 / sqrt(comp_dim)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
@@ -107,7 +104,7 @@ Random.seed!(1223)
             @test recipe.n_rows == comp_dim
             @test recipe.n_cols == n_rows
             @test recipe.scale == type(
-                sqrt(comp_dim) / sqrt(padded_dim)
+                1 / sqrt(comp_dim)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
@@ -133,7 +130,7 @@ Random.seed!(1223)
             @test recipe.n_rows == n_cols
             @test recipe.n_cols == comp_dim
             @test recipe.scale == type(
-                sqrt(comp_dim) / sqrt(padded_dim)
+                1 / sqrt(comp_dim)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
@@ -160,7 +157,7 @@ Random.seed!(1223)
             @test recipe.n_rows == n_cols 
             @test recipe.n_cols == comp_dim
             @test recipe.scale == type(
-                sqrt(comp_dim) / sqrt(padded_dim)
+                1 / sqrt(comp_dim)
             )
             @test typeof(recipe.op) == Vector{Int64} 
             @test typeof(recipe.signs) == BitVector
@@ -186,7 +183,7 @@ Random.seed!(1223)
             @test compressor_recipe.cardinality == card
             @test compressor_recipe.n_rows == c_dim
             @test compressor_recipe.n_cols == n_rows 
-            @test compressor_recipe.scale == type(sqrt(4) / sqrt(16))
+            @test compressor_recipe.scale == type(1 / sqrt(4))
             @test typeof(compressor_recipe.op) <: Vector{Int64} 
             @test typeof(compressor_recipe.signs) == BitVector
             @test typeof(compressor_recipe.padding) == Matrix{type}
@@ -207,7 +204,7 @@ Random.seed!(1223)
             @test compressor_recipe.cardinality == card
             @test compressor_recipe.n_rows == n_cols 
             @test compressor_recipe.n_cols == c_dim
-            @test compressor_recipe.scale == type(sqrt(4) / sqrt(16))
+            @test compressor_recipe.scale == type(1 / sqrt(4))
             @test typeof(compressor_recipe.op) <: Vector{Int64} 
             @test typeof(compressor_recipe.signs) == BitVector
             @test typeof(compressor_recipe.padding) == Matrix{type}

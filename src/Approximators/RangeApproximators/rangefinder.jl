@@ -83,9 +83,9 @@ mutable struct RangeFinder <: RangeApproximator
 end
 
 RangeFinder(;
-    compressor = SparseSign(cardinality = Right()), 
-    orthogonalize = false, 
-    power_its = 0
+    compressor::Compressor = SparseSign(cardinality = Right()),
+    orthogonalize::Bool = false,
+    power_its::Int64 = 0
 ) = RangeFinder(compressor, power_its, orthogonalize)
 
 """

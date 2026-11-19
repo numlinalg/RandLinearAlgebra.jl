@@ -1,8 +1,7 @@
+module LQ_subsolver
+include("../../test_helpers/preamble.jl")
+
 @testset "LQ SubSolver Tests" begin
-    using Test, RandLinearAlgebra, Random, LinearAlgebra
-    using ..FieldTest
-    using ..ApproxTol
-    
     @testset "LQ SubSolver" begin
         @test supertype(LQSolver) == SubSolver
         @test fieldnames(LQSolver) == ()
@@ -63,5 +62,7 @@
         end
 
     end
+
+end
 
 end

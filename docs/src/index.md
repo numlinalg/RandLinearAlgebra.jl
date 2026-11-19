@@ -12,13 +12,13 @@ structures and methods which allow code reuse.
 
 This documentation serves both as a manual to the library and as an introduction to 
 randomized linear approximation techniques and randomized linear algebra solvers. 
-We divide it in four parts:
+We divide it into four parts:
 
 * **Tutorial**: examples of how to solve linear systems and least squares problems with
     RandLinearAlgebra and how to extend the library.
 * **Manual**: here we offer an introduction to solving linear systems with randomized linear 
     algebra techniques, compressing a matrix, and forming a low-rank approximation of a matrix. 
-    We introduce theoretical foundations and we provide code examples with RandLinearAlgebra.
+    We introduce theoretical foundations and provide code examples with RandLinearAlgebra.
 * **API**: a detailed description of all the data structures and methods of the library.
 * **Development**: detailed instructions on how to contribute to the library.
 ## Acknowledgements

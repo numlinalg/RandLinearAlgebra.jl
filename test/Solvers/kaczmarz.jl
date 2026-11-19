@@ -1,11 +1,5 @@
 module KaczmarzTest
-using Test, RandLinearAlgebra, LinearAlgebra
-import RandLinearAlgebra: complete_compressor, update_compressor!
-import LinearAlgebra: mul!, norm
-import Random: randn!
-import SparseArrays: sprand, SparseMatrixCSC, SparseVector, spzeros
-using ..FieldTest
-using ..ApproxTol
+include("../test_helpers/preamble.jl")
 
 # Define the test structures
 ##########################

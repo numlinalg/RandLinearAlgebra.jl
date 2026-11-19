@@ -1,5 +1,5 @@
 module distribution_abstract_types
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 struct TestDistribution <: Distribution end
 struct TestDistributionRecipe <: DistributionRecipe end
 

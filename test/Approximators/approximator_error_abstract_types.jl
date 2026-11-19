@@ -1,5 +1,5 @@
 module approximator_error_abstract_types
-using Test, RandLinearAlgebra
+include("../test_helpers/preamble.jl")
 import RandLinearAlgebra: complete_approximator_error, compute_approximator_error!
 
 #############################

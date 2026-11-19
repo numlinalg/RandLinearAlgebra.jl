@@ -13,7 +13,7 @@ a matrix.
 
 ## Keywords
 - `compressor::Compressor`, the compression technique that will applied to the matrix, 
-    before selecting indices. Defaults the [Identity](@ref) compressor.
+    before selecting indices. Defaults the [`Identity`](@ref) compressor.
 
 ## Returns
 - A `QRCP` object.
@@ -22,7 +22,7 @@ mutable struct QRCP <: Selector
     compressor::Compressor
 end
 
-function QRCP(;compressor = Identity()) 
+function QRCP(; compressor::Compressor = Identity())
     QRCP(compressor)
 end
 
