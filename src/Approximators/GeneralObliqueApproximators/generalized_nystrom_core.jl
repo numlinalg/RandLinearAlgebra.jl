@@ -1,64 +1,64 @@
 """
-    CURCore
+    GeneralizedNystromCore
 
-An abstract type for computing the core linking matrix in a CUR decomposition.
+An abstract type for computing the core linking matrix in a generalized Nyström decomposition.
 """
-abstract type CURCore end
+abstract type GeneralizedNystromCore end
 
 """
-    CURCoreRecipe
+    GeneralizedNystromCoreRecipe
 
 An abstract type for the recipes containing the preallocated information required for
-    computing the core linking matrix in a CUR decomposition.
+    computing the core linking matrix in a generalized Nyström decomposition.
 """
-abstract type CURCoreRecipe end
+abstract type GeneralizedNystromCoreRecipe end
 
 """
-    CURCoreAdjoint{S<:CURCoreRecipe} <: CURCoreRecipe 
+    GeneralizedNystromCoreAdjoint{S<:GeneralizedNystromCoreRecipe} <: GeneralizedNystromCoreRecipe 
 
-A structure for the adjoint of an `CURCoreRecipe`.
+A structure for the adjoint of an `GeneralizedNystromCoreRecipe`.
 
 # Fields
 
-  - `Parent::CURCoreRecipe`, the approximator that we are taking the adjoint.
+  - `Parent::GeneralizedNystromCoreRecipe`, the approximator that we are taking the adjoint.
 """
-struct CURCoreAdjoint{S<:CURCoreRecipe} <: CURCoreRecipe
+struct GeneralizedNystromCoreAdjoint{S<:GeneralizedNystromCoreRecipe} <: GeneralizedNystromCoreRecipe
     parent::S
 end
 
-adjoint(A::CURCoreRecipe) = CURCoreAdjoint(A)
+adjoint(A::GeneralizedNystromCoreRecipe) = GeneralizedNystromCoreAdjoint(A)
 # Undo the transpose
-adjoint(A::CURCoreAdjoint{<:CURCoreRecipe}) = A.parent
+adjoint(A::GeneralizedNystromCoreAdjoint{<:GeneralizedNystromCoreRecipe}) = A.parent
 # Make transpose wrapper function
-transpose(A::CURCoreRecipe) = CURCoreAdjoint(A)
+transpose(A::GeneralizedNystromCoreRecipe) = GeneralizedNystromCoreAdjoint(A)
 # Undo the transpose wrapper
-transpose(A::CURCoreAdjoint{<:CURCoreRecipe}) = A.parent
+transpose(A::GeneralizedNystromCoreAdjoint{<:GeneralizedNystromCoreRecipe}) = A.parent
 
 ###################################
-# Size of CURCore 
+# Size of GeneralizedNystromCore 
 ###################################
-function Base.size(S::CURCoreRecipe)
+function Base.size(S::GeneralizedNystromCoreRecipe)
     return S.n_rows, S.n_cols
 end
 
-function Base.size(S::CURCoreRecipe, dim::Int64)
+function Base.size(S::GeneralizedNystromCoreRecipe, dim::Int64)
     ((dim < 1) || (dim > 2)) && throw(DomainError("`dim` must be 1 or 2."))
     return dim == 1 ? S.n_rows : S.n_cols
 end
 
-function Base.size(S::CURCoreAdjoint)
+function Base.size(S::GeneralizedNystromCoreAdjoint)
     return S.parent.n_cols, S.parent.n_rows
 end
 
-function Base.size(S::CURCoreAdjoint, dim::Int64)
+function Base.size(S::GeneralizedNystromCoreAdjoint, dim::Int64)
     ((dim < 1) || (dim > 2)) && throw(DomainError("`dim` must be 1 or 2."))
     return dim == 1 ? S.parent.n_cols : S.parent.n_rows
 end
 
-# add the mul! functions for CURCore matrices
+# add the mul! functions for GeneralizedNystromCore matrices
 function mul!(
     C::AbstractArray, 
-    U::CURCoreRecipe, 
+    U::GeneralizedNystromCoreRecipe, 
     A::AbstractArray, 
     alpha::Number, 
     beta::Number
@@ -74,7 +74,7 @@ end
 function mul!(
     C::AbstractArray, 
     A::AbstractArray, 
-    U::CURCoreRecipe, 
+    U::GeneralizedNystromCoreRecipe, 
     alpha::Number, 
     beta::Number
 )
@@ -89,7 +89,7 @@ end
 # C <- beta * C + alpha * U' * A
 function mul!(  
     C::AbstractArray,
-    U::CURCoreAdjoint,
+    U::GeneralizedNystromCoreAdjoint,
     A::AbstractArray,
     alpha::Number,
     beta::Number
@@ -102,7 +102,7 @@ end
 function mul!(
     C::AbstractArray, 
     A::AbstractArray, 
-    U::CURCoreAdjoint, 
+    U::GeneralizedNystromCoreAdjoint, 
     alpha::Number, 
     beta::Number
 )
@@ -111,31 +111,31 @@ function mul!(
 end
 
 # C <- U * A
-function mul!(C::AbstractArray, U::CURCoreRecipe, A::AbstractArray)
+function mul!(C::AbstractArray, U::GeneralizedNystromCoreRecipe, A::AbstractArray)
     mul!(C, U, A, 1.0, 0.0)
     return nothing
 end
 
 # C <- A * U
-function mul!(C::AbstractArray, A::AbstractArray, U::CURCoreRecipe)
+function mul!(C::AbstractArray, A::AbstractArray, U::GeneralizedNystromCoreRecipe)
     mul!(C, A, U, 1.0, 0.0)
     return nothing
 end
 
 # C <- U' * A
-function mul!(C::AbstractArray, U::CURCoreAdjoint, A::AbstractArray)
+function mul!(C::AbstractArray, U::GeneralizedNystromCoreAdjoint, A::AbstractArray)
     mul!(transpose(C), transpose(A), U.parent)
     return nothing
 end
 
 # C <- A * U'
-function mul!(C::AbstractArray, A::AbstractArray, U::CURCoreAdjoint)
+function mul!(C::AbstractArray, A::AbstractArray, U::GeneralizedNystromCoreAdjoint)
     mul!(transpose(C), U.parent, transpose(A))
     return nothing
 end
 
 # U * A
-function (*)(U::CURCoreRecipe, A::AbstractArray)
+function (*)(U::GeneralizedNystromCoreRecipe, A::AbstractArray)
     u_rows = size(U, 1)
     a_cols = size(A, 2)
     C = a_cols == 1 ? zeros(eltype(A), u_rows) : zeros(eltype(A), u_rows, a_cols)
@@ -144,7 +144,7 @@ function (*)(U::CURCoreRecipe, A::AbstractArray)
 end
 
 # A * U
-function (*)(A::AbstractArray, U::CURCoreRecipe)
+function (*)(A::AbstractArray, U::GeneralizedNystromCoreRecipe)
     u_cols = size(U, 2)
     a_rows = size(A, 1)
     C = a_rows == 1 ? zeros(eltype(A), u_cols)' : zeros(eltype(A), a_rows, u_cols)
@@ -153,7 +153,7 @@ function (*)(A::AbstractArray, U::CURCoreRecipe)
 end
 
 # S' * A
-function (*)(U::CURCoreAdjoint, A::AbstractArray)
+function (*)(U::GeneralizedNystromCoreAdjoint, A::AbstractArray)
     u_rows = size(U, 1)
     a_cols = size(A, 2)
     C = a_cols == 1 ? zeros(eltype(A), u_rows) : zeros(eltype(A), u_rows, a_cols)
@@ -162,7 +162,7 @@ function (*)(U::CURCoreAdjoint, A::AbstractArray)
 end
 
 # A * S'
-function (*)(A::AbstractArray, U::CURCoreAdjoint)
+function (*)(A::AbstractArray, U::GeneralizedNystromCoreAdjoint)
     u_cols = size(U, 2)
     a_rows = size(A, 1)
     C = a_rows == 1 ? zeros(eltype(A), u_cols)' : zeros(eltype(A), a_rows, u_cols)

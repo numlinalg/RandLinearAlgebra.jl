@@ -23,7 +23,7 @@ end
 
 @testset "CrossApproximation" begin
     @testset "CrossApproximation" begin
-        @test supertype(CrossApproximation) == CURCore
+        @test supertype(CrossApproximation) == GeneralizedNystromCore
 
         # test the fieldnames and types
         @test fieldnames(CrossApproximation) == ()
@@ -37,7 +37,7 @@ end
     end
 
     @testset "CrossApproximation Recipe" begin
-        supertype(CrossApproximationRecipe) == CURCoreRecipe
+        supertype(CrossApproximationRecipe) == GeneralizedNystromCoreRecipe
 
         # test the fieldnames and types
         @test fieldnames(CrossApproximationRecipe) == (

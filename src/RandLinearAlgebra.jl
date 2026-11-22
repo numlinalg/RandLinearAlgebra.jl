@@ -22,8 +22,8 @@ export rapproximate, rapproximate!, complete_approximator
 export RangeApproximator, RangeApproximatorRecipe
 export RangeFinder, RangeFinderRecipe
 export RandSVD, RandSVDRecipe
-export CUR, CURRecipe
-export CURCore, CURCoreRecipe, CURCoreAdjoint
+export GeneralizedNystrom, GeneralizedNystromRecipe, CUR, CURRecipe
+export GeneralizedNystromCore, GeneralizedNystromCoreRecipe, GeneralizedNystromCoreAdjoint
 export CrossApproximation, CrossApproximationRecipe
 
 # Export Compressor types and functions

@@ -463,6 +463,6 @@ include("Approximators/RangeApproximators/helpers/power_its.jl")
 ############################################
 include("Approximators/Selectors.jl")
 ############################################
-# Include CUR file which depends on selector
+# Include generalized Nyström file which depends on selector
 ############################################
-include("Approximators/GeneralObliqueApproximators/cur.jl")
+include("Approximators/GeneralObliqueApproximators/generalized_nystrom.jl")

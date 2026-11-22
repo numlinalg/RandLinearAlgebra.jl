@@ -15,11 +15,11 @@ RandLinearAlgebra.RangeApproximator
 
 RangeApproximatorRecipe
 
-CURCore
+GeneralizedNystromCore
 
-CURCoreRecipe
+GeneralizedNystromCoreRecipe
 
-CURCoreAdjoint
+GeneralizedNystromCoreAdjoint
 
 ```
 
@@ -37,11 +37,15 @@ RangeFinderRecipe
 
 ## General Oblique Approximators
 ```@docs
+GeneralizedNystrom
+
+GeneralizedNystromRecipe
+
 CUR
 
 CURRecipe
 ```
-### CURCore Structures
+### Core Structures
 ```@docs
 CrossApproximation
 

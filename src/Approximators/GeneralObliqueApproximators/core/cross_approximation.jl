@@ -1,19 +1,19 @@
 """
-    CrossApproximation <: CURCore
+    CrossApproximation <: GeneralizedNystromCore
 
-A form of the core matrix in CUR decomposition, such that for column indices, J, and row
+A form of the core matrix in a generalized Nyström decomposition, such that for column indices, J, and row
 indices, I, the matrix ``U`` is ``A[I,J]^\\dagger``.
 
 # Fields
 - None
 """
-struct CrossApproximation <: CURCore end
+struct CrossApproximation <: GeneralizedNystromCore end
 
 """
-    CrossApproximationRecipe <: CURCore
+    CrossApproximationRecipe <: GeneralizedNystromCoreRecipe
 
 A structure featuring the preallocated arrays necessary for storing the cross-approximation
-core matrix to a CUR decomposition.
+core matrix to a generalized Nyström decomposition.
 
 The core matrix is ``U = A[I, J]^\\dagger``, the pseudoinverse of the intersection
 submatrix. Rather than forming ``U`` explicitly, we store the factors of the thin QR
@@ -31,7 +31,7 @@ triangular solve with `R`) during multiplication, since ``U = R^{-1} Q'``.
     applying the `Q` factor during multiplication. It has `n_rows` rows and its number of
     columns sets the block size used to process wider inputs with views and a loop.
 """
-mutable struct CrossApproximationRecipe <: CURCoreRecipe
+mutable struct CrossApproximationRecipe <: GeneralizedNystromCoreRecipe
     n_rows::Int64
     n_cols::Int64
     Q::AbstractMatrix
@@ -39,7 +39,7 @@ mutable struct CrossApproximationRecipe <: CURCoreRecipe
     buffer::AbstractMatrix
 end
 
-function complete_core(core::CrossApproximation, cur::CUR,  A::AbstractMatrix)
+function complete_core(core::CrossApproximation, cur::GeneralizedNystrom,  A::AbstractMatrix)
     # preallocate the Q and R factors of the intersection submatrix `A[I, J]`, which is
     # `(rank + oversample) x rank`. We use identity initializers because this form
     # preallocates all dense entries and works for sparse arrays.
@@ -58,7 +58,7 @@ function complete_core(core::CrossApproximation, cur::CUR,  A::AbstractMatrix)
     )
 end
 
-function update_core!(core::CrossApproximationRecipe, cur::CURRecipe, A::AbstractMatrix)
+function update_core!(core::CrossApproximationRecipe, cur::GeneralizedNystromRecipe, A::AbstractMatrix)
     # Factor the intersection submatrix `A[I, J] = Q R`. The core matrix
     # `U = A[I, J]^dagger = R^{-1} Q'` is never formed explicitly; instead we store the
     # thin `Q` and the upper triangular `R` and apply them during multiplication.
@@ -82,7 +82,7 @@ end
 # intersection matrix of 0 causing overflows when computing the pseudo inverse.)
 # 3. form the core matrix will be formed using the entries at the intersection 
 # of the index sets.
-function rapproximate!(approx::CURRecipe{CrossApproximationRecipe}, A::AbstractMatrix)
+function rapproximate!(approx::GeneralizedNystromRecipe{CrossApproximationRecipe}, A::AbstractMatrix)
     # select column indices
     select_indices!(
         approx.col_idx,

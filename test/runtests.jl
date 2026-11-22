@@ -15,7 +15,7 @@ directs =
             "Approximators/RangeApproximator/",
             "Approximators/Selectors/",
             "Approximators/GeneralObliqueApproximators/",
-            "Approximators/GeneralObliqueApproximators/CURCore/",
+            "Approximators/GeneralObliqueApproximators/core/",
             "Solvers/",
             "Solvers/helpers/",
             "Solvers/ErrorMethods/",

@@ -1,9 +1,9 @@
-module cur_test 
+module generalized_nystrom_test
 using Test, RandLinearAlgebra, LinearAlgebra, SparseArrays
 import Base.*
 import Base: size
 import LinearAlgebra: mul!
-import RandLinearAlgebra: CURCoreAdjoint, complete_selector, complete_core
+import RandLinearAlgebra: GeneralizedNystromCoreAdjoint, complete_selector, complete_core
 import RandLinearAlgebra: rapproximate!, update_core! 
 
 # Write test selector recipe 
@@ -25,16 +25,16 @@ function select_indices!(
 end
 
 # Test core structures
-mutable struct TestCore <: CURCore end
-mutable struct TestCoreRecipe <: CURCoreRecipe
+mutable struct TestCore <: GeneralizedNystromCore end
+mutable struct TestCoreRecipe <: GeneralizedNystromCoreRecipe
     A::AbstractMatrix
 end
 
-function complete_core(core::TestCore, cur::CUR, A::AbstractMatrix)
+function complete_core(core::TestCore, cur::GeneralizedNystrom, A::AbstractMatrix)
     return TestCoreRecipe(rand(2,2))
 end
 
-function update_core!(core::TestCoreRecipe, cur::CURRecipe, A::AbstractMatrix)
+function update_core!(core::TestCoreRecipe, cur::GeneralizedNystromRecipe, A::AbstractMatrix)
     core.A = pinv(Array(A[cur.row_idx, cur.col_idx]))
     return nothing
 end
@@ -49,11 +49,11 @@ function size(S::TestCoreRecipe, dim::Int64)
     return size(S.A, dim)
 end
 
-function size(S::CURCoreAdjoint{TestCoreRecipe})
+function size(S::GeneralizedNystromCoreAdjoint{TestCoreRecipe})
     return size(S.parent.A')
 end
 
-function size(S::CURCoreAdjoint{TestCoreRecipe}, dim::Int64)
+function size(S::GeneralizedNystromCoreAdjoint{TestCoreRecipe}, dim::Int64)
     return size(S.parent.A', dim)
 end
 
@@ -77,7 +77,7 @@ function mul!(
     mul!(C, B, S.A, alpha, beta)
 end
 
-function rapproximate!(approx::CURRecipe{TestCoreRecipe}, A::AbstractMatrix)
+function rapproximate!(approx::GeneralizedNystromRecipe{TestCoreRecipe}, A::AbstractMatrix)
     # select column indices
     select_indices!(approx.col_idx, approx.col_selector, A, approx.n_col_vecs, 0)
     # select row indices
@@ -91,23 +91,34 @@ end
 
 @testset "CUR" begin
     @testset "CUR" begin
-        supertype(CUR) == Approximator
+        @test GeneralizedNystrom <: Approximator
+        # the CUR alias is a GeneralizedNystrom specialized to two selectors
+        @test CUR == GeneralizedNystrom{<:Selector,<:Selector}
 
         # test the fieldnames and types
-        fieldnames(CUR) == (
-            :rank, 
-            :oversample, 
-            :col_selector, 
-            :row_selector, 
-            :core, 
+        @test fieldnames(GeneralizedNystrom) == (
+            :rank,
+            :oversample,
+            :col_selector,
+            :row_selector,
+            :core,
             :block_size
         )
-        fieldtypes(CUR) == (
+        @test fieldtypes(GeneralizedNystrom) == (
+            Int64,
+            Int64,
+            Union{Selector,Compressor},
+            Union{Selector,Compressor},
+            GeneralizedNystromCore,
+            Int64
+        )
+        # the CUR alias narrows the operator fields to selectors
+        @test fieldtypes(CUR) == (
             Int64,
             Int64,
             Selector,
             Selector,
-            CURCore,
+            GeneralizedNystromCore,
             Int64
         )
 
@@ -177,10 +188,10 @@ end
     end 
 
     @testset "CURRecipe" begin
-        @test supertype(CURRecipe) == ApproximatorRecipe
+        @test GeneralizedNystromRecipe <: ApproximatorRecipe
 
         # test the fieldnames and types
-        @test fieldnames(CURRecipe) == (
+        @test fieldnames(GeneralizedNystromRecipe) == (
             :n_rows,
             :n_cols,
             :n_row_vecs,
@@ -205,7 +216,7 @@ end
             Vector{Int64},
             Vector{Int64},
             AbstractMatrix,
-            CURCoreRecipe,
+            GeneralizedNystromCoreRecipe,
             AbstractMatrix,
             AbstractArray,
             AbstractArray
@@ -232,7 +243,7 @@ end
             ) 
 
             recipe = complete_approximator(cur, A)
-            typeof(recipe) == CURRecipe{TestCoreRecipe}
+            @test recipe isa CURRecipe
             # test that the size function works correctly for recipe
             @test recipe.n_row_vecs == rank + oversample
             @test recipe.n_col_vecs == rank

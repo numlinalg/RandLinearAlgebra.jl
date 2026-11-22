@@ -1,34 +1,34 @@
-module CURCore_test 
+module generalized_nystrom_core_test
 using Test, RandLinearAlgebra, LinearAlgebra
 import LinearAlgebra: mul!
 import RandLinearAlgebra: complete_core, update_core!
 
-struct TestCURCore <: CURCore end 
-struct TestCURCoreRecipe <: CURCoreRecipe 
+struct TestGeneralizedNystromCore <: GeneralizedNystromCore end 
+struct TestGeneralizedNystromCoreRecipe <: GeneralizedNystromCoreRecipe 
     n_rows::Int64
     n_cols::Int64
     code::Int64
 end 
 
-TestCoreRecipe() = TestCURCoreRecipe(2, 2, 1)
+TestCoreRecipe() = TestGeneralizedNystromCoreRecipe(2, 2, 1)
 struct TestSelectorRecipe <: SelectorRecipe end
 
-@testset "CURCore: Abstract Types" begin
-    @test isdefined(Main, :CURCore)
-    @test isdefined(Main, :CURCoreRecipe)
-    @test isdefined(Main, :CURCoreAdjoint)
+@testset "GeneralizedNystromCore: Abstract Types" begin
+    @test isdefined(Main, :GeneralizedNystromCore)
+    @test isdefined(Main, :GeneralizedNystromCoreRecipe)
+    @test isdefined(Main, :GeneralizedNystromCoreAdjoint)
 end
 
-@testset "CURCore: Completion Errors" begin
+@testset "GeneralizedNystromCore: Completion Errors" begin
     cur = CUR(rank = 1)
     A = ones(2, 2)
-    core = TestCURCore()
+    core = TestGeneralizedNystromCore()
     
     @test_throws ArgumentError complete_core(core, cur, A)
 end
 
-@testset "CURCore: size" begin
-    cur = CURRecipe{TestCURCoreRecipe}(
+@testset "GeneralizedNystromCore: size" begin
+    cur = GeneralizedNystromRecipe(
         2, 
         2,
         2,
@@ -38,7 +38,7 @@ end
         ones(Int64, 2),
         ones(Int64, 2),
         zeros(2, 2), 
-        TestCURCoreRecipe(1, 2, 1),
+        TestGeneralizedNystromCoreRecipe(1, 2, 1),
         zeros(2, 2),
         zeros(1), 
         zeros(1)
@@ -58,18 +58,18 @@ end
 end
 
 # check that the adjoint functions work correctly
-@testset "CURCore: adjoint" begin
-    core = TestCURCoreRecipe(1, 2, 1)
+@testset "GeneralizedNystromCore: adjoint" begin
+    core = TestGeneralizedNystromCoreRecipe(1, 2, 1)
     core_t = transpose(core)
     core_a = adjoint(core)
-    @test typeof(core_t) <: CURCoreAdjoint
-    @test typeof(core_a) <: CURCoreAdjoint
+    @test typeof(core_t) <: GeneralizedNystromCoreAdjoint
+    @test typeof(core_a) <: GeneralizedNystromCoreAdjoint
     @test transpose(core_t) == core
     @test adjoint(core_a)  == core
 end
 
-@testset "CURCore: Update Errors" begin
-    cur = CURRecipe{TestCURCoreRecipe}(
+@testset "GeneralizedNystromCore: Update Errors" begin
+    cur = GeneralizedNystromRecipe(
         2, 
         2,
         2,
@@ -79,7 +79,7 @@ end
         ones(Int64, 2),
         ones(Int64, 2),
         zeros(2, 2), 
-        TestCURCoreRecipe(1, 2, 1),
+        TestGeneralizedNystromCoreRecipe(1, 2, 1),
         zeros(2, 2),
         zeros(1), 
         zeros(1)
@@ -90,7 +90,7 @@ end
     @test_throws ArgumentError update_core!(cur.U, cur, A)
 end
 
-@testset "CURCore Multiplication Errors" begin 
+@testset "GeneralizedNystromCore Multiplication Errors" begin 
     # Test Set Parameters 
     x = randn(2)
     y = randn(2)
@@ -135,11 +135,11 @@ end
 end
 
 # Left 5 Arg mul: S*A, C[i,j] =-1
-mul!(C::AbstractArray, S::TestCURCoreRecipe, A::AbstractArray, alpha::Number, 
+mul!(C::AbstractArray, S::TestGeneralizedNystromCoreRecipe, A::AbstractArray, alpha::Number, 
     β::Number) = fill!(C, -1)
 
 # Right mul: A*S, C[i,j] = -2
-mul!(C::AbstractArray, A::AbstractArray, S::TestCURCoreRecipe, alpha::Number, 
+mul!(C::AbstractArray, A::AbstractArray, S::TestGeneralizedNystromCoreRecipe, alpha::Number, 
     β::Number) = fill!(C, -2)
 
 @testset "Compressor Recipe Abstract 5-Arg Multiplication" begin 
