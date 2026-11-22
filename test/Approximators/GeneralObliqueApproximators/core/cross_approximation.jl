@@ -1,5 +1,5 @@
-module CrossApproximation_tests 
-using Test, RandLinearAlgebra, LinearAlgebra, SparseArrays
+module CrossApproximation_tests
+using Test, RandLinearAlgebra, LinearAlgebra, SparseArrays, Random
 import RandLinearAlgebra: complete_selector, select_indices!
 import RandLinearAlgebra: complete_core, update_core!
 # Write test selector recipe 
@@ -362,6 +362,43 @@ end
             @test norm(y' - ( beta * ytest' + alpha * x' * pinv(Array(A[1:3, 1:2]))')) < 1e-10
         end
 
+    end
+
+    # The two rapproximate! paths: dependent selection for two selectors (CUR), and
+    # independent selection/compression for every other operator combination.
+    @testset "CrossApproximation: rapproximate dispatch" begin
+        Random.seed!(0xC0FFEE)
+        let m = 30, n = 20, rankv = 4, oversample = 2,
+            A = randn(m, rankv) * randn(rankv, n),
+            Id = Matrix{Float64}(I, n, n)
+
+            # both compressors -> classical generalized Nystrom (independent path)
+            gn = GeneralizedNystrom(
+                rank = rankv,
+                oversample = oversample,
+                selector_cols = Gaussian(cardinality = Right(), compression_dim = rankv),
+                selector_rows = Gaussian(
+                    cardinality = Left(), compression_dim = rankv + oversample
+                ),
+            )
+            @test !(gn isa CUR)
+            @test norm(A - rapproximate(gn, A) * Id) / norm(A) < 1e-8
+
+            # mixed: compressor columns, selector rows (independent path)
+            mixed = GeneralizedNystrom(
+                rank = rankv,
+                oversample = oversample,
+                selector_cols = Gaussian(cardinality = Right(), compression_dim = rankv),
+                selector_rows = TestSelector(),
+            )
+            @test !(mixed isa CUR)
+            @test norm(A - rapproximate(mixed, A) * Id) / norm(A) < 1e-8
+
+            # both selectors -> dependent CUR path
+            cur = CUR(rank = rankv, oversample = oversample, selector_cols = TestSelector())
+            @test cur isa CUR
+            @test norm(A - rapproximate(cur, A) * Id) / norm(A) < 1e-8
+        end
     end
 
 end

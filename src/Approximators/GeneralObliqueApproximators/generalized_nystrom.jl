@@ -213,6 +213,10 @@ const CURRecipe = GeneralizedNystromRecipe{
 ###############################################
 include("./core/cross_approximation.jl")
 
+# Complete a column/row operator, whether it is a selector or a compressor.
+complete_operator(op::Selector, A::AbstractMatrix) = complete_selector(op, A)
+complete_operator(op::Compressor, A::AbstractMatrix) = complete_compressor(op, A)
+
 function complete_approximator(ingredients::GeneralizedNystrom, A::AbstractMatrix)
     n_col_vecs = ingredients.rank
     n_row_vecs = ingredients.rank + ingredients.oversample
@@ -232,8 +236,8 @@ function complete_approximator(ingredients::GeneralizedNystrom, A::AbstractMatri
 
     col_idx = zeros(Int64, n_col_vecs)
     row_idx = zeros(Int64, n_row_vecs)
-    col_selector = complete_selector(ingredients.col_selector, A)
-    row_selector = complete_selector(ingredients.row_selector, A)
+    col_selector = complete_operator(ingredients.col_selector, A)
+    row_selector = complete_operator(ingredients.row_selector, A)
     C = typeof(A)(undef, size(A, 1), n_col_vecs)
     R = typeof(A)(undef, n_row_vecs, size(A, 2))
     U = complete_core(ingredients.core, ingredients, A)
@@ -258,6 +262,48 @@ end
 # implementations of rapproximate can be found with the core matrix implementations
 # This is done to ensure stability as different core matrix approaches require
 # different organizations of the generalized Nyström selection
+
+###############################################
+# Operator application helpers
+###############################################
+# Form the column factor `C` by applying the column operator to `A`. A selector selects and
+# gathers columns; a compressor sketches the column space via a right multiplication.
+function form_columns!(approx::GeneralizedNystromRecipe, A::AbstractMatrix)
+    _form_columns!(approx.col_selector, approx, A)
+    return nothing
+end
+
+function _form_columns!(col::SelectorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
+    select_indices!(approx.col_idx, col, A, approx.n_col_vecs, 1)
+    copyto!(approx.C, A[:, approx.col_idx])
+    return nothing
+end
+
+function _form_columns!(col::CompressorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
+    # C = A * X
+    mul!(approx.C, A, col)
+    return nothing
+end
+
+# Form the row factor `R` by applying the row operator to `A`, independently of the columns.
+# A selector selects and gathers rows (pivoting on `A'`); a compressor sketches the row space
+# via a left multiplication.
+function form_rows!(approx::GeneralizedNystromRecipe, A::AbstractMatrix)
+    _form_rows!(approx.row_selector, approx, A)
+    return nothing
+end
+
+function _form_rows!(row::SelectorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
+    select_indices!(approx.row_idx, row, A', approx.n_row_vecs, 1)
+    copyto!(approx.R, A[approx.row_idx, :])
+    return nothing
+end
+
+function _form_rows!(row::CompressorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
+    # R = Y' * A
+    mul!(approx.R, row, A)
+    return nothing
+end
 
 # Implement the muls
 function mul!(

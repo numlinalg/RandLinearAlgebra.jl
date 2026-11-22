@@ -58,31 +58,41 @@ function complete_core(core::CrossApproximation, cur::GeneralizedNystrom,  A::Ab
     )
 end
 
+# The core matrix is `U = M^dagger = R^{-1} Q'`, where `M` is the row operator applied to the
+# columns `C`. For selectors this is the intersection submatrix `A[I, J]` (the CUR case); for
+# a compressor it is `Y'C` (the generalized Nyström case). `core_input` returns `M`.
+core_input(row::SelectorRecipe, cur::GeneralizedNystromRecipe) = cur.C[cur.row_idx, :]
+core_input(row::CompressorRecipe, cur::GeneralizedNystromRecipe) = row * cur.C
+
 function update_core!(core::CrossApproximationRecipe, cur::GeneralizedNystromRecipe, A::AbstractMatrix)
-    # Factor the intersection submatrix `A[I, J] = Q R`. The core matrix
-    # `U = A[I, J]^dagger = R^{-1} Q'` is never formed explicitly; instead we store the
-    # thin `Q` and the upper triangular `R` and apply them during multiplication.
-    F = qr!(A[cur.row_idx, cur.col_idx])
+    # Factor `M = Q R`. The core `U = M^dagger = R^{-1} Q'` is never formed explicitly;
+    # instead we store the thin `Q` and the upper triangular `R` and apply them during
+    # multiplication.
+    F = qr!(core_input(cur.row_selector, cur))
     core.Q = Array(F.Q)
     core.R = Matrix(F.R)
     return nothing
 end
 
 
-# Implement the rapproximate function for the Cross Approximation 
-# This function will 
-# 1. apply a selection routine to the columns of A
-# 2. on the selected columns only, apply the row selection routine to select rows. (This is 
-# applied to only selected columns and not the whole matrix because of the example
+# Implement the rapproximate function for the Cross Approximation.
+#
+# When both operators are selectors (the CUR case) the rows are selected *dependently*: the
+# row selection routine is applied to the already-selected columns `C'` rather than to the
+# whole matrix. This is necessary because of the example
 # 3 0 0
 # 0 2 0
 # 1 0 0
-# where the first column would be selected. If the rows are selected disregarding the 
-# selection of the first column the second row would be selected, which results in an 
-# intersection matrix of 0 causing overflows when computing the pseudo inverse.)
-# 3. form the core matrix will be formed using the entries at the intersection 
-# of the index sets.
-function rapproximate!(approx::GeneralizedNystromRecipe{CrossApproximationRecipe}, A::AbstractMatrix)
+# where the first column would be selected. If the rows are selected disregarding the
+# selection of the first column the second row would be selected, which results in an
+# intersection matrix of 0 causing overflows when computing the pseudo inverse. The core is
+# then formed from the entries at the intersection of the index sets.
+function rapproximate!(
+    approx::GeneralizedNystromRecipe{
+        CrossApproximationRecipe,<:SelectorRecipe,<:SelectorRecipe
+    },
+    A::AbstractMatrix
+)
     # select column indices
     select_indices!(
         approx.col_idx,
@@ -91,11 +101,11 @@ function rapproximate!(approx::GeneralizedNystromRecipe{CrossApproximationRecipe
         approx.n_col_vecs,
         1
     )
-    
-    # gather the columns to select rows dependently 
+
+    # gather the columns to select rows dependently
     copyto!(approx.C, A[:, approx.col_idx])
 
-    # select row indices depent on the columns selected
+    # select row indices dependent on the columns selected (from `C'`, not `A'`)
     select_indices!(
         approx.row_idx,
         approx.row_selector,
@@ -104,8 +114,22 @@ function rapproximate!(approx::GeneralizedNystromRecipe{CrossApproximationRecipe
         1
     )
 
-    # gather the rows entries 
+    # gather the rows entries
     copyto!(approx.R, A[approx.row_idx, :])
+    # Compute the core matrix
+    update_core!(approx.U, approx, A)
+    return nothing
+end
+
+# For all other cases (at least one operator is a compressor) the columns and rows are formed
+# *independently*: each operator is applied to `A` on its own, with no dependence between the
+# column and row choices.
+function rapproximate!(
+    approx::GeneralizedNystromRecipe{CrossApproximationRecipe}, A::AbstractMatrix
+)
+    # form the columns `C` and rows `R` by applying each operator to `A` independently
+    form_columns!(approx, A)
+    form_rows!(approx, A)
     # Compute the core matrix
     update_core!(approx.U, approx, A)
     return nothing
@@ -140,7 +164,13 @@ function _cross_left_mul!(C, Q, R, buffer, A, alpha, beta)
         mul!(buf, Qt, view(A, :, cols))
         ldiv!(Rt, buf)
         Cv = view(C, :, cols)
-        @. Cv = beta * Cv + alpha * buf
+        # when beta is zero C is overwritten (and not read); this matches the BLAS
+        # convention and avoids propagating uninitialized NaN/Inf values from C.
+        if iszero(beta)
+            @. Cv = alpha * buf
+        else
+            @. Cv = beta * Cv + alpha * buf
+        end
         start += width
     end
     return nothing
