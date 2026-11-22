@@ -2,7 +2,7 @@ module RandLinearAlgebra
 import Base.:*
 import Base: transpose, adjoint, size, setproperty!
 import LinearAlgebra: Adjoint, axpby!, axpy!, ColumnNorm, dot, I, ldiv!
-import LinearAlgebra: lmul!, lq!, lq, LQ, lu!, mul!, norm, qr!, rmul!, svd
+import LinearAlgebra: lmul!, lq!, lq, LQ, lu!, mul!, norm, qr!, rdiv!, rmul!, svd
 import LinearAlgebra: Transpose, UpperTriangular
 import StatsBase: ProbabilityWeights, sample, sample!, wsample!
 import Random: bitrand, rand!, randn!

@@ -41,10 +41,10 @@ end
 
         # test the fieldnames and types
         @test fieldnames(CrossApproximationRecipe) == (
-            :n_rows, :n_cols, :core
+            :n_rows, :n_cols, :Q, :R, :buffer
         )
         @test fieldtypes(CrossApproximationRecipe) == (
-            Int64, Int64, AbstractMatrix 
+            Int64, Int64, AbstractMatrix, AbstractMatrix, AbstractMatrix
         )
     end
 
@@ -65,8 +65,9 @@ end
             # test the complete core function
             recipe = complete_core(core, approx, A)
             @test size(recipe) == (rank, rank + oversample)
-            # check that the core is identity
-            @test sum(diag(recipe.core) .== 1) == rank
+            # check that the Q and R factors are preallocated with the correct sizes
+            @test size(recipe.Q) == (rank + oversample, rank)
+            @test size(recipe.R) == (rank, rank)
         end
 
         # test with sparse matrix
@@ -76,17 +77,18 @@ end
             oversample = 1,
             A = sprand(n_rows, rank, .9) * sprand(rank, n_cols, .9)
             approx = CUR(
-                rank = rank, 
-                oversample = oversample, 
+                rank = rank,
+                oversample = oversample,
                 selector_cols = TestSelector()
-            ) 
+            )
             core = CrossApproximation()
 
             # test the complete core function
             recipe = complete_core(core, approx, A)
             @test size(recipe) == (rank, rank + oversample)
-            # check that the core is identity
-            @test sum(diag(recipe.core) .== 1) == rank
+            # check that the Q and R factors are preallocated with the correct sizes
+            @test size(recipe.Q) == (rank + oversample, rank)
+            @test size(recipe.R) == (rank, rank)
         end
 
     end
