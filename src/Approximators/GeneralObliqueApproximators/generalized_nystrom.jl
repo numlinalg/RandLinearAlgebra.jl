@@ -217,6 +217,40 @@ include("./core/cross_approximation.jl")
 complete_operator(op::Selector, A::AbstractMatrix) = complete_selector(op, A)
 complete_operator(op::Compressor, A::AbstractMatrix) = complete_compressor(op, A)
 
+# Validate that a completed operator aligns with the approximation dimensions. A selector
+# always selects exactly the requested number of indices, so only compressors are checked.
+validate_col_operator(op::SelectorRecipe, A::AbstractMatrix, n_col_vecs::Int64) = nothing
+validate_row_operator(op::SelectorRecipe, A::AbstractMatrix, n_row_vecs::Int64) = nothing
+
+function validate_col_operator(op::CompressorRecipe, A::AbstractMatrix, n_col_vecs::Int64)
+    # columns are formed as `C = A * X`, so `X` must have size `(size(A, 2), n_col_vecs)`
+    if size(op, 1) != size(A, 2) || size(op, 2) != n_col_vecs
+        throw(
+            DimensionMismatch(
+                "the column compressor must be a `Right` compressor with \
+                `compression_dim == rank` (= $(n_col_vecs)); it completed to size \
+                $(size(op)) but $((size(A, 2), n_col_vecs)) is required to form `C = A * X`."
+            )
+        )
+    end
+    return nothing
+end
+
+function validate_row_operator(op::CompressorRecipe, A::AbstractMatrix, n_row_vecs::Int64)
+    # rows are formed as `R = Y' * A`, so `Y'` must have size `(n_row_vecs, size(A, 1))`
+    if size(op, 1) != n_row_vecs || size(op, 2) != size(A, 1)
+        throw(
+            DimensionMismatch(
+                "the row compressor must be a `Left` compressor with \
+                `compression_dim == rank + oversample` (= $(n_row_vecs)); it completed to \
+                size $(size(op)) but $((n_row_vecs, size(A, 1))) is required to form \
+                `R = Y' * A`."
+            )
+        )
+    end
+    return nothing
+end
+
 function complete_approximator(ingredients::GeneralizedNystrom, A::AbstractMatrix)
     n_col_vecs = ingredients.rank
     n_row_vecs = ingredients.rank + ingredients.oversample
@@ -238,6 +272,8 @@ function complete_approximator(ingredients::GeneralizedNystrom, A::AbstractMatri
     row_idx = zeros(Int64, n_row_vecs)
     col_selector = complete_operator(ingredients.col_selector, A)
     row_selector = complete_operator(ingredients.row_selector, A)
+    validate_col_operator(col_selector, A, n_col_vecs)
+    validate_row_operator(row_selector, A, n_row_vecs)
     C = typeof(A)(undef, size(A, 1), n_col_vecs)
     R = typeof(A)(undef, n_row_vecs, size(A, 2))
     U = complete_core(ingredients.core, ingredients, A)

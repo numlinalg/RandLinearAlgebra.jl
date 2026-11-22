@@ -401,6 +401,51 @@ end
         end
     end
 
+    # A compressor operator must align with the approximation dimensions.
+    @testset "CrossApproximation: operator dimension validation" begin
+        let m = 30, n = 20, rankv = 4, oversample = 2,
+            A = rand(m, n),
+            good_col = Gaussian(cardinality = Right(), compression_dim = rankv),
+            good_row = Gaussian(cardinality = Left(), compression_dim = rankv + oversample)
+
+            # wrong column compression dimension
+            @test_throws DimensionMismatch complete_approximator(
+                GeneralizedNystrom(
+                    rank = rankv, oversample = oversample,
+                    selector_cols = Gaussian(cardinality = Right(), compression_dim = rankv + 1),
+                    selector_rows = good_row,
+                ),
+                A,
+            )
+            # wrong column cardinality (a `Left` compressor used for columns)
+            @test_throws DimensionMismatch complete_approximator(
+                GeneralizedNystrom(
+                    rank = rankv, oversample = oversample,
+                    selector_cols = Gaussian(cardinality = Left(), compression_dim = rankv),
+                    selector_rows = good_row,
+                ),
+                A,
+            )
+            # wrong row compression dimension
+            @test_throws DimensionMismatch complete_approximator(
+                GeneralizedNystrom(
+                    rank = rankv, oversample = oversample,
+                    selector_cols = good_col,
+                    selector_rows = Gaussian(cardinality = Left(), compression_dim = rankv),
+                ),
+                A,
+            )
+            # a correctly sized pair completes without error
+            @test complete_approximator(
+                GeneralizedNystrom(
+                    rank = rankv, oversample = oversample,
+                    selector_cols = good_col, selector_rows = good_row,
+                ),
+                A,
+            ) isa GeneralizedNystromRecipe
+        end
+    end
+
 end
 
 end
