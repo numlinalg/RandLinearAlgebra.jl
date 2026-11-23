@@ -166,8 +166,8 @@ end
             # first 3 rows
             @test approx_recipe.col_idx == 1:col_idx
             @test approx_recipe.row_idx == 1:row_idx
-            @test approx_recipe.C == A[:, 1:col_idx]
-            @test approx_recipe.R == A[1:row_idx, :]
+            @test approx_recipe.Column == A[:, 1:col_idx]
+            @test approx_recipe.Row == A[1:row_idx, :]
             @test typeof(approx_recipe.U) == CrossApproximationRecipe
             @test size(approx_recipe.U) == (col_idx, row_idx)
         end
@@ -192,8 +192,8 @@ end
             # first 3 rows
             @test approx_recipe.col_idx == 1:col_idx
             @test approx_recipe.row_idx == 1:row_idx
-            @test approx_recipe.C == A[:, 1:col_idx]
-            @test approx_recipe.R == A[1:row_idx, :]
+            @test approx_recipe.Column == A[:, 1:col_idx]
+            @test approx_recipe.Row == A[1:row_idx, :]
             @test typeof(approx_recipe.U) == CrossApproximationRecipe
             @test size(approx_recipe.U) == (col_idx, row_idx)
         end

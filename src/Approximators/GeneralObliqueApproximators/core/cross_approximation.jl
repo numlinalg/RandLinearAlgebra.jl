@@ -61,8 +61,8 @@ end
 # The core matrix is `U = M^dagger = R^{-1} Q'`, where `M` is the row operator applied to the
 # columns `C`. For selectors this is the intersection submatrix `A[I, J]` (the CUR case); for
 # a compressor it is `Y'C` (the generalized Nyström case). `core_input` returns `M`.
-core_input(row::SelectorRecipe, gn::GeneralizedNystromRecipe) = gn.C[gn.row_idx, :]
-core_input(row::CompressorRecipe, gn::GeneralizedNystromRecipe) = row * gn.C
+core_input(row::SelectorRecipe, gn::GeneralizedNystromRecipe) = gn.Column[gn.row_idx, :]
+core_input(row::CompressorRecipe, gn::GeneralizedNystromRecipe) = row * gn.Column
 
 function update_core!(core::CrossApproximationRecipe, gn::GeneralizedNystromRecipe, A::AbstractMatrix)
     # Factor `M = Q R`. The core `U = M^dagger = R^{-1} Q'` is never formed explicitly;
@@ -103,19 +103,19 @@ function rapproximate!(
     )
 
     # gather the columns to select rows dependently
-    copyto!(approx.C, A[:, approx.col_idx])
+    copyto!(approx.Column, A[:, approx.col_idx])
 
     # select row indices dependent on the columns selected (from `C'`, not `A'`)
     select_indices!(
         approx.row_idx,
         approx.row_operator,
-        approx.C',
+        approx.Column',
         approx.n_row_vecs,
         1
     )
 
     # gather the rows entries
-    copyto!(approx.R, A[approx.row_idx, :])
+    copyto!(approx.Row, A[approx.row_idx, :])
     # Compute the core matrix
     update_core!(approx.U, approx, A)
     return nothing

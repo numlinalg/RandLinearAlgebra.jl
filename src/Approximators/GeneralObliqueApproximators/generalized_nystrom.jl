@@ -13,7 +13,7 @@ A struct that implements the generalized Nyström decomposition, a technique for
     ``
         A \\approx XYZ.
     ``
-    (these factors are stored as the `C`, `U`, and `R` fields of the
+    (these factors are stored as the `Column`, `U`, and `Row` fields of the
     [`GeneralizedNystromRecipe`](@ref), respectively.)
 
 The column and row operators may each be either a [`Selector`](@ref) (selecting actual
@@ -172,11 +172,11 @@ A struct that contains the preallocated memory and completed operators to form a
 - `row_operator::Union{SelectorRecipe,CompressorRecipe}`, the completed row operator.
 - `row_idx::Vector{Int64}`, the selected row indices.
 - `col_idx::Vector{Int64}`, the selected column indices.
-- `C::AbstractMatrix`, the column factor `X` formed by the column operator.
-- `U::GeneralizedNystromCoreRecipe`, the core factor `Y` linking the `C` and `R` matrices to
-    approximate `A`.
-- `R::AbstractMatrix`, the row factor `Z` formed by the row operator.
-- `buffer_row::AbstractArray`, a buffer matrix used to store the result of `R`
+- `Column::AbstractMatrix`, the column factor `X` formed by the column operator.
+- `U::GeneralizedNystromCoreRecipe`, the core factor `Y` linking the `Column` and `Row`
+    matrices to approximate `A`.
+- `Row::AbstractMatrix`, the row factor `Z` formed by the row operator.
+- `buffer_row::AbstractArray`, a buffer matrix used to store the result of `Row`
     multiplied with an array.
 - `buffer_core::AbstractArray`, a buffer matrix used to store the result of `U`
     multiplied with an array.
@@ -194,9 +194,9 @@ mutable struct GeneralizedNystromRecipe{
     row_operator::RS
     row_idx::Vector{Int64}
     col_idx::Vector{Int64}
-    C::AbstractMatrix
+    Column::AbstractMatrix
     U::CR
-    R::AbstractMatrix
+    Row::AbstractMatrix
     buffer_row::AbstractArray
     buffer_core::AbstractArray
 end
@@ -315,13 +315,13 @@ end
 
 function _form_columns!(col::SelectorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
     select_indices!(approx.col_idx, col, A, approx.n_col_vecs, 1)
-    copyto!(approx.C, A[:, approx.col_idx])
+    copyto!(approx.Column, A[:, approx.col_idx])
     return nothing
 end
 
 function _form_columns!(col::CompressorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
     # C = A * X
-    mul!(approx.C, A, col)
+    mul!(approx.Column, A, col)
     return nothing
 end
 
@@ -335,13 +335,13 @@ end
 
 function _form_rows!(row::SelectorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
     select_indices!(approx.row_idx, row, A', approx.n_row_vecs, 1)
-    copyto!(approx.R, A[approx.row_idx, :])
+    copyto!(approx.Row, A[approx.row_idx, :])
     return nothing
 end
 
 function _form_rows!(row::CompressorRecipe, approx::GeneralizedNystromRecipe, A::AbstractMatrix)
     # R = Y' * A
-    mul!(approx.R, row, A)
+    mul!(approx.Row, row, A)
     return nothing
 end
 
@@ -372,9 +372,9 @@ function mul!(
     br_v = view(approx.buffer_row, :, 1:block_size)
     bc_v = view(approx.buffer_core, :, 1:block_size)
     Cv = view(C, :, 1:block_size)
-    mul!(br_v, approx.R, A[:, 1:block_size])
+    mul!(br_v, approx.Row, A[:, 1:block_size])
     mul!(bc_v, approx.U, br_v)
-    mul!(Cv, approx.C, bc_v, alpha, beta)
+    mul!(Cv, approx.Column, bc_v, alpha, beta)
 
     start = block_size + 1
     # perform remaining necessary iterations
@@ -384,9 +384,9 @@ function mul!(
         br_v = view(approx.buffer_row, :, 1:block_size)
         bc_v = view(approx.buffer_core, :, 1:block_size)
         Cv = view(C, :, start:last)
-        mul!(br_v, approx.R, A[:, start:last])
+        mul!(br_v, approx.Row, A[:, start:last])
         mul!(bc_v, approx.U, br_v)
-        mul!(Cv, approx.C, bc_v, alpha, beta)
+        mul!(Cv, approx.Column, bc_v, alpha, beta)
         start = last + 1
     end
 
@@ -397,9 +397,9 @@ function mul!(
         br_v = view(approx.buffer_row, :, 1:last_block)
         bc_v = view(approx.buffer_core, :, 1:last_block)
         Cv = view(C, :, start:last)
-        mul!(br_v, approx.R, A[:, start:last])
+        mul!(br_v, approx.Row, A[:, start:last])
         mul!(bc_v, approx.U, br_v)
-        mul!(Cv, approx.C, bc_v, alpha, beta)
+        mul!(Cv, approx.Column, bc_v, alpha, beta)
     end
 
     return
@@ -426,9 +426,9 @@ function mul!(
     br_v = view(approx.buffer_row, :, 1:block_size)
     bc_v = view(approx.buffer_core, :, 1:block_size)
     Cv = view(C, 1:block_size, :)
-    mul!(bc_v', A[1:block_size, :], approx.C)
+    mul!(bc_v', A[1:block_size, :], approx.Column)
     mul!(br_v', bc_v', approx.U)
-    mul!(Cv, br_v', approx.R, alpha, beta)
+    mul!(Cv, br_v', approx.Row, alpha, beta)
 
     start = block_size + 1
     # perform remaining necessary iterations
@@ -438,9 +438,9 @@ function mul!(
         br_v = view(approx.buffer_row, :, :)
         bc_v = view(approx.buffer_core, :, :)
         Cv = view(C, start:last, :)
-        mul!(bc_v', A[start:last, :], approx.C)
+        mul!(bc_v', A[start:last, :], approx.Column)
         mul!(br_v', bc_v', approx.U)
-        mul!(Cv, br_v', approx.R, alpha, beta)
+        mul!(Cv, br_v', approx.Row, alpha, beta)
         start = last + 1
     end
 
@@ -451,9 +451,9 @@ function mul!(
         br_v = view(approx.buffer_row, :, 1:last_block)
         bc_v = view(approx.buffer_core, :, 1:last_block)
         Cv = view(C, start:last, :)
-        mul!(bc_v', A[start:last, :], approx.C)
+        mul!(bc_v', A[start:last, :], approx.Column)
         mul!(br_v', bc_v', approx.U)
-        mul!(Cv, br_v', approx.R, alpha, beta)
+        mul!(Cv, br_v', approx.Row, alpha, beta)
     end
 
     return

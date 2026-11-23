@@ -82,8 +82,8 @@ function rapproximate!(approx::GeneralizedNystromRecipe{TestCoreRecipe}, A::Abst
     select_indices!(approx.col_idx, approx.column_operator, A, approx.n_col_vecs, 0)
     # select row indices
     select_indices!(approx.row_idx, approx.row_operator, A, approx.n_row_vecs, 0) 
-    approx.C .= A[:, approx.col_idx]
-    approx.R .= A[approx.row_idx, :]
+    approx.Column .= A[:, approx.col_idx]
+    approx.Row .= A[approx.row_idx, :]
     # update the core matrix
     update_core!(approx.U, approx, A)
     return
@@ -200,9 +200,9 @@ end
             :row_operator,
             :row_idx,
             :col_idx,
-            :C,
+            :Column,
             :U,
-            :R,
+            :Row,
             :buffer_row,
             :buffer_core
         )
@@ -259,10 +259,10 @@ end
             @test size(recipe.col_idx) == (rank, )
             # test the matrices are allocated with the correct 
             # types and size
-            @test typeof(recipe.C) == typeof(A)
-            @test size(recipe.C) == (n_rows, rank)
-            @test typeof(recipe.R) == typeof(A)
-            @test size(recipe.R) == (rank + oversample, n_cols)
+            @test typeof(recipe.Column) == typeof(A)
+            @test size(recipe.Column) == (n_rows, rank)
+            @test typeof(recipe.Row) == typeof(A)
+            @test size(recipe.Row) == (rank + oversample, n_cols)
             @test typeof(recipe.U) == TestCoreRecipe
             @test size(recipe.U) == (2, 2)
             # test that the buffer matrices are the correct size and type
@@ -306,10 +306,10 @@ end
             @test size(recipe.col_idx) == (rank, )
             # test the matrices are allocated with the correct 
             # types and size
-            @test typeof(recipe.C) == typeof(A)
-            @test size(recipe.C) == (n_rows, rank)
-            @test typeof(recipe.R) == typeof(A)
-            @test size(recipe.R) == (rank + oversample, n_cols)
+            @test typeof(recipe.Column) == typeof(A)
+            @test size(recipe.Column) == (n_rows, rank)
+            @test typeof(recipe.Row) == typeof(A)
+            @test size(recipe.Row) == (rank + oversample, n_cols)
             @test typeof(recipe.U) == TestCoreRecipe
             @test size(recipe.U) == (2, 2)
             # test that the buffer matrices are the correct size and type
@@ -425,20 +425,20 @@ end
 
             # test left mat multiplication
             mul!(C, recipe, B, alpha, beta)
-            @test norm(C - (Ctest * beta + alpha * recipe.C * recipe.U * recipe.R * B)) < 1e-10
+            @test norm(C - (Ctest * beta + alpha * recipe.Column * recipe.U * recipe.Row * B)) < 1e-10
             # reset the C for later test
             C = deepcopy(Ctest)
             #test left vec multiplication
             mul!(y, recipe, x, alpha, beta)
-            @test norm(y - (ytest * beta + alpha * recipe.C * recipe.U * recipe.R * x)) < 1e-10
+            @test norm(y - (ytest * beta + alpha * recipe.Column * recipe.U * recipe.Row * x)) < 1e-10
             # reset the y for later test
             y = deepcopy(ytest)
             # now test with the adjoint of the recipe
             mul!(B, recipe', C, alpha, beta)
-            @test norm(B - (Btest * beta + alpha * recipe.R' * (recipe.U' * (recipe.C' * C)))) < 1e-10
+            @test norm(B - (Btest * beta + alpha * recipe.Row' * (recipe.U' * (recipe.Column' * C)))) < 1e-10
             # now test for the vector case
             mul!(x, recipe', y, alpha, beta)
-            @test norm(x - (xtest * beta + alpha * recipe.R' * (recipe.U' * (recipe.C' * y)))) < 1e-10
+            @test norm(x - (xtest * beta + alpha * recipe.Row' * (recipe.U' * (recipe.Column' * y)))) < 1e-10
         end
             
 
@@ -474,20 +474,20 @@ end
 
             # test left mat multiplication
             mul!(C, recipe, B, alpha, beta)
-            @test norm(C - (Ctest * beta + alpha * recipe.C * recipe.U * recipe.R * B)) < 1e-10
+            @test norm(C - (Ctest * beta + alpha * recipe.Column * recipe.U * recipe.Row * B)) < 1e-10
             # reset the C for later test
             C = deepcopy(Ctest)
             #test left vec multiplication
             mul!(y, recipe, x, alpha, beta)
-            @test norm(y - (ytest * beta + alpha * recipe.C * recipe.U * recipe.R * x)) < 1e-10
+            @test norm(y - (ytest * beta + alpha * recipe.Column * recipe.U * recipe.Row * x)) < 1e-10
             # reset the y for later test
             y = deepcopy(ytest)
             # now test with the adjoint of the recipe
             mul!(B, recipe', C, alpha, beta)
-            @test norm(B - (Btest * beta + alpha * recipe.R' * (recipe.U' * (recipe.C' * C)))) < 1e-10
+            @test norm(B - (Btest * beta + alpha * recipe.Row' * (recipe.U' * (recipe.Column' * C)))) < 1e-10
             # now test for the vector case
             mul!(x, recipe', y, alpha, beta)
-            @test norm(x - (xtest * beta + alpha * recipe.R' * (recipe.U' * (recipe.C' * y)))) < 1e-10
+            @test norm(x - (xtest * beta + alpha * recipe.Row' * (recipe.U' * (recipe.Column' * y)))) < 1e-10
         end
 
         # begin with right multiplication with a matrix and vector and default 
@@ -522,20 +522,20 @@ end
 
             # test left mat multiplication
             mul!(C, B, recipe, alpha, beta)
-            @test norm(C - (Ctest * beta + alpha * B * recipe.C * recipe.U * recipe.R)) < 1e-10
+            @test norm(C - (Ctest * beta + alpha * B * recipe.Column * recipe.U * recipe.Row)) < 1e-10
             # reset the C for later test
             C = deepcopy(Ctest)
             #test left vec multiplication
             mul!(x', y', recipe, alpha, beta)
-            @test norm(x' - (xtest' * beta + alpha * (y' * (recipe.C * recipe.U) * recipe.R))) < 1e-10
+            @test norm(x' - (xtest' * beta + alpha * (y' * (recipe.Column * recipe.U) * recipe.Row))) < 1e-10
             # reset the y for later test
             y = deepcopy(ytest)
             # now test with the adjoint of the recipe
             mul!(B, C, recipe', alpha, beta)
-            @test norm(B - (Btest * beta + alpha * C * recipe.R' * (recipe.U' * (recipe.C')))) < 1e-10
+            @test norm(B - (Btest * beta + alpha * C * recipe.Row' * (recipe.U' * (recipe.Column')))) < 1e-10
             # now test for the vector case
             mul!(y', x', recipe', alpha, beta)
-            @test norm(y' - (ytest' * beta + alpha * x' * recipe.R' * (recipe.U' * (recipe.C')))) < 1e-10
+            @test norm(y' - (ytest' * beta + alpha * x' * recipe.Row' * (recipe.U' * (recipe.Column')))) < 1e-10
         end
 
         # begin with right multiplication with a matrix and vector and default 
@@ -570,20 +570,20 @@ end
 
             # test left mat multiplication
             mul!(C, B, recipe, alpha, beta)
-            @test norm(C - (Ctest * beta + alpha * B * recipe.C * recipe.U * recipe.R)) < 1e-10
+            @test norm(C - (Ctest * beta + alpha * B * recipe.Column * recipe.U * recipe.Row)) < 1e-10
             # reset the C for later test
             C = deepcopy(Ctest)
             #test left vec multiplication
             mul!(x', y', recipe, alpha, beta)
-            @test norm(x' - (xtest' * beta + alpha * (y' * (recipe.C * recipe.U) * recipe.R))) < 1e-10
+            @test norm(x' - (xtest' * beta + alpha * (y' * (recipe.Column * recipe.U) * recipe.Row))) < 1e-10
             # reset the y for later test
             y = deepcopy(ytest)
             # now test with the adjoint of the recipe
             mul!(B, C, recipe', alpha, beta)
-            @test norm(B - (Btest * beta + alpha * C * recipe.R' * (recipe.U' * (recipe.C')))) < 1e-10
+            @test norm(B - (Btest * beta + alpha * C * recipe.Row' * (recipe.U' * (recipe.Column')))) < 1e-10
             # now test for the vector case
             mul!(y', x', recipe', alpha, beta)
-            @test norm(y' - (ytest' * beta + alpha * x' * recipe.R' * (recipe.U' * (recipe.C')))) < 1e-10
+            @test norm(y' - (ytest' * beta + alpha * x' * recipe.Row' * (recipe.U' * (recipe.Column')))) < 1e-10
         end
 
     end
