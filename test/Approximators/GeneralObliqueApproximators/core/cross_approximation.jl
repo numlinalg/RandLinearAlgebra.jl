@@ -58,7 +58,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
             core = CrossApproximation()
 
@@ -79,7 +79,7 @@ end
             approx = CUR(
                 rank = rank,
                 oversample = oversample,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             )
             core = CrossApproximation()
 
@@ -103,7 +103,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
             core = CrossApproximation()
 
@@ -128,7 +128,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
             core = CrossApproximation()
             # test the complete core function
@@ -155,14 +155,14 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector(),
+                column_operator = TestSelector(),
                 core = CrossApproximation() 
             ) 
             approx_recipe = complete_approximator(approx, A)
             rapproximate!(approx_recipe, A)
             col_idx = approx_recipe.n_col_vecs
             row_idx = approx_recipe.n_row_vecs
-            # test that the cur approximation corresponds to the first 2 columns and 
+            # test that the gn approximation corresponds to the first 2 columns and 
             # first 3 rows
             @test approx_recipe.col_idx == 1:col_idx
             @test approx_recipe.row_idx == 1:row_idx
@@ -181,14 +181,14 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector(), 
+                column_operator = TestSelector(), 
                 core = CrossApproximation()
             ) 
             approx_recipe = complete_approximator(approx, A)
             rapproximate!(approx_recipe, A)
             col_idx = approx_recipe.n_col_vecs
             row_idx = approx_recipe.n_row_vecs
-            # test that the cur approximation corresponds to the first 2 columns and 
+            # test that the gn approximation corresponds to the first 2 columns and 
             # first 3 rows
             @test approx_recipe.col_idx == 1:col_idx
             @test approx_recipe.row_idx == 1:row_idx
@@ -217,7 +217,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector(),
+                column_operator = TestSelector(),
                 core = CrossApproximation()
             ) 
             recipe = complete_approximator(approx, A)
@@ -258,7 +258,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector(),
+                column_operator = TestSelector(),
                 core = CrossApproximation()
             ) 
             recipe = complete_approximator(approx, A)
@@ -298,7 +298,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector(),
+                column_operator = TestSelector(),
                 core = CrossApproximation()
             ) 
             recipe = complete_approximator(approx, A)
@@ -339,7 +339,7 @@ end
             approx = CUR(
                 rank = rank, 
                 oversample = oversample, 
-                selector_cols = TestSelector(),
+                column_operator = TestSelector(),
                 core = CrossApproximation()
             ) 
             recipe = complete_approximator(approx, A)
@@ -376,8 +376,8 @@ end
             gn = GeneralizedNystrom(
                 rank = rankv,
                 oversample = oversample,
-                selector_cols = Gaussian(cardinality = Right(), compression_dim = rankv),
-                selector_rows = Gaussian(
+                column_operator = Gaussian(cardinality = Right(), compression_dim = rankv),
+                row_operator = Gaussian(
                     cardinality = Left(), compression_dim = rankv + oversample
                 ),
             )
@@ -388,16 +388,16 @@ end
             mixed = GeneralizedNystrom(
                 rank = rankv,
                 oversample = oversample,
-                selector_cols = Gaussian(cardinality = Right(), compression_dim = rankv),
-                selector_rows = TestSelector(),
+                column_operator = Gaussian(cardinality = Right(), compression_dim = rankv),
+                row_operator = TestSelector(),
             )
             @test !(mixed isa CUR)
             @test norm(A - rapproximate(mixed, A) * Id) / norm(A) < 1e-8
 
             # both selectors -> dependent CUR path
-            cur = CUR(rank = rankv, oversample = oversample, selector_cols = TestSelector())
-            @test cur isa CUR
-            @test norm(A - rapproximate(cur, A) * Id) / norm(A) < 1e-8
+            gn = CUR(rank = rankv, oversample = oversample, column_operator = TestSelector())
+            @test gn isa CUR
+            @test norm(A - rapproximate(gn, A) * Id) / norm(A) < 1e-8
         end
     end
 
@@ -412,8 +412,8 @@ end
             @test_throws DimensionMismatch complete_approximator(
                 GeneralizedNystrom(
                     rank = rankv, oversample = oversample,
-                    selector_cols = Gaussian(cardinality = Right(), compression_dim = rankv + 1),
-                    selector_rows = good_row,
+                    column_operator = Gaussian(cardinality = Right(), compression_dim = rankv + 1),
+                    row_operator = good_row,
                 ),
                 A,
             )
@@ -421,8 +421,8 @@ end
             @test_throws DimensionMismatch complete_approximator(
                 GeneralizedNystrom(
                     rank = rankv, oversample = oversample,
-                    selector_cols = Gaussian(cardinality = Left(), compression_dim = rankv),
-                    selector_rows = good_row,
+                    column_operator = Gaussian(cardinality = Left(), compression_dim = rankv),
+                    row_operator = good_row,
                 ),
                 A,
             )
@@ -430,8 +430,8 @@ end
             @test_throws DimensionMismatch complete_approximator(
                 GeneralizedNystrom(
                     rank = rankv, oversample = oversample,
-                    selector_cols = good_col,
-                    selector_rows = Gaussian(cardinality = Left(), compression_dim = rankv),
+                    column_operator = good_col,
+                    row_operator = Gaussian(cardinality = Left(), compression_dim = rankv),
                 ),
                 A,
             )
@@ -439,7 +439,7 @@ end
             @test complete_approximator(
                 GeneralizedNystrom(
                     rank = rankv, oversample = oversample,
-                    selector_cols = good_col, selector_rows = good_row,
+                    column_operator = good_col, row_operator = good_row,
                 ),
                 A,
             ) isa GeneralizedNystromRecipe

@@ -39,19 +39,19 @@ mutable struct CrossApproximationRecipe <: GeneralizedNystromCoreRecipe
     buffer::AbstractMatrix
 end
 
-function complete_core(core::CrossApproximation, cur::GeneralizedNystrom,  A::AbstractMatrix)
+function complete_core(core::CrossApproximation, gn::GeneralizedNystrom,  A::AbstractMatrix)
     # preallocate the Q and R factors of the intersection submatrix `A[I, J]`, which is
     # `(rank + oversample) x rank`. We use identity initializers because this form
     # preallocates all dense entries and works for sparse arrays.
-    Q = typeof(A)(I, cur.rank + cur.oversample, cur.rank)
-    R = typeof(A)(I, cur.rank, cur.rank)
+    Q = typeof(A)(I, gn.rank + gn.oversample, gn.rank)
+    R = typeof(A)(I, gn.rank, gn.rank)
     # preallocate a dense buffer with `rank` rows for applying the `Q` factor. Its column
     # count is the block size; inputs wider than this are processed in blocks via views.
-    block_size = cur.block_size == 0 ? size(A, 2) : cur.block_size
-    buffer = Matrix{eltype(A)}(undef, cur.rank, block_size)
+    block_size = gn.block_size == 0 ? size(A, 2) : gn.block_size
+    buffer = Matrix{eltype(A)}(undef, gn.rank, block_size)
     return CrossApproximationRecipe(
-        cur.rank,
-        cur.rank + cur.oversample,
+        gn.rank,
+        gn.rank + gn.oversample,
         Q,
         R,
         buffer
@@ -61,14 +61,14 @@ end
 # The core matrix is `U = M^dagger = R^{-1} Q'`, where `M` is the row operator applied to the
 # columns `C`. For selectors this is the intersection submatrix `A[I, J]` (the CUR case); for
 # a compressor it is `Y'C` (the generalized Nyström case). `core_input` returns `M`.
-core_input(row::SelectorRecipe, cur::GeneralizedNystromRecipe) = cur.C[cur.row_idx, :]
-core_input(row::CompressorRecipe, cur::GeneralizedNystromRecipe) = row * cur.C
+core_input(row::SelectorRecipe, gn::GeneralizedNystromRecipe) = gn.C[gn.row_idx, :]
+core_input(row::CompressorRecipe, gn::GeneralizedNystromRecipe) = row * gn.C
 
-function update_core!(core::CrossApproximationRecipe, cur::GeneralizedNystromRecipe, A::AbstractMatrix)
+function update_core!(core::CrossApproximationRecipe, gn::GeneralizedNystromRecipe, A::AbstractMatrix)
     # Factor `M = Q R`. The core `U = M^dagger = R^{-1} Q'` is never formed explicitly;
     # instead we store the thin `Q` and the upper triangular `R` and apply them during
     # multiplication.
-    F = qr!(core_input(cur.row_selector, cur))
+    F = qr!(core_input(gn.row_operator, gn))
     core.Q = Array(F.Q)
     core.R = Matrix(F.R)
     return nothing
@@ -96,7 +96,7 @@ function rapproximate!(
     # select column indices
     select_indices!(
         approx.col_idx,
-        approx.col_selector,
+        approx.column_operator,
         A,
         approx.n_col_vecs,
         1
@@ -108,7 +108,7 @@ function rapproximate!(
     # select row indices dependent on the columns selected (from `C'`, not `A'`)
     select_indices!(
         approx.row_idx,
-        approx.row_selector,
+        approx.row_operator,
         approx.C',
         approx.n_row_vecs,
         1

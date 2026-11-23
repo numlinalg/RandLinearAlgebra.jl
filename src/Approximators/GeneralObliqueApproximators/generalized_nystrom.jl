@@ -4,15 +4,17 @@
 include("generalized_nystrom_core.jl")
 
 """
-    GeneralizedNystrom{CS,RS,C} <: Approximator
+    GeneralizedNystrom{CS,RS} <: Approximator
 
 A struct that implements the generalized Nyström decomposition, a technique for computing a
     low-rank approximation to a matrix, ``A``. This technique forms a column operator applied
-    to ``A`` to produce ``C``, a row operator applied to ``A`` to produce ``R``, and a core
-    matrix, ``U``, such that
+    to ``A`` to produce a column factor ``X``, a row operator applied to ``A`` to produce a
+    row factor ``Z``, and a core matrix, ``Y``, such that
     ``
-        A \\approx CUR.
+        A \\approx XYZ.
     ``
+    (these factors are stored as the `C`, `U`, and `R` fields of the
+    [`GeneralizedNystromRecipe`](@ref), respectively.)
 
 The column and row operators may each be either a [`Selector`](@ref) (selecting actual
     column/row subsets, as in a CUR decomposition) or a [`Compressor`](@ref) (sketching the
@@ -23,11 +25,10 @@ The column and row operators may each be either a [`Selector`](@ref) (selecting 
 # Type Parameters
 - `CS<:Union{Selector,Compressor}`, the type of the column operator.
 - `RS<:Union{Selector,Compressor}`, the type of the row operator.
-- `C<:GeneralizedNystromCore`, the type of the core method.
 
 # Mathematical Description
-In the CUR case, ``C`` and ``R`` are subsets of the columns and rows of ``A`` and the core
-    ``U`` is formed from their intersection. In general finding row indices ``I`` and column
+In the CUR case, ``X`` and ``Z`` are subsets of the columns and rows of ``A`` and the core
+    ``Y`` is formed from their intersection. In general finding row indices ``I`` and column
     indices ``J`` that minimize the approximation error is an NP-hard problem
     [shitov2021column](@cite); thus, we often aim to find sufficiently good indices. The best
     known quality of a rank ``r`` CUR approximation to a matrix ``\\tilde A_r`` is known to be
@@ -50,15 +51,15 @@ In practice numerous randomized methods match the performance of this best possi
 - `rank::Int64`, the desired rank of approximation.
 - `oversample::Int64`, the amount of extra rows to sample. By default this zero. Making it a
     positive integer can improve the approximation quality [park2025accuracy](@cite).
-- `col_selector::Union{Selector,Compressor}`, the operator used to form the columns, `C`.
-- `row_selector::Union{Selector,Compressor}`, the operator used to form the rows, `R`.
-- `core::GeneralizedNystromCore`, the method for computing the core matrix, `U`.
+- `column_operator::Union{Selector,Compressor}`, the operator used to form the column factor, `X`.
+- `row_operator::Union{Selector,Compressor}`, the operator used to form the row factor, `Z`.
+- `core::GeneralizedNystromCore`, the method for computing the core factor, `Y`.
 - `block_size::Int64`, number of vectors stored in a buffer matrix for multiplication.
 # Constructor
     GeneralizedNystrom(rank;
         oversample = 0,
-        selector_cols = LUPP(),
-        selector_rows = selector_cols,
+        column_operator = LUPP(),
+        row_operator = column_operator,
         core = CrossApproximation(),
         block_size = 0
     )
@@ -67,9 +68,9 @@ In practice numerous randomized methods match the performance of this best possi
 - `rank::Int64`, the desired rank of approximation.
 - `oversample::Int64`, the amount of extra rows to sample. By default this zero. Making it a
     positive integer can improve the approximation quality [park2025accuracy](@cite).
-- `selector_cols::Union{Selector,Compressor}`, the operator used to form the columns, `C`.
-- `selector_rows::Union{Selector,Compressor}`, the operator used to form the rows, `R`.
-- `core::GeneralizedNystromCore`, the method for computing the core matrix, `U`.
+- `column_operator::Union{Selector,Compressor}`, the operator used to form the column factor, `X`.
+- `row_operator::Union{Selector,Compressor}`, the operator used to form the row factor, `Z`.
+- `core::GeneralizedNystromCore`, the method for computing the core factor, `Y`.
 - `block_size::Int64`, number of vectors stored in a buffer matrix for multiplication. If
     zero is inputted it set this to be the number of columns in `A`.
 
@@ -83,20 +84,23 @@ In practice numerous randomized methods match the performance of this best possi
 mutable struct GeneralizedNystrom{
     CS<:Union{Selector,Compressor},
     RS<:Union{Selector,Compressor},
-    C<:GeneralizedNystromCore,
 } <: Approximator
     rank::Int64
     oversample::Int64
-    col_selector::CS
-    row_selector::RS
-    core::C
+    column_operator::CS
+    row_operator::RS
+    core::GeneralizedNystromCore
     block_size::Int64
     function GeneralizedNystrom(
-        rank, oversample, col_selector::CS, row_selector::RS, core::C, block_size
+        rank,
+        oversample,
+        column_operator::CS,
+        row_operator::RS,
+        core::GeneralizedNystromCore,
+        block_size,
     ) where {
         CS<:Union{Selector,Compressor},
         RS<:Union{Selector,Compressor},
-        C<:GeneralizedNystromCore,
     }
         if rank < 0
             return throw(ArgumentError("Field `rank` must be non-negative."))
@@ -110,8 +114,8 @@ mutable struct GeneralizedNystrom{
             return throw(ArgumentError("Field `block_size` must be non-negative."))
         end
 
-        return new{CS,RS,C}(
-            rank, oversample, col_selector, row_selector, core, block_size
+        return new{CS,RS}(
+            rank, oversample, column_operator, row_operator, core, block_size
         )
     end
 
@@ -121,13 +125,13 @@ end
 function GeneralizedNystrom(;
     rank = 1,
     oversample = 0,
-    selector_cols = LUPP(),
-    selector_rows = selector_cols,
+    column_operator = LUPP(),
+    row_operator = column_operator,
     core = CrossApproximation(),
     block_size = 0
 )
     return GeneralizedNystrom(
-        rank, oversample, selector_cols, selector_rows, core, block_size
+        rank, oversample, column_operator, row_operator, core, block_size
     )
 end
 
@@ -142,9 +146,9 @@ A type alias for a [`GeneralizedNystrom`](@ref) whose column and row operators a
 const CUR = GeneralizedNystrom{<:Selector,<:Selector}
 
 CUR(; kwargs...) = GeneralizedNystrom(; kwargs...)
-function CUR(rank, oversample, col_selector, row_selector, core, block_size)
+function CUR(rank, oversample, column_operator, row_operator, core, block_size)
     return GeneralizedNystrom(
-        rank, oversample, col_selector, row_selector, core, block_size
+        rank, oversample, column_operator, row_operator, core, block_size
     )
 end
 
@@ -164,14 +168,14 @@ A struct that contains the preallocated memory and completed operators to form a
 - `n_cols::Int64`, the column dimension of the approximation.
 - `n_row_vecs::Int64`, the number of rows selected in the approximation.
 - `n_col_vecs::Int64`, the number of columns selected in the approximation.
-- `col_selector::Union{SelectorRecipe,CompressorRecipe}`, the completed column operator.
-- `row_selector::Union{SelectorRecipe,CompressorRecipe}`, the completed row operator.
+- `column_operator::Union{SelectorRecipe,CompressorRecipe}`, the completed column operator.
+- `row_operator::Union{SelectorRecipe,CompressorRecipe}`, the completed row operator.
 - `row_idx::Vector{Int64}`, the selected row indices.
 - `col_idx::Vector{Int64}`, the selected column indices.
-- `C::AbstractMatrix`, the entries of `A` at the selected column indices.
-- `U::GeneralizedNystromCoreRecipe`, the core matrix linking the `C` and `R` matrices to
+- `C::AbstractMatrix`, the column factor `X` formed by the column operator.
+- `U::GeneralizedNystromCoreRecipe`, the core factor `Y` linking the `C` and `R` matrices to
     approximate `A`.
-- `R::AbstractMatrix`, the entries of `A` at the selected row indices.
+- `R::AbstractMatrix`, the row factor `Z` formed by the row operator.
 - `buffer_row::AbstractArray`, a buffer matrix used to store the result of `R`
     multiplied with an array.
 - `buffer_core::AbstractArray`, a buffer matrix used to store the result of `U`
@@ -186,8 +190,8 @@ mutable struct GeneralizedNystromRecipe{
     n_cols::Int64
     n_row_vecs::Int64
     n_col_vecs::Int64
-    col_selector::CS
-    row_selector::RS
+    column_operator::CS
+    row_operator::RS
     row_idx::Vector{Int64}
     col_idx::Vector{Int64}
     C::AbstractMatrix
@@ -270,10 +274,10 @@ function complete_approximator(ingredients::GeneralizedNystrom, A::AbstractMatri
 
     col_idx = zeros(Int64, n_col_vecs)
     row_idx = zeros(Int64, n_row_vecs)
-    col_selector = complete_operator(ingredients.col_selector, A)
-    row_selector = complete_operator(ingredients.row_selector, A)
-    validate_col_operator(col_selector, A, n_col_vecs)
-    validate_row_operator(row_selector, A, n_row_vecs)
+    column_operator = complete_operator(ingredients.column_operator, A)
+    row_operator = complete_operator(ingredients.row_operator, A)
+    validate_col_operator(column_operator, A, n_col_vecs)
+    validate_row_operator(row_operator, A, n_row_vecs)
     C = typeof(A)(undef, size(A, 1), n_col_vecs)
     R = typeof(A)(undef, n_row_vecs, size(A, 2))
     U = complete_core(ingredients.core, ingredients, A)
@@ -282,8 +286,8 @@ function complete_approximator(ingredients::GeneralizedNystrom, A::AbstractMatri
         size(A, 2),
         n_row_vecs,
         n_col_vecs,
-        col_selector,
-        row_selector,
+        column_operator,
+        row_operator,
         row_idx,
         col_idx,
         C,
@@ -305,7 +309,7 @@ end
 # Form the column factor `C` by applying the column operator to `A`. A selector selects and
 # gathers columns; a compressor sketches the column space via a right multiplication.
 function form_columns!(approx::GeneralizedNystromRecipe, A::AbstractMatrix)
-    _form_columns!(approx.col_selector, approx, A)
+    _form_columns!(approx.column_operator, approx, A)
     return nothing
 end
 
@@ -325,7 +329,7 @@ end
 # A selector selects and gathers rows (pivoting on `A'`); a compressor sketches the row space
 # via a left multiplication.
 function form_rows!(approx::GeneralizedNystromRecipe, A::AbstractMatrix)
-    _form_rows!(approx.row_selector, approx, A)
+    _form_rows!(approx.row_operator, approx, A)
     return nothing
 end
 

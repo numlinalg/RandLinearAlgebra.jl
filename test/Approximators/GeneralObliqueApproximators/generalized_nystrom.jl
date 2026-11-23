@@ -30,12 +30,12 @@ mutable struct TestCoreRecipe <: GeneralizedNystromCoreRecipe
     A::AbstractMatrix
 end
 
-function complete_core(core::TestCore, cur::GeneralizedNystrom, A::AbstractMatrix)
+function complete_core(core::TestCore, gn::GeneralizedNystrom, A::AbstractMatrix)
     return TestCoreRecipe(rand(2,2))
 end
 
-function update_core!(core::TestCoreRecipe, cur::GeneralizedNystromRecipe, A::AbstractMatrix)
-    core.A = pinv(Array(A[cur.row_idx, cur.col_idx]))
+function update_core!(core::TestCoreRecipe, gn::GeneralizedNystromRecipe, A::AbstractMatrix)
+    core.A = pinv(Array(A[gn.row_idx, gn.col_idx]))
     return nothing
 end
 
@@ -79,9 +79,9 @@ end
 
 function rapproximate!(approx::GeneralizedNystromRecipe{TestCoreRecipe}, A::AbstractMatrix)
     # select column indices
-    select_indices!(approx.col_idx, approx.col_selector, A, approx.n_col_vecs, 0)
+    select_indices!(approx.col_idx, approx.column_operator, A, approx.n_col_vecs, 0)
     # select row indices
-    select_indices!(approx.row_idx, approx.row_selector, A, approx.n_row_vecs, 0) 
+    select_indices!(approx.row_idx, approx.row_operator, A, approx.n_row_vecs, 0) 
     approx.C .= A[:, approx.col_idx]
     approx.R .= A[approx.row_idx, :]
     # update the core matrix
@@ -99,8 +99,8 @@ end
         @test fieldnames(GeneralizedNystrom) == (
             :rank,
             :oversample,
-            :col_selector,
-            :row_selector,
+            :column_operator,
+            :row_operator,
             :core,
             :block_size
         )
@@ -169,20 +169,20 @@ end
             oversample = 1, 
             core = TestCore()
 
-            cur = CUR(
+            gn = CUR(
                 rank = rank,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             )
 
-            @test typeof(cur.core) == TestCore
-            @test typeof(cur.col_selector) == TestSelector
-            @test typeof(cur.row_selector) == TestSelector
-            @test cur.oversample == oversample
-            @test cur.block_size === block_size
-            @test cur.rank == rank
+            @test typeof(gn.core) == TestCore
+            @test typeof(gn.column_operator) == TestSelector
+            @test typeof(gn.row_operator) == TestSelector
+            @test gn.oversample == oversample
+            @test gn.block_size === block_size
+            @test gn.rank == rank
         end
 
     end 
@@ -196,8 +196,8 @@ end
             :n_cols,
             :n_row_vecs,
             :n_col_vecs,
-            :col_selector,
-            :row_selector,
+            :column_operator,
+            :row_operator,
             :row_idx,
             :col_idx,
             :C,
@@ -234,15 +234,15 @@ end
             oversample = 1, 
             core = TestCore()
 
-            cur = CUR(
+            gn = CUR(
                 rank = rank,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
 
-            recipe = complete_approximator(cur, A)
+            recipe = complete_approximator(gn, A)
             @test recipe isa CURRecipe
             # test that the size function works correctly for recipe
             @test recipe.n_row_vecs == rank + oversample
@@ -250,8 +250,8 @@ end
             @test size(recipe) == (n_rows, n_cols)
             @test size(recipe') == (n_cols, n_rows)
             # test that the selectors are the right type
-            @test typeof(recipe.col_selector) == TestSelectorRecipe
-            @test typeof(recipe.row_selector) == TestSelectorRecipe
+            @test typeof(recipe.column_operator) == TestSelectorRecipe
+            @test typeof(recipe.row_operator) == TestSelectorRecipe
             # test that the index vectors are correct type and size
             @test typeof(recipe.row_idx) == Vector{Int64}
             @test size(recipe.row_idx) == (rank + oversample, )
@@ -282,23 +282,23 @@ end
             oversample = 1, 
             core = TestCore()
 
-            cur = CUR(
+            gn = CUR(
                 rank = rank,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
 
-            recipe = complete_approximator(cur, A)
+            recipe = complete_approximator(gn, A)
             # test that the size function works correctly for recipe
             @test recipe.n_row_vecs == rank + oversample
             @test recipe.n_col_vecs == rank
             @test size(recipe) == (n_rows, n_cols)
             @test size(recipe') == (n_cols, n_rows)
             # test that the selectors are the right type
-            @test typeof(recipe.col_selector) == TestSelectorRecipe
-            @test typeof(recipe.row_selector) == TestSelectorRecipe
+            @test typeof(recipe.column_operator) == TestSelectorRecipe
+            @test typeof(recipe.row_operator) == TestSelectorRecipe
             # test that the index vectors are correct type and size
             @test typeof(recipe.row_idx) == Vector{Int64}
             @test size(recipe.row_idx) == (rank + oversample, )
@@ -329,15 +329,15 @@ end
             oversample = 1, 
             core = TestCore()
 
-            cur = CUR(
+            gn = CUR(
                 rank = rank,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
 
-            recipe = complete_approximator(cur, A)
+            recipe = complete_approximator(gn, A)
             @test typeof(recipe.buffer_row) == typeof(A)
             @test size(recipe.buffer_row) == (rank + oversample, size(A, 2))
             @test typeof(recipe.buffer_core) == typeof(A)
@@ -354,17 +354,17 @@ end
             oversample = 1, 
             core = TestCore()
 
-            cur = CUR(
+            gn = CUR(
                 rank = rank,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
 
             @test_throws DomainError(
                 "`rank` is greater than number of columns."
-            ) complete_approximator(cur, A)
+            ) complete_approximator(gn, A)
         end
 
         # test when rank + oversample is larger than number of rows
@@ -377,17 +377,17 @@ end
             oversample = 4, 
             core = TestCore()
 
-            cur = CUR(
+            gn = CUR(
                 rank = rank,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = TestSelector()
+                column_operator = TestSelector()
             ) 
 
             @test_throws DomainError(
                 "`rank + oversample` is greater than number of rows."
-            ) complete_approximator(cur, A)
+            ) complete_approximator(gn, A)
         end
 
     end
@@ -403,7 +403,7 @@ end
             beta = 0.1,
             A = rand(n_rows, n_cols),
             block_size = 0,
-            col_selector = TestSelector(),
+            column_operator = TestSelector(),
             core = TestCore(),
             B = rand(n_cols, 10),
             Btest = deepcopy(B),
@@ -414,14 +414,14 @@ end
             y = rand(n_rows),
             ytest = deepcopy(y)
 
-            cur = CUR(
+            gn = CUR(
                 rank = rankv,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = col_selector 
+                column_operator = column_operator 
             ) 
-            recipe = rapproximate(cur, A)
+            recipe = rapproximate(gn, A)
 
             # test left mat multiplication
             mul!(C, recipe, B, alpha, beta)
@@ -452,7 +452,7 @@ end
             beta = 0.1,
             A = rand(n_rows, n_cols),
             block_size = 3,
-            col_selector = TestSelector(),
+            column_operator = TestSelector(),
             core = TestCore(),
             B = rand(n_cols, 10),
             Btest = deepcopy(B),
@@ -463,14 +463,14 @@ end
             y = rand(n_rows),
             ytest = deepcopy(y)
 
-            cur = CUR(
+            gn = CUR(
                 rank = rankv,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = col_selector 
+                column_operator = column_operator 
             ) 
-            recipe = rapproximate(cur, A)
+            recipe = rapproximate(gn, A)
 
             # test left mat multiplication
             mul!(C, recipe, B, alpha, beta)
@@ -500,7 +500,7 @@ end
             beta = 0.1,
             A = rand(n_rows, n_cols),
             block_size = 0,
-            col_selector = TestSelector(),
+            column_operator = TestSelector(),
             core = TestCore(),
             B = rand(10, n_rows),
             Btest = deepcopy(B),
@@ -511,14 +511,14 @@ end
             y = rand(n_rows),
             ytest = deepcopy(y)
 
-            cur = CUR(
+            gn = CUR(
                 rank = rankv,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = col_selector 
+                column_operator = column_operator 
             ) 
-            recipe = rapproximate(cur, A)
+            recipe = rapproximate(gn, A)
 
             # test left mat multiplication
             mul!(C, B, recipe, alpha, beta)
@@ -548,7 +548,7 @@ end
             beta = 0.1,
             A = rand(n_rows, n_cols),
             block_size = 3,
-            col_selector = TestSelector(),
+            column_operator = TestSelector(),
             core = TestCore(),
             B = rand(10, n_rows),
             Btest = deepcopy(B),
@@ -559,14 +559,14 @@ end
             y = rand(n_rows),
             ytest = deepcopy(y)
 
-            cur = CUR(
+            gn = CUR(
                 rank = rankv,
                 oversample = oversample,
                 core = core,
                 block_size = block_size,
-                selector_cols = col_selector 
+                column_operator = column_operator 
             ) 
-            recipe = rapproximate(cur, A)
+            recipe = rapproximate(gn, A)
 
             # test left mat multiplication
             mul!(C, B, recipe, alpha, beta)

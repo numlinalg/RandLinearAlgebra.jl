@@ -20,15 +20,15 @@ struct TestSelectorRecipe <: SelectorRecipe end
 end
 
 @testset "GeneralizedNystromCore: Completion Errors" begin
-    cur = CUR(rank = 1)
+    gn = CUR(rank = 1)
     A = ones(2, 2)
     core = TestGeneralizedNystromCore()
     
-    @test_throws ArgumentError complete_core(core, cur, A)
+    @test_throws ArgumentError complete_core(core, gn, A)
 end
 
 @testset "GeneralizedNystromCore: size" begin
-    cur = GeneralizedNystromRecipe(
+    gn = GeneralizedNystromRecipe(
         2, 
         2,
         2,
@@ -45,16 +45,16 @@ end
     )
 
     # test the size functions 
-    @test size(cur.U) == (1, 2)
-    @test size(cur.U') == (2, 1)
-    @test size(cur.U, 1) == 1 
-    @test size(cur.U', 1) == 2
-    @test size(cur.U, 2) == 2 
-    @test size(cur.U', 2) == 1
-    @test_throws DomainError size(cur.U, 3)
-    @test_throws DomainError size(cur.U', 3)
-    @test_throws DomainError size(cur.U, 0)
-    @test_throws DomainError size(cur.U', 0)
+    @test size(gn.U) == (1, 2)
+    @test size(gn.U') == (2, 1)
+    @test size(gn.U, 1) == 1 
+    @test size(gn.U', 1) == 2
+    @test size(gn.U, 2) == 2 
+    @test size(gn.U', 2) == 1
+    @test_throws DomainError size(gn.U, 3)
+    @test_throws DomainError size(gn.U', 3)
+    @test_throws DomainError size(gn.U, 0)
+    @test_throws DomainError size(gn.U', 0)
 end
 
 # check that the adjoint functions work correctly
@@ -69,7 +69,7 @@ end
 end
 
 @testset "GeneralizedNystromCore: Update Errors" begin
-    cur = GeneralizedNystromRecipe(
+    gn = GeneralizedNystromRecipe(
         2, 
         2,
         2,
@@ -87,7 +87,7 @@ end
 
 
     A = ones(2, 2)
-    @test_throws ArgumentError update_core!(cur.U, cur, A)
+    @test_throws ArgumentError update_core!(gn.U, gn, A)
 end
 
 @testset "GeneralizedNystromCore Multiplication Errors" begin 
