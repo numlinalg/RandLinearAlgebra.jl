@@ -168,7 +168,7 @@ end
             @test solver.alpha == 1.0
             @test typeof(solver.compressor) == SparseSign 
             @test typeof(solver.compressor.cardinality) == Left 
-            @test typeof(solver.log) == BasicLogger
+            @test typeof(solver.log) <: BasicLogger
             @test typeof(solver.error) == FullResidual
         end
 
@@ -501,6 +501,15 @@ end
     
     end
 
+end
+
+@testset "IHS: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    b = rand(40)
+    x = zeros(10)
+    recipe = complete_solver(IHS(compressor=Gaussian(compression_dim=20)), x, A, b)
+    @test nonconcrete_fields(recipe) == Symbol[]
 end
 
 end

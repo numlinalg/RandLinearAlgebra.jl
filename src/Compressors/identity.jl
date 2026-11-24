@@ -27,18 +27,18 @@ function Identity(; cardinality::Cardinality = Left())
 end
 
 """
-    IdentityRecipe <: CompressorRecipe
+    IdentityRecipe{C<:Cardinality} <: CompressorRecipe
 
 The recipe containing all allocations and information for the `Identity` compressor.
 
 # Fields
-- `cardinality::Cardinality`, the direction the compression matrix is intended to
+- `cardinality::C`, the direction the compression matrix is intended to
     be applied to a target matrix or operator. Values allowed are `Left()` or `Right()`.
 - `n_rows::Int64`, the number of rows of the compression matrix.
 - `n_cols::Int64`, the number of columns of the compression matrix.
 """
-mutable struct IdentityRecipe{C} <: CompressorRecipe where C<:Cardinality
-    cardinality::Cardinality
+mutable struct IdentityRecipe{C<:Cardinality} <: CompressorRecipe
+    cardinality::C
     n_rows::Int64
     n_cols::Int64
 end

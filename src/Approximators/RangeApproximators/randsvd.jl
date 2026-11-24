@@ -111,7 +111,13 @@ RandSVD(;
 ) = RandSVD(compressor, power_its, orthogonalize, block_size)
 
 """
-    RandSVDRecipe
+    RandSVDRecipe{
+        CR<:CompressorRecipe,
+        MU<:AbstractArray,
+        VS<:AbstractVector,
+        MV<:AbstractArray,
+        MB<:AbstractArray
+    } <: RangeApproximatorRecipe
 
 A struct that contains the preallocated memory and completed compressor to form a
     RandSVD approximation to the matrix ``A``.
@@ -119,30 +125,32 @@ A struct that contains the preallocated memory and completed compressor to form 
 # Fields
 - `n_rows::Int64`, the number of rows in the approximation. 
 - `n_cols::Int64`, the number of columns in the approximation. 
-- `compressor::CompressorRecipe`, the compressor to be applied from the right to ``A``.
+- `compressor::CR`, the compressor to be applied from the right to ``A``.
 - `power_its::Int64`, the number of power iterations that should be performed.
 - `orthogonalize::Bool`, a boolean indicating whether the `power_its` should be performed 
     with orthogonalization.
-- `U::AbstractArray`, the orthogonal matrix that approximates the top `compressor_dim` 
+- `U::MU`, the orthogonal matrix that approximates the top `compressor_dim` 
     left singular vectors of ``A``.
-- `S::AbstractVector`, a vector containing the top `compressor_dim` singular values of 
-    ``A``.
-- `V::AbstractArray`, the orthogonal matrix that approximates the top `compressor_dim` 
+- `S::VS`, a vector containing the top `compressor_dim` singular values of ``A``. Its
+    element type is real, even for complex ``A``.
+- `V::MV`, the orthogonal matrix that approximates the top `compressor_dim` 
     right singular vectors of ``A``.
-- `buffer::AbstractArray`, the storage for matrix multiplication with this low-rank 
+- `buffer::MB`, the storage for matrix multiplication with this low-rank 
     approximation. Will have the `compression_dim` number of rows and `block_size`
     number of columns.
 """
-mutable struct RandSVDRecipe <: RangeApproximatorRecipe
+mutable struct RandSVDRecipe{
+    CR<:CompressorRecipe,MU<:AbstractArray,VS<:AbstractVector,MV<:AbstractArray,MB<:AbstractArray
+} <: RangeApproximatorRecipe
     n_rows::Int64
     n_cols::Int64
-    compressor::CompressorRecipe
+    compressor::CR
     power_its::Int64
     orthogonalize::Bool
-    U::AbstractArray
-    S::AbstractVector
-    V::AbstractArray
-    buffer::AbstractArray
+    U::MU
+    S::VS
+    V::MV
+    buffer::MB
 end
 
 function complete_approximator(approx::RandSVD, A::AbstractMatrix)
@@ -165,7 +173,8 @@ function complete_approximator(approx::RandSVD, A::AbstractMatrix)
         approx.power_its,
         approx.orthogonalize, 
         Matrix{type}(undef, 2, 2),
-        Vector{type}(undef,2),
+        # Singular values are real even for complex input
+        Vector{real(type)}(undef, 2),
         Matrix{type}(undef, 2, 2),
         Matrix{type}(undef, c_cols, bsize) 
     )
@@ -180,7 +189,7 @@ function rapproximate!(approx::RandSVDRecipe, A::AbstractMatrix)
         Q = rand_power_it(A, approx)
     end
 
-    QA = Matrix{Float64}(undef, size(Q, 2), size(A, 2))
+    QA = Matrix{eltype(A)}(undef, size(Q, 2), size(A, 2))
     # Making Q an Array is far more efficient than not
     mul!(QA, Q', A)
     U, approx.S, approx.V = svd(QA)

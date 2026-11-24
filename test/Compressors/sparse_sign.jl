@@ -78,16 +78,8 @@ Random.seed!(2131)
         @test_compressor SparseSignRecipe
         @test fieldnames(SparseSignRecipe) ==
             (:cardinality, :n_rows, :n_cols, :nnz, :scale, :op)
-        @test fieldtypes(SparseSignRecipe) == (
-            Cardinality,
-            Int64,
-            Int64,
-            Int64,
-            Vector{<:Number},
-            Union{
-                Adjoint{T,SparseMatrixCSC{T,I}},SparseMatrixCSC
-            } where {T<:Number,I<:Integer},
-        )
+        @test fieldtype(SparseSignRecipe, :op) <:
+            Union{SparseMatrixCSC,Adjoint{<:Any,<:SparseMatrixCSC}}
 
         # Verify the internal constructor
         let card = Left,
@@ -454,6 +446,33 @@ Random.seed!(2131)
 
     end
 
+end
+
+@testset "SparseSign: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    for card in CARDINALITIES
+        S = complete_compressor(SparseSign(compression_dim=5, cardinality=card), A)
+        @test nonconcrete_fields(S) == Symbol[]
+    end
+end
+
+@testset "SparseSign: Allocations" begin
+    Random.seed!(5)
+    A = rand(200, 100)
+
+    S = complete_compressor(SparseSign(compression_dim=10, cardinality=Left()), A)
+    C = zeros(size(S, 1), size(A, 2))
+    @test_no_allocations mul!(C, S, A, 1.0, 0.0)
+
+    S = complete_compressor(SparseSign(compression_dim=10, cardinality=Right()), A)
+    C = zeros(size(A, 1), size(S, 2))
+    @test_no_allocations mul!(C, A, S, 1.0, 0.0)
+
+    for card in CARDINALITIES
+        S = complete_compressor(SparseSign(compression_dim=10, cardinality=card), A)
+        @test_no_allocations update_compressor!(S)
+    end
 end
 
 end

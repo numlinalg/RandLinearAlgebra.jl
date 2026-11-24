@@ -89,25 +89,28 @@ RangeFinder(;
 ) = RangeFinder(compressor, power_its, orthogonalize)
 
 """
-    RangeFinderRecipe
+    RangeFinderRecipe{CR<:CompressorRecipe, M<:AbstractMatrix} <: RangeApproximatorRecipe
 
 A struct that contains the preallocated memory and completed compressor to form a
     RangeFinder approximation to the matrix ``A``.
 
 # Fields
-- `compressor::CompressorRecipe`, the compressor to be applied from the right to ``A``.
+- `n_rows::Int64`, the number of rows in the approximation.
+- `n_cols::Int64`, the number of columns in the approximation.
+- `compressor::CR`, the compressor to be applied from the right to ``A``.
 - `power_its::Int64`, the number of power iterations that should be performed.
 - `orthogonalize::Bool`, a boolean indicating whether the `power_its` should be performed 
     with orthogonalization.
-- `range::AbstractMatrix`, the orthogonal matrix that approximates the range of ``A``.
+- `range::M`, the orthogonal matrix that approximates the range of ``A``.
 """
-mutable struct RangeFinderRecipe <: RangeApproximatorRecipe
+mutable struct RangeFinderRecipe{CR<:CompressorRecipe,M<:AbstractMatrix} <:
+               RangeApproximatorRecipe
     n_rows::Int64
     n_cols::Int64
-    compressor::CompressorRecipe
+    compressor::CR
     power_its::Int64
     orthogonalize::Bool
-    range::AbstractMatrix
+    range::M
 end
 
 function complete_approximator(approx::RangeFinder, A::AbstractMatrix)
@@ -161,7 +164,7 @@ end
 
 function mul!(
     C::AbstractArray, 
-    R::ApproximatorAdjoint{RangeFinderRecipe}, 
+    R::ApproximatorAdjoint{<:RangeFinderRecipe}, 
     A::AbstractArray, 
     alpha::Number, 
     beta::Number
@@ -183,7 +186,7 @@ end
 function mul!(
     C::AbstractArray, 
     A::AbstractArray, 
-    R::ApproximatorAdjoint{RangeFinderRecipe}, 
+    R::ApproximatorAdjoint{<:RangeFinderRecipe}, 
     alpha::Number, 
     beta::Number
 )

@@ -142,4 +142,12 @@ Random.seed!(21321)
 
 end
 
+@testset "Identity: Recipe Concreteness" begin
+    A = rand(40, 10)
+    for card in CARDINALITIES
+        S = complete_compressor(Identity(cardinality=card), A)
+        @test nonconcrete_fields(S) == Symbol[]
+    end
+end
+
 end

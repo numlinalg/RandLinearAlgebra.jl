@@ -75,7 +75,7 @@ end
         Type<:Number, 
         LR<:LoggerRecipe,
         CR<:CompressorRecipe,
-        ER<:ErrorRecipe,
+        ER<:SolverErrorRecipe,
         M<:AbstractArray, 
         MV<:SubArray, 
         V<:AbstractVector
@@ -87,19 +87,19 @@ includes all the user controlled parameters, the linear system `A`, and the cons
 vector `b`.
 
 # Fields
-- `log::LoggerRecipe`, a technique for logging the progress of the solver.
-- `compressor::CompressorRecipe`, a technique for compressing the matrix ``A``.
-- `error::SolverErrorRecipe`, a technique for estimating the progress of the solver.
+- `log::LR`, a technique for logging the progress of the solver.
+- `compressor::CR`, a technique for compressing the matrix ``A``.
+- `error::ER`, a technique for estimating the progress of the solver.
 - `alpha::Float64`, a step size parameter, by default is set to 1.
-- `compressed_mat::AbstractMatrix`, a buffer for storing the compressed matrix.
-- `mat_view::SubArray`, a container for storing a view of the compressed matrix buffer.
-- `residual_vec::AbstractVector`, a vector that contains the residual of the linear system 
+- `compressed_mat::M`, a buffer for storing the compressed matrix.
+- `mat_view::MV`, a container for storing a view of the compressed matrix buffer.
+- `residual_vec::V`, a vector that contains the residual of the linear system 
     ``Ax-b``.
-- `gradient_vec::AbstractVector`, a vector that contains the gradient of the least squares 
+- `gradient_vec::V`, a vector that contains the gradient of the least squares 
     problem, ``A^\\top(b-Ax)``.
-- `buffer_vec::AbstractVector`, a buffer vector for storing intermediate linear system solves.
-- `solution_vec::AbstractVector`, a vector storing the current IHS solution.
-- `R::UpperTriangular`, a container for storing the upper triangular portion of the R 
+- `buffer_vec::V`, a buffer vector for storing intermediate linear system solves.
+- `solution_vec::V`, a vector storing the current IHS solution.
+- `R::UpperTriangular{Type, M}`, a container for storing the upper triangular portion of the R 
     factor from a QR factorization of `mat_view`. This is used to solve the IHS sub-problem.
 """
 mutable struct IHSRecipe{

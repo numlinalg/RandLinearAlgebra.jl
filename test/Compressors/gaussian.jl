@@ -44,14 +44,14 @@ Random.seed!(21321)
         @test_compressor GaussianRecipe
         @test fieldnames(GaussianRecipe) ==
             (:cardinality, :compression_dim, :n_rows, :n_cols, :scale, :op)
-        @test fieldtypes(GaussianRecipe) == (
-            Cardinality,
-            Int64,
-            Int64,
-            Int64,
-            Number,
-            Matrix{<:Number},
-        )
+        @test fieldtype(GaussianRecipe, :cardinality) == Cardinality
+        @test fieldtype(GaussianRecipe, :compression_dim) == Int64
+        @test fieldtype(GaussianRecipe, :n_rows) == Int64
+        @test fieldtype(GaussianRecipe, :n_cols) == Int64
+        @test fieldtype(GaussianRecipe{Left,Float64}, :scale) == Float64
+        @test fieldtype(GaussianRecipe{Left,Float64}, :op) == Matrix{Float64}
+        @test fieldtype(GaussianRecipe{Left,Float32}, :scale) == Float32
+        @test fieldtype(GaussianRecipe{Left,Float32}, :op) == Matrix{Float32}
     end
 
     @testset "Gaussian: Complete Compressor" begin
@@ -277,6 +277,33 @@ Random.seed!(21321)
 
     end
 
+end
+
+@testset "Gaussian: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    for card in CARDINALITIES
+        S = complete_compressor(Gaussian(compression_dim=5, cardinality=card), A)
+        @test nonconcrete_fields(S) == Symbol[]
+    end
+end
+
+@testset "Gaussian: Allocations" begin
+    Random.seed!(5)
+    A = rand(200, 100)
+
+    S = complete_compressor(Gaussian(compression_dim=10, cardinality=Left()), A)
+    C = zeros(size(S, 1), size(A, 2))
+    @test_no_allocations mul!(C, S, A, 1.0, 0.0)
+
+    S = complete_compressor(Gaussian(compression_dim=10, cardinality=Right()), A)
+    C = zeros(size(A, 1), size(S, 2))
+    @test_no_allocations mul!(C, A, S, 1.0, 0.0)
+
+    for card in CARDINALITIES
+        S = complete_compressor(Gaussian(compression_dim=10, cardinality=card), A)
+        @test_no_allocations update_compressor!(S)
+    end
 end
 
 end

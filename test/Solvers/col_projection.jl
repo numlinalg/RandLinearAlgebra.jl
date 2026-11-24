@@ -19,7 +19,7 @@ include("../test_helpers/preamble.jl")
         @test solver.alpha == 1.0
         @test typeof(solver.compressor) == SparseSign 
         @test typeof(solver.compressor.cardinality) == Right 
-        @test typeof(solver.log) == BasicLogger
+        @test typeof(solver.log) <: BasicLogger
         @test typeof(solver.error) == LSGradient
         @test typeof(solver.sub_solver) == QRSolver 
     end
@@ -111,7 +111,7 @@ include("../test_helpers/preamble.jl")
     # Test Field Types 
     @test fieldtypes(ColumnProjectionRecipe) == (
         CompressorRecipe, LoggerRecipe, SolverErrorRecipe, SubSolverRecipe, 
-        Float64, AbstractArray, AbstractVector, AbstractVector, SubArray,
+        Float64, AbstractArray, AbstractVector, Vector{T} where T<:Number, SubArray,
         AbstractVector
     )
 end 
@@ -214,7 +214,75 @@ end
 end
 
 ###################################
-# Column Project Update 
+# ColumnProjectionRecipe: View Inputs
+###################################
+module column_projection_recipe_view_inputs
+
+include("../test_helpers/preamble.jl")
+
+@testset "ColumnProjectionRecipe complete_solver with views" begin
+    m = 5
+    n = 10
+    A = randn(m, n)
+    b = randn(m)
+    x = randn(n)
+
+    Av = @view A[1:end, 1:end]
+    bv = @view b[1:end]
+    xv = @view x[1:end]
+
+    solver = ColumnProjection()
+
+    recipe = complete_solver(solver, xv, Av, bv)
+    @test typeof(recipe.compressed_mat) == Matrix{Float64}
+    @test typeof(recipe.residual_vec) == Vector{Float64}
+    @test typeof(recipe.update_vec) == Vector{Float64}
+end
+
+# A * S is dense even for sparse A, so the compressed matrix must be stored densely
+@testset "ColumnProjectionRecipe complete_solver with sparse A" begin
+    Random.seed!(11)
+    m, n = 200, 40
+    A = sprandn(m, n, 0.3)
+    x_true = randn(n)
+    b = A * x_true
+    solver = ColumnProjection(
+        compressor=SparseSign(compression_dim=8, cardinality=Right()),
+        log=BasicLogger(max_it=200, threshold=1e-8),
+    )
+
+    x = zeros(n)
+    recipe = complete_solver(solver, x, A, b)
+    @test typeof(recipe.compressed_mat) == Matrix{Float64}
+    rsolve!(recipe, x, A, b)
+    @test recipe.log.converged
+    @test norm(x - x_true) < 1e-5
+
+    # The compression step no longer allocates for a sparse A
+    mul!(recipe.compressed_mat, A, recipe.compressor)
+    @test (@allocated mul!(recipe.compressed_mat, A, recipe.compressor)) == 0
+end
+
+# update_vec is written by the sub-solver, so it follows A rather than x
+@testset "ColumnProjectionRecipe complete_solver with mixed element types" begin
+    Random.seed!(3)
+    A = rand(Float32, 40, 6)
+    x_true = rand(Float32, 6)
+    b = A * x_true
+    x = zeros(Float64, 6)
+    solver = ColumnProjection(log=BasicLogger(max_it=2000, threshold=1e-6))
+
+    recipe = complete_solver(solver, x, A, b)
+    @test eltype(recipe.update_vec) == Float32
+    @test recipe.solution_vec === x
+    rsolve!(recipe, x, A, b)
+    @test isapprox(x, x_true; rtol=1e-3)
+end
+
+end
+
+###################################
+# Column Project Update
 ###################################
 module column_projection_update
 
@@ -373,6 +441,40 @@ include("../test_helpers/preamble.jl")
         @test solver.log.converged
 
     end
+
+    # A recipe is tied to the type of the `x` given to `complete_solver`; a different type
+    # would be converted to a copy and the caller's `x` would never be written
+    @testset "rsolve! with a mismatched x type" begin
+        Random.seed!(3)
+        A = rand(80, 6)
+        b = A * rand(6)
+        solver = ColumnProjection(
+            compressor=SparseSign(compression_dim=3, cardinality=Right()),
+            log=BasicLogger(max_it=10)
+        )
+        solver_rec = complete_solver(solver, zeros(6), A, b)
+
+        xfull = zeros(12)
+        xv = view(xfull, 1:6)
+        @test_throws ArgumentError rsolve!(solver_rec, xv, A, b)
+        @test all(iszero, xfull)
+        @test_throws ArgumentError rsolve!(solver_rec, zeros(Float32, 6), A, b)
+
+        # the recipe is still usable with the type it was completed with
+        x = zeros(6)
+        rsolve!(solver_rec, x, A, b)
+        @test solver_rec.solution_vec === x
+        @test !all(iszero, x)
+    end
+end
+
+@testset "ColumnProjection: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    b = rand(40)
+    x = zeros(10)
+    recipe = complete_solver(ColumnProjection(), x, A, b)
+    @test nonconcrete_fields(recipe) == Symbol[]
 end
 
 end
