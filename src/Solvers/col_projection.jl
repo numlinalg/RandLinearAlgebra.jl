@@ -334,6 +334,15 @@ function rsolve!(
 )
     # initialization
     reset_logger!(solver.log)
+    if !(x isa typeof(solver.solution_vec))
+        throw(
+            ArgumentError(
+                "`x` has type $(typeof(x)), but the recipe was completed with " *
+                "$(typeof(solver.solution_vec)). Call `complete_solver` again with this `x`."
+            )
+        )
+    end
+
     solver.solution_vec = x
     copyto!(solver.residual_vec, b)
 

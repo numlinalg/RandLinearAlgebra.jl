@@ -441,6 +441,31 @@ include("../test_helpers/preamble.jl")
         @test solver.log.converged
 
     end
+
+    # A recipe is tied to the type of the `x` given to `complete_solver`; a different type
+    # would be converted to a copy and the caller's `x` would never be written
+    @testset "rsolve! with a mismatched x type" begin
+        Random.seed!(3)
+        A = rand(80, 6)
+        b = A * rand(6)
+        solver = ColumnProjection(
+            compressor=SparseSign(compression_dim=3, cardinality=Right()),
+            log=BasicLogger(max_it=10)
+        )
+        solver_rec = complete_solver(solver, zeros(6), A, b)
+
+        xfull = zeros(12)
+        xv = view(xfull, 1:6)
+        @test_throws ArgumentError rsolve!(solver_rec, xv, A, b)
+        @test all(iszero, xfull)
+        @test_throws ArgumentError rsolve!(solver_rec, zeros(Float32, 6), A, b)
+
+        # the recipe is still usable with the type it was completed with
+        x = zeros(6)
+        rsolve!(solver_rec, x, A, b)
+        @test solver_rec.solution_vec === x
+        @test !all(iszero, x)
+    end
 end
 
 end
