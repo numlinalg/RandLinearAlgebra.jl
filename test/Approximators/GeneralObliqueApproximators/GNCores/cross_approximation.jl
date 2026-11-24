@@ -146,6 +146,7 @@ end
     end
 
     @testset "CrossApproximation: rapproximate" begin
+        # test with dense matrix
         let n_rows = 10,
             n_cols = 10,
             rank = 2,
@@ -172,6 +173,7 @@ end
             @test size(approx_recipe.U) == (col_idx, row_idx)
         end
 
+        # test with sparse matrix
         let n_rows = 10,
             n_cols = 10,
             rank = 2,
@@ -393,6 +395,18 @@ end
             )
             @test !(mixed isa CUR)
             @test norm(A - rapproximate(mixed, A) * Id) / norm(A) < 1e-8
+
+            # mixed: selector columns, compressor rows (independent path)
+            mixed2 = GeneralizedNystrom(
+                rank = rankv,
+                oversample = oversample,
+                column_operator = TestSelector(),
+                row_operator = Gaussian(
+                    cardinality = Left(), compression_dim = rankv + oversample
+                ),
+            )
+            @test !(mixed2 isa CUR)
+            @test norm(A - rapproximate(mixed2, A) * Id) / norm(A) < 1e-8
 
             # both selectors -> dependent CUR path
             gn = CUR(rank = rankv, oversample = oversample, column_operator = TestSelector())

@@ -167,12 +167,14 @@ function _cross_left_mul!(C, Q, R, buffer, A, alpha, beta)
         # when beta is zero C is overwritten (and not read); this matches the BLAS
         # convention and avoids propagating uninitialized NaN/Inf values from C.
         if iszero(beta)
-            @. Cv = alpha * buf
+            Cv .= alpha .* buf
         else
-            @. Cv = beta * Cv + alpha * buf
+            Cv .= beta .* Cv .+ alpha .* buf
         end
+
         start += width
     end
+
     return nothing
 end
 
@@ -209,5 +211,6 @@ function _cross_right_mul!(C, Q, R, buffer, A, alpha, beta)
         mul!(Cv, buf, Qt, alpha, beta)
         start += width
     end
+
     return nothing
 end

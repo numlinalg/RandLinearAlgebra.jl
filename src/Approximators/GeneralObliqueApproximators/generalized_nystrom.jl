@@ -1,7 +1,7 @@
 ###########################################
 # Include the core definition
 ##########################################
-include("generalized_nystrom_core.jl")
+include("GNCores.jl")
 
 """
     GeneralizedNystrom{CS,RS} <: Approximator
@@ -215,7 +215,7 @@ const CURRecipe = GeneralizedNystromRecipe{
 ###############################################
 # Include files for core implementations
 ###############################################
-include("./core/cross_approximation.jl")
+include("./GNCores/cross_approximation.jl")
 
 # Complete a column/row operator, whether it is a selector or a compressor.
 complete_operator(op::Selector, A::AbstractMatrix) = complete_selector(op, A)

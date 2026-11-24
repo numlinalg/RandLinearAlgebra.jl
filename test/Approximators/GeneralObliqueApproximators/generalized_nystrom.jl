@@ -183,9 +183,17 @@ end
             @test gn.oversample == oversample
             @test gn.block_size === block_size
             @test gn.rank == rank
+
+            # the positional CUR constructor forwards to GeneralizedNystrom
+            gn_pos = CUR(rank, oversample, TestSelector(), TestSelector(), core, block_size)
+            @test gn_pos isa CUR
+            @test typeof(gn_pos.core) == TestCore
+            @test gn_pos.rank == rank
+            @test gn_pos.oversample == oversample
+            @test gn_pos.block_size === block_size
         end
 
-    end 
+    end
 
     @testset "CURRecipe" begin
         @test GeneralizedNystromRecipe <: ApproximatorRecipe
