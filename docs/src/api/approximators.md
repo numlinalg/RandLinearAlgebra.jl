@@ -14,9 +14,16 @@ ApproximatorAdjoint
 RandLinearAlgebra.RangeApproximator
 
 RangeApproximatorRecipe
+
+GeneralizedNystromCore
+
+GeneralizedNystromCoreRecipe
+
+GeneralizedNystromCoreAdjoint
+
 ```
 
-## Approximator Structures
+## Range Approximator Structures
 ```@docs
 RandSVD
 
@@ -25,6 +32,24 @@ RandSVDRecipe
 RangeFinder
 
 RangeFinderRecipe
+
+```
+
+## General Oblique Approximators
+```@docs
+GeneralizedNystrom
+
+GeneralizedNystromRecipe
+
+CUR
+
+CURRecipe
+```
+### Core Structures
+```@docs
+CrossApproximation
+
+CrossApproximationRecipe
 ```
 
 ## Exported Functions
@@ -41,4 +66,9 @@ rapproximate!
 RandLinearAlgebra.rand_power_it
 
 RandLinearAlgebra.rand_ortho_it
+
+RandLinearAlgebra.complete_core
+
+RandLinearAlgebra.update_core!
+
 ```
