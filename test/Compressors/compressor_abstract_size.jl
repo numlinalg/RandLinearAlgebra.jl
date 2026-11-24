@@ -1,18 +1,15 @@
 
 module compressor_abstract_size
 include("../test_helpers/preamble.jl")
+using .MockCompressors
 
 #####################
 # Testing Parameters
 ##################### 
-mutable struct TestCompressorRecipe <: CompressorRecipe
-    n_rows::Int64
-    n_cols::Int64
-end
 s = 3
 n_rows = 4
 n_cols = 5
-S = TestCompressorRecipe(s, n_rows)
+S = MockCompressorRecipe(s, n_rows)
 
 
 @testset "Compressor Size" begin
