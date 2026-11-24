@@ -568,7 +568,7 @@ Random.seed!(1223)
                 @test eltype(S.padding) == type
                 @test typeof(S.extraction) == Matrix{type}
                 @test typeof(S.sign_vec) == Vector{R}
-                @test all(isconcretetype, fieldtypes(typeof(S)))
+                @test nonconcrete_fields(S) == Symbol[]
 
                 SA = rand(type, comp_dim, n_cols)
                 SAc = copy(SA)
@@ -593,7 +593,7 @@ Random.seed!(1223)
                 @test eltype(S.padding) == type
                 @test typeof(S.extraction) == Matrix{type}
                 @test typeof(S.sign_vec) == Vector{R}
-                @test all(isconcretetype, fieldtypes(typeof(S)))
+                @test nonconcrete_fields(S) == Symbol[]
 
                 AS = rand(type, n_cols, comp_dim)
                 ASc = copy(AS)
@@ -632,6 +632,28 @@ Random.seed!(1223)
         @test allocs_right == 0
     end
 
+end
+
+@testset "SRHT: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    for card in CARDINALITIES
+        S = complete_compressor(SRHT(compression_dim=5, cardinality=card), A)
+        @test nonconcrete_fields(S) == Symbol[]
+    end
+end
+
+@testset "SRHT: Allocations" begin
+    Random.seed!(5)
+    A = rand(200, 100)
+
+    S = complete_compressor(SRHT(compression_dim=10, block_size=16, cardinality=Left()), A)
+    C = zeros(size(S, 1), size(A, 2))
+    @test_no_allocations mul!(C, S, A, 1.0, 0.0)
+
+    S = complete_compressor(SRHT(compression_dim=10, block_size=16, cardinality=Right()), A)
+    C = zeros(size(A, 1), size(S, 2))
+    @test_no_allocations mul!(C, A, S, 1.0, 0.0)
 end
 
 end

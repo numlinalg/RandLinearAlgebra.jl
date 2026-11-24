@@ -670,4 +670,13 @@ Random.seed!(2131)
 
 end
 
+@testset "Sampling: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    for card in CARDINALITIES
+        S = complete_compressor(Sampling(compression_dim=5, cardinality=card), A)
+        @test nonconcrete_fields(S) == Symbol[]
+    end
+end
+
 end

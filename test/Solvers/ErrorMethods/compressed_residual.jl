@@ -101,4 +101,12 @@ end
 
 end
 
+@testset "CompressedResidual: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    b = rand(40)
+    recipe = complete_error(CompressedResidual(), Kaczmarz(), A, b)
+    @test nonconcrete_fields(recipe) == Symbol[]
+end
+
 end

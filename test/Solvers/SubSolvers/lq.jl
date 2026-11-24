@@ -27,7 +27,7 @@ include("../../test_helpers/preamble.jl")
                 # test the attributes of the outputs of the complete function
                 @test typeof(ss_recipe) <: LQSolverRecipe{Matrix{type}}
                 @test typeof(ss_recipe.T) == Matrix{type}
-                @test all(isconcretetype, fieldtypes(typeof(ss_recipe)))
+                @test nonconcrete_fields(ss_recipe) == Symbol[]
                 @test ss_recipe.A == Matrix(A')
                 @test size(ss_recipe.T) == (3, 3)
             end
@@ -73,7 +73,7 @@ include("../../test_helpers/preamble.jl")
             A = rand(type, 3, 10)
             b = rand(type, 3)
             ss_recipe = complete_sub_solver(LQSolver(), A)
-            @test all(isconcretetype, fieldtypes(typeof(ss_recipe)))
+            @test nonconcrete_fields(ss_recipe) == Symbol[]
             x_sol = zeros(type, 10)
             ldiv!(x_sol, ss_recipe, b)
             @test isapprox(x_sol, A \ b; rtol=sqrt(eps(real(type))))
@@ -88,7 +88,7 @@ include("../../test_helpers/preamble.jl")
         update_sub_solver!(ss_recipe, A)
         ldiv!(x, ss_recipe, b)
         update_sub_solver!(ss_recipe, A)
-        @test (@allocated update_sub_solver!(ss_recipe, A)) == 0
+        @test_no_allocations update_sub_solver!(ss_recipe, A)
         # only the small views passed to the LAPACK wrappers allocate
         @test (@allocated ldiv!(x, ss_recipe, b)) <= 128
     end

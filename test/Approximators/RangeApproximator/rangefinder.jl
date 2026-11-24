@@ -353,4 +353,12 @@ end
 
 end
 
+@testset "RangeFinder: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    compressor = Gaussian(compression_dim=5, cardinality=Right())
+    recipe = complete_approximator(RangeFinder(compressor=compressor), A)
+    @test nonconcrete_fields(recipe) == Symbol[]
+end
+
 end

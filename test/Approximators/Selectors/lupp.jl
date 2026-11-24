@@ -190,4 +190,10 @@ include("../../test_helpers/preamble.jl")
 
 end
 
+@testset "LUPP: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    @test nonconcrete_fields(complete_selector(LUPP(), A)) == Symbol[]
+end
+
 end

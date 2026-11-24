@@ -146,6 +146,31 @@ function nonconcrete_fields(recipe; exclude::Tuple=())
     ]
 end
 
+"""
+    @test_no_allocations expr
+
+Evaluate `expr` once so that it is compiled, then test that a second evaluation does not
+allocate. Use for hot-loop operations such as `mul!` and `update_compressor!`.
+"""
+macro test_no_allocations(expr)
+    # Build the `@test` call with the caller's source location so failures point there
+    check = Expr(
+        :macrocall, Symbol("@test"), __source__, :((@allocated $expr) == 0)
+    )
+    return esc(quote
+        $expr
+        $check
+    end)
+end
+
+"""
+    CARDINALITIES
+
+The cardinalities that a compressor can be completed with, `(Left(), Right())`. Use to loop
+a test over both.
+"""
+const CARDINALITIES = (Left(), Right())
+
 export @test_projection_solver, @test_compressor, @test_logger, @test_range_approximator
-export nonconcrete_fields
+export nonconcrete_fields, @test_no_allocations, CARDINALITIES
 end

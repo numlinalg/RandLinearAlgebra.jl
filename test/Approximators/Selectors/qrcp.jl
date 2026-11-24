@@ -176,4 +176,10 @@ include("../../test_helpers/preamble.jl")
 
 end
 
+@testset "QRCP: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    @test nonconcrete_fields(complete_selector(QRCP(), A)) == Symbol[]
+end
+
 end

@@ -503,4 +503,13 @@ end
 
 end
 
+@testset "IHS: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    b = rand(40)
+    x = zeros(10)
+    recipe = complete_solver(IHS(compressor=Gaussian(compression_dim=20)), x, A, b)
+    @test nonconcrete_fields(recipe) == Symbol[]
+end
+
 end

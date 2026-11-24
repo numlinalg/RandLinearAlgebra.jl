@@ -588,4 +588,14 @@ include("../../test_helpers/preamble.jl")
     end
 end
 
+@testset "Agmon: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    b = rand(40)
+    x = zeros(10)
+    recipe = complete_distribution(Agmon(cardinality=Left()), x, A, b)
+    # `r` is intentionally abstract (see issue #191)
+    @test nonconcrete_fields(recipe; exclude=(:r,)) == Symbol[]
+end
+
 end # module

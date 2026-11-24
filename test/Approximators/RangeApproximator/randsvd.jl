@@ -519,7 +519,7 @@ end
             @test eltype(approx_rec.U) == ComplexF64
             @test eltype(approx_rec.S) == Float64
             @test eltype(approx_rec.V) == ComplexF64
-            @test all(isconcretetype, fieldtypes(typeof(approx_rec)))
+            @test nonconcrete_fields(approx_rec) == Symbol[]
             # A has exact rank 4, so the decomposition should reproduce it
             @test approx_rec.U * Diagonal(approx_rec.S) * approx_rec.V' ≈ A
         end
@@ -640,6 +640,14 @@ end
     end
 
 
+end
+
+@testset "RandSVD: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    compressor = Gaussian(compression_dim=5, cardinality=Right())
+    recipe = complete_approximator(RandSVD(compressor=compressor), A)
+    @test nonconcrete_fields(recipe) == Symbol[]
 end
 
 end

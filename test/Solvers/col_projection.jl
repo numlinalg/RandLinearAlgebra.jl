@@ -468,4 +468,13 @@ include("../test_helpers/preamble.jl")
     end
 end
 
+@testset "ColumnProjection: Recipe Concreteness" begin
+    Random.seed!(21)
+    A = rand(40, 10)
+    b = rand(40)
+    x = zeros(10)
+    recipe = complete_solver(ColumnProjection(), x, A, b)
+    @test nonconcrete_fields(recipe) == Symbol[]
+end
+
 end

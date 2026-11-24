@@ -239,4 +239,8 @@ module basic_logger
     
     end
 
+@testset "BasicLogger: Recipe Concreteness" begin
+    @test nonconcrete_fields(complete_logger(BasicLogger(max_it=10))) == Symbol[]
+end
+
 end
