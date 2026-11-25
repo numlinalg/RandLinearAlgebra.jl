@@ -23,6 +23,8 @@ IHSRecipe
 Kaczmarz
 
 KaczmarzRecipe
+
+SketchAndSolve
 ```
 
 ## Exported Functions

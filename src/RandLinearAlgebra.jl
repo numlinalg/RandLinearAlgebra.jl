@@ -40,6 +40,7 @@ export Uniform, UniformRecipe, L2Norm, L2NormRecipe, Agmon, AgmonRecipe
 # Export Solver types and functions
 export Solver, SolverRecipe
 export Kaczmarz, KaczmarzRecipe
+export SketchAndSolve
 export ColumnProjection, ColumnProjectionRecipe
 export complete_solver, update_solver!, rsolve!
 export IHS, IHSRecipe
