@@ -44,7 +44,7 @@ end
 
 function complete_selector(ingredients::QRCP, A::AbstractMatrix)
     compressor = complete_compressor(ingredients.compressor, A)
-    SA = Matrix{eltype(A)}(undef, size(compressor, 1), size(A, 2))
+    SA = similar(A, eltype(A), size(compressor, 1), size(A, 2))
     return QRCPRecipe(compressor, SA)
 end
 

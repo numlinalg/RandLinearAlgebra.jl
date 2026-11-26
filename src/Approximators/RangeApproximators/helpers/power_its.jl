@@ -17,22 +17,21 @@ function rand_power_it(A::AbstractMatrix, approx::RangeApproximatorRecipe)
     a_rows, a_cols = size(A)
     s_rows, s_cols = size(comp_mat)
     type = eltype(A)
-    compressed_mat = Matrix{type}(undef, a_rows, s_cols)
+    compressed_mat = similar(A, type, a_rows, s_cols)
     mul!(compressed_mat, A, comp_mat)
     if approx.power_its > 0
         # If we are running power iterations an extra matrix is need to store multiplication
         # output
-        buff_mat = Matrix{type}(undef, a_cols, s_cols) 
+        buff_mat = similar(A, type, a_cols, s_cols)
         for i in 1:approx.power_its
             # Perform the power iterations (AA^\top)^power_its (AS)
             mul!(buff_mat, A', compressed_mat)
             mul!(compressed_mat, A, buff_mat)
         end
-    
+
     end
-    
-    # Return the economical qr of the matrix Q using Array call for efficiency
-    return Array(qr!(compressed_mat).Q) 
+
+    return Matrix(qr(compressed_mat).Q)
 end
 
 
@@ -55,26 +54,23 @@ function rand_ortho_it(A::AbstractMatrix, approx::RangeApproximatorRecipe)
     a_rows, a_cols = size(A)
     s_rows, s_cols = size(comp_mat)
     type = eltype(A)
-    compressed_mat = Matrix{type}(undef, a_rows, s_cols)
+    compressed_mat = similar(A, type, a_rows, s_cols)
     mul!(compressed_mat, A, comp_mat)
-    Q = Array(qr!(compressed_mat).Q)
+    Q = Matrix(qr(compressed_mat).Q)
     if approx.power_its > 0
         # If we are running power iterations an extra matrix is need to store multiplication
         # output
-        buff_mat = Matrix{type}(undef, a_cols, s_cols) 
+        buff_mat = similar(A, type, a_cols, s_cols)
         for i in 1:approx.power_its
-            # Perform the power iterations based on the recusion Q_{i'} = qr(A'Q_{i-1}).Q 
+            # Perform the power iterations based on the recusion Q_{i'} = qr(A'Q_{i-1}).Q
             # Q_i = qr(A*Q_{i'}).Q this helps limit rounding errors
             mul!(buff_mat, A', Q)
-            # taking the array is way faster and leads to way fewer memory allocations
-            Q = Array(qr!(buff_mat).Q)
-            # taking the array is way faster and leads to way fewer memory allocations
+            Q = Matrix(qr(buff_mat).Q)
             mul!(compressed_mat, A, Q)
-            Q = Array(qr!(compressed_mat).Q)
+            Q = Matrix(qr(compressed_mat).Q)
         end
-    
+
     end
-    
-    # Return the economical qr of the matrix Q using Array call for efficiency
-    return Array(Q)    
+
+    return Q
 end

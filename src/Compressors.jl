@@ -412,20 +412,22 @@ end
 ##################################################
 # Binary Operator Compressor-Array Multiplications
 ##################################################
-# S * A 
+# S * A
 function (*)(S::CompressorRecipe, A::AbstractArray)
     s_rows = size(S, 1)
     a_cols = size(A, 2)
-    C = a_cols == 1 ? zeros(eltype(A), s_rows) : zeros(eltype(A), s_rows, a_cols)
+    C = a_cols == 1 ? fill!(similar(A, eltype(A), s_rows), zero(eltype(A))) :
+                      fill!(similar(A, eltype(A), s_rows, a_cols), zero(eltype(A)))
     mul!(C, S, A)
     return C
 end
 
-# A * S 
+# A * S
 function (*)(A::AbstractArray, S::CompressorRecipe)
     s_cols = size(S, 2)
     a_rows = size(A, 1)
-    C = a_rows == 1 ? zeros(eltype(A), s_cols)' : zeros(eltype(A), a_rows, s_cols)
+    C = a_rows == 1 ? fill!(similar(A, eltype(A), s_cols), zero(eltype(A)))' :
+                      fill!(similar(A, eltype(A), a_rows, s_cols), zero(eltype(A)))
     mul!(C, A, S)
     return C
 end
@@ -434,7 +436,8 @@ end
 function (*)(S::CompressorAdjoint, A::AbstractArray)
     s_rows = size(S, 1)
     a_cols = size(A, 2)
-    C = a_cols == 1 ? zeros(eltype(A), s_rows) : zeros(eltype(A), s_rows, a_cols)
+    C = a_cols == 1 ? fill!(similar(A, eltype(A), s_rows), zero(eltype(A))) :
+                      fill!(similar(A, eltype(A), s_rows, a_cols), zero(eltype(A)))
     mul!(C, S, A)
     return C
 end
@@ -443,7 +446,8 @@ end
 function (*)(A::AbstractArray, S::CompressorAdjoint)
     s_cols = size(S, 2)
     a_rows = size(A, 1)
-    C = a_rows == 1 ? zeros(eltype(A), s_cols)' : zeros(eltype(A), a_rows, s_cols)
+    C = a_rows == 1 ? fill!(similar(A, eltype(A), s_cols), zero(eltype(A)))' :
+                      fill!(similar(A, eltype(A), a_rows, s_cols), zero(eltype(A)))
     mul!(C, A, S)
     return C
 end

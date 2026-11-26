@@ -56,7 +56,7 @@ end
 function complete_selector(ingredients::LUPP, A::AbstractMatrix)
     compressor = complete_compressor(ingredients.compressor, A)
     n_rows, n_cols = size(compressor)
-    SA = Matrix{eltype(A)}(undef, n_rows, n_cols)
+    SA = similar(A, eltype(A), n_rows, n_cols)
     return LUPPRecipe(compressor, SA)
 end
 
