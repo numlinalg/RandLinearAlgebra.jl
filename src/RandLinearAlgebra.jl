@@ -52,9 +52,11 @@ export threshold_stop
 
 # Export SubSolver types and functions
 export SubSolver, SubSolverRecipe, ldiv!
+export KrylovSubSolver, KrylovSubSolverRecipe
 export complete_sub_solver, update_sub_solver!
 export LQSolver, LQSolverRecipe
 export QRSolver, QRSolverRecipe
+export LSQRSolver, LSQRSolverRecipe, NoPreconditioner
 
 # Export SolverError types and functions
 export SolverError, SolverErrorRecipe

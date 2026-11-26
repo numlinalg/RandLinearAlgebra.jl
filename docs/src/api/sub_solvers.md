@@ -8,6 +8,10 @@ Pages = ["sub_solvers.md"]
 SubSolver
 
 SubSolverRecipe
+
+KrylovSubSolver
+
+KrylovSubSolverRecipe
 ```
 
 ## SubSolver Structures
@@ -19,6 +23,15 @@ LQSolverRecipe
 QRSolver
 
 QRSolverRecipe
+
+LSQRSolver
+
+LSQRSolverRecipe
+```
+
+## Preconditioners
+```@docs
+NoPreconditioner
 ```
 
 ## Exported Functions

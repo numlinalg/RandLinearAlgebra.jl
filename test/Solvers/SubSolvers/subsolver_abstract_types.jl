@@ -6,6 +6,8 @@ struct TestSubSolverRecipe <: SubSolverRecipe end
 @testset "Sub-Solver Abstract Types" begin
     @test isdefined(Main, :SubSolver)
     @test isdefined(Main, :SubSolverRecipe)
+    @test isdefined(Main, :KrylovSubSolver)
+    @test isdefined(Main, :KrylovSubSolverRecipe)
 end
 
 @testset "Sub-Solver Argument Errors" begin
@@ -17,5 +19,6 @@ end
     @test_throws ArgumentError complete_sub_solver(TestSubSolver(), A, b)
     @test_throws ArgumentError update_sub_solver!(TestSubSolverRecipe(), A)
     @test_throws ArgumentError ldiv!(x, TestSubSolverRecipe(), b)
+    
 end
 end

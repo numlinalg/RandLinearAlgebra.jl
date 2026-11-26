@@ -14,6 +14,20 @@ linear system or least squares problem.
 """
 abstract type SubSolverRecipe end
 
+"""
+    KrylovSubSolver <: SubSolver
+An abstract supertype for structures specifying Krylov approaches to solving a linear system
+    or least squares problems.
+"""
+abstract type KrylovSubSolver <: SubSolver end
+
+
+"""
+    KrylovSubSolverRecipe <: SubSolverRecipe
+An abstract supertype for structures with preallocated memory for methods specifying Krylov 
+    approaches to solving a linear system or least squares problems.
+"""
+abstract type KrylovSubSolverRecipe <: SubSolverRecipe end
 # Docstring Components
 sub_solver_arg_list = Dict{Symbol,String}(
     :sub_solver => "`solver::SubSolver`, a user-specified sub-solving method.",
@@ -144,3 +158,4 @@ end
 ###########################################
 include("SubSolvers/lq.jl")
 include("SubSolvers/qr.jl")
+include("SubSolvers/lsqr.jl")
